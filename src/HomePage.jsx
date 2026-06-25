@@ -1,5 +1,5 @@
-import './Homepage.css';
-import heroImg from './assets/hero.png';
+import './HomePage.css';
+import heroImg from './assets/Hero.png';
 import logoIcon from './assets/logo-icon.png';
 import { useNavigate } from 'react-router-dom'; // استيراد أداة التنقل
 
