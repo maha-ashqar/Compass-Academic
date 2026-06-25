@@ -1,0 +1,93 @@
+/* إعدادات عامة */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+.landing-page { padding: 20px 80px; background-color: #fafafa; }
+
+/* شريط التنقل */
+.navbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+.logo { display: flex; align-items: center; font-weight: bold; font-size: 20px; }
+.logo-img { width: 30px; margin-right: 10px; }
+.nav-links { display: flex; list-style: none; gap: 25px; color: #555; }
+.nav-links li { cursor: pointer; }
+.get-started { background: #000; color: #fff; padding: 10px 20px; border-radius: 20px; border: none; cursor: pointer; margin-left: 15px; }
+
+/* القسم الرئيسي */
+.hero { display: flex; align-items: center; justify-content: space-between; padding: 60px 0; }
+.hero-content { flex: 1; }
+.badge { background: #e0e7ff; color: #4338ca; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 14px; margin-bottom: 20px; }
+h1 { font-size: 50px; line-height: 1.2; margin-bottom: 20px; }
+.highlight { color: #0056d2; }
+.hero-content p { color: #666; margin-bottom: 30px; line-height: 1.6; }
+.buttons { display: flex; gap: 15px; margin-bottom: 30px; }
+.btn-primary { background: #001233; color: white; padding: 15px 30px; border-radius: 30px; border: none; cursor: pointer; }
+.btn-secondary { background: transparent; border: 1px solid #ccc; padding: 15px 30px; border-radius: 30px; cursor: pointer; }
+
+/* قسم الميزات (الجديد والمرتب) */
+.features {
+  display: flex;
+  gap: 40px; /* المسافة بين العمودين */
+  max-width: 80%;
+}
+
+.features-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* المسافة بين العناصر داخل العمود */
+}
+
+.features span {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* تنسيق علامات الصح ✔️ */
+.features span::before {
+  margin-right: 8px; /* المسافة بين الصح والنص */
+  font-size: 1.2em;
+}
+
+/* صورة البطل */
+.hero-image { flex: 1; display: flex; justify-content: flex-end; }
+.hero-image img { width: 80%; border-radius: 20px; }
+
+/* قسم الإحصائيات المحدث */
+.stats-section { 
+  display: flex; 
+  justify-content: space-around; 
+  align-items: center;
+  background: white; 
+  padding: 40px; 
+  border-radius: 20px; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  margin-top: 40px;
+}
+
+.stat-card { 
+  text-align: center; 
+  flex: 1;
+  position: relative;
+}
+
+.stat-card h3 { 
+  font-size: 36px; 
+  color: #3b82f6; /* أزرق فاتح كما طلبتِ */
+  margin-bottom: 5px;
+}
+
+.stat-card p { 
+  font-size: 14px; 
+  color: #001233; /* كحلي */
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* الخط الشفاف تحت كل كلمة */
+.stat-line {
+  width: 40px;
+  height: 3px;
+  background-color: rgba(0, 18, 51, 0.2); /* كحلي مع شفافية 20% */
+  margin: 15px auto 0 auto;
+  border-radius: 2px;
+}

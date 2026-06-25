@@ -1,0 +1,70 @@
+.login-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.form-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 80px;
+  max-width: 500px;
+}
+
+.logo { width: 120px; margin-bottom: 40px; align-self: center; }
+
+.input-group { margin-bottom: 20px; }
+label { display: block; font-size: 14px; margin-bottom: 8px; color: #333; }
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fcfcfc;
+}
+
+.forgot-password {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: #0056d2;
+  margin-top: 5px;
+  text-decoration: none;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: #001233;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.divider { text-align: center; margin: 25px 0; color: #888; font-size: 12px; }
+
+.btn-google {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.signup-link { text-align: center; margin-top: 20px; font-size: 14px; }
+.signup-link a { color: #0056d2; font-weight: bold; }
+
+/* هنا السحر: استدعاء الصورة من مجلد assets */
+.image-side {
+  flex: 1;
+  background-image: url('./assets/side-image.png');
+  background-size: cover;
+  background-position: center;
+}
