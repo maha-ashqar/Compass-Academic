@@ -1,0 +1,28 @@
+/* ==================== تكبير/تصغير الواجهة (حجم الخط) ==================== */
+:root {
+  --ui-zoom: 1;
+}
+
+.main-viewport {
+  zoom: var(--ui-zoom, 1);
+}
+
+/* ==================== الوضع الليلي ==================== */
+.dark-theme {
+  --main-bg: #0b0f1a;
+  --card-bg: #131a2b;
+  --card-border: #232a3d;
+  --text-dark: #f1f2f6;
+  --text-muted: #9aa1b5;
+  --text-menu: #8890ac;
+  --search-bg: #1b2233;
+}
+
+.dark-theme .stat-box::after {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dark-theme .bookmark-btn {
+  background: var(--card-bg);
+  color: var(--text-dark);
+}

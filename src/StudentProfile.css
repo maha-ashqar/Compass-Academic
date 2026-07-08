@@ -1,0 +1,270 @@
+.profile-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.profile-hero-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hero-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hero-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.name-status-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.name-status-row h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000a33;
+}
+
+.status-badge {
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.hero-subtext {
+  font-size: 13px;
+  color: #7e84a3;
+  font-weight: 500;
+}
+
+.edit-profile-btn {
+  background: #03082b;
+  color: #ffffff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-profile-btn .btn-icon {
+  font-size: 14px;
+}
+
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.details-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 20px;
+  padding: 28px 32px;
+}
+
+.card-title-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.card-title-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #000a33;
+}
+
+.title-icon,
+.title-icon-cap {
+  font-size: 20px;
+  color: #7e84a3;
+}
+
+.info-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 28px;
+  column-gap: 20px;
+}
+
+.info-item label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a3aed0;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.info-item p {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000a33;
+}
+
+.truncated-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.academic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.academic-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8f9fb;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.academic-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.blue-icon-bg { background: #e0e7ff; color: #4338ca; }
+.orange-icon-bg { background: #ffedd5; color: #ea580c; }
+.purple-icon-bg { background: #f3e8ff; color: #9333ea; }
+
+.academic-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.academic-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a3aed0;
+  letter-spacing: 0.5px;
+}
+
+.academic-text h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000a33;
+  margin-top: 2px;
+}
+
+.dept-text {
+  font-size: 12px;
+  color: #4338ca;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ==================== Overview / Skills / Connect ==================== */
+.overview-section,
+.skills-section,
+.connections-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eef0f4;
+}
+
+.overview-section label,
+.skills-section label,
+.connections-section label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a3aed0;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.overview-text {
+  font-size: 14px;
+  color: #000a33;
+  line-height: 1.6;
+}
+
+.skills-display-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-display-tag {
+  background: #eef0f4;
+  color: #000a33;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.connections-display-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.connection-display-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000a33;
+  text-decoration: none;
+}
+
+.connection-display-item:hover {
+  color: #4338ca;
+}
+
+/* ==================== استجابة للشاشات الصغيرة ==================== */
+@media (max-width: 900px) {
+  .profile-details-grid {
+    grid-template-columns: 1fr;
+  }
+  .info-data-grid {
+    grid-template-columns: 1fr;
+  }
+}

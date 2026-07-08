@@ -1,29 +1,73 @@
-/* الحاوية الرئيسية */
-.login-container {
-  display: flex;
-  height: 100vh;
+* {
+  box-sizing: border-box;
+}
+
+.trainer-login-page {
+  min-height: 100vh;
   width: 100%;
-  font-family: Arial, sans-serif;
-  overflow: hidden;
-}
-
-/* قسم النموذج */
-.form-section {
-  flex: 1;
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 40px;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(
+    180deg,
+    #030a37 0%,
+    #171e48 15%,
+    #2d335b 30%,
+    #42476c 45%,
+    #5b6081 60%,
+    #7c7f9a 75%,
+    #9b9eb2 90%,
+    #b1b3c3 100%
+  );
 }
 
-.form-content { width: 100%; max-width: 400px; text-align: center; }
-.logo-img { width: 120px; margin-bottom: 20px; }
-.title { color: #c49a6c; font-size: 1.5rem; margin: 10px 0; }
-.subtitle { color: #666; font-size: 0.9rem; margin-bottom: 30px; }
+.trainer-login-card {
+  width: 100%;
+  max-width: 480px;
+  background: #e6e7ec;
+  border-radius: 32px;
+  padding: 48px 48px 40px;
+  box-shadow: 0 25px 60px rgba(3, 10, 55, 0.35);
+  display: flex;
+  flex-direction: column;
+}
 
-/* تنسيق الحقول والأيقونات */
-.input-group { text-align: left; margin-bottom: 20px; }
-.input-group label { display: block; font-size: 0.8rem; color: #555; margin-bottom: 5px; }
+.logo {
+  display: block;
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  margin: 0 auto 20px;
+  align-self: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 28px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #8a8fa3;
+  font-weight: 500;
+}
 
 .input-wrapper {
   position: relative;
@@ -33,71 +77,135 @@
 
 .input-wrapper input {
   width: 100%;
-  padding: 12px 15px;
-  padding-right: 40px; /* مساحة للأيقونة */
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 14px 42px 14px 16px;
+  border: none;
+  border-radius: 12px;
+  background: #eceef4;
+  font-size: 15px;
+  color: #333;
   box-sizing: border-box;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.input-wrapper input::placeholder {
+  color: #9a9ea8;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(3, 11, 61, 0.15);
 }
 
 .input-icon {
   position: absolute;
-  right: 12px;
-  color: #a0a0a0;
-  font-size: 1.2rem;
+  right: 14px;
+  color: #8a8fa3;
+  font-size: 18px;
   pointer-events: none;
 }
 
-.forgot-password { text-align: right; margin-top: -10px; margin-bottom: 20px; }
-.forgot-password a { font-size: 0.8rem; color: #007bff; text-decoration: none; }
+.forgot-password {
+  text-align: right;
+  margin-top: -8px;
+  margin-bottom: 20px;
+}
 
-/* زر الدخول */
+.forgot-password a {
+  font-size: 13px;
+  color: #4a7fd6;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+
 .login-btn {
   width: 100%;
-  padding: 12px;
-  background-color: #001233;
-  color: white;
+  padding: 15px;
+  background: #030b3d;
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
-/* الخط الفاصل */
+.login-btn:hover {
+  background: #060f4a;
+  transform: translateY(-1px);
+}
+
 .divider {
-  display: flex;
-  align-items: center;
-  margin: 25px 0;
-  color: #aaa;
-  font-size: 0.8rem;
+  text-align: center;
+  margin: 28px 0 20px;
+  color: #8a8fa3;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  position: relative;
 }
-.line { flex: 1; height: 1px; background: #eee; }
-.text { margin: 0 10px; }
 
-/* زر جوجل */
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 28%;
+  height: 1px;
+  background: #c7cad6;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
 .google-btn {
   width: 100%;
-  padding: 12px;
-  background: white;
-  border: 1px solid #001233;
-  color: #001233;
-  border-radius: 8px;
+  background: none;
+  border: none;
+  color: #1c1c1e;
+  font-size: 15px;
+  padding: 6px;
   cursor: pointer;
-  font-weight: 500;
 }
 
-.signup-link { text-align: center; margin-top: 20px; font-size: 0.9rem; }
-
-/* قسم الصورة */
-.image-section {
-  flex: 1;
-  background-image: url('D:/My-React-Projects/src/assets/trainer-hero.jpg.png');
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 40px;
-  color: white;
+.google-btn:hover {
+  text-decoration: underline;
 }
-.overlay-text h2 { color: #3498db; font-size: 2rem; margin-bottom: 10px; }
+
+.footer-text {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 14px;
+  color: #333;
+}
+
+.footer-text a {
+  color: #2f69d3;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.footer-text a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+  .trainer-login-card {
+    padding: 36px 28px 32px;
+    border-radius: 24px;
+  }
+
+  .logo {
+    width: 90px;
+    height: 90px;
+  }
+}

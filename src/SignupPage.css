@@ -1,0 +1,129 @@
+* {
+  box-sizing: border-box;
+}
+
+.signup-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(
+    180deg,
+    #050e3f 0%,
+    #181f4d 15%,
+    #2e3560 30%,
+    #444a72 45%,
+    #5d6386 60%,
+    #7d81a0 75%,
+    #9c9fb5 90%,
+    #b1b3c2 100%
+  );
+}
+
+.signup-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 44px 44px;
+  box-shadow: 0 25px 60px rgba(3, 10, 55, 0.35);
+}
+
+.signup-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0c1230;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #eef1f6;
+  font-size: 14px;
+  color: #333;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.input-group input::placeholder {
+  color: #9a9ea8;
+}
+
+.input-group input:focus {
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(1, 78, 187, 0.15);
+}
+
+.match-hint {
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.match-ok {
+  color: #16a34a;
+}
+
+.match-bad {
+  color: #e53e3e;
+}
+
+.form-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.btn-signup {
+  width: 100%;
+  padding: 15px;
+  margin-top: 14px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #004cc2 0%, #016485 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-signup:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(1, 100, 133, 0.35);
+}
+
+@media (max-width: 500px) {
+  .signup-card {
+    padding: 32px 24px 36px;
+    border-radius: 16px;
+  }
+}

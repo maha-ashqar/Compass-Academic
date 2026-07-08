@@ -1,0 +1,13 @@
+.dashboard-wrapper { display: flex; min-height: 100vh; }
+.fixed-sidebar { 
+  width: 280px; 
+  position: fixed; 
+  height: 100vh; 
+  /* background: #001233; لون خلفية القائمة الغامق */
+}
+.content-area { 
+  margin-left: 280px; 
+  flex: 1; 
+  padding: 40px;
+  background: #f9fbff; /* لون الخلفية الفاتح */
+}

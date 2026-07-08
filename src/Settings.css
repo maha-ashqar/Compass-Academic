@@ -1,0 +1,399 @@
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 900px;
+}
+
+/* ==================== كرت البروفايل العلوي ==================== */
+.settings-hero-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.settings-hero-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.settings-hero-name-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-hero-name-row h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.settings-status-badge {
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.settings-hero-major {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.settings-edit-btn {
+  background: var(--sidebar-bg);
+  color: #ffffff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==================== الأقسام ==================== */
+.settings-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.settings-section-header {
+  background: #f5f7fb;
+  padding: 14px 24px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #2f5fff;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.settings-row:hover {
+  background: var(--search-bg);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row.nested {
+  padding: 10px 0;
+  border-bottom: none;
+  cursor: default;
+}
+
+.settings-row.nested:hover {
+  background: transparent;
+}
+
+.settings-row-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.settings-row-icon {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.settings-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chevron {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.settings-expand-panel {
+  padding: 18px 24px 22px;
+  background: var(--search-bg);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.settings-inline-note {
+  padding: 0 24px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -8px;
+}
+
+/* ==================== مفتاح التبديل (Toggle) ==================== */
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 20px;
+  background: #d7dae3;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch.active {
+  background: #2f5fff;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: left 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-knob {
+  left: 23px;
+}
+
+/* ==================== اللغة ==================== */
+.lang-option {
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  background: #fff;
+  border: 1px solid var(--card-border);
+}
+
+.lang-option.active {
+  background: #eef1ff;
+  border-color: #2f5fff;
+  color: #2f5fff;
+}
+
+/* ==================== حجم الخط ==================== */
+.fontsize-options {
+  display: flex;
+  gap: 10px;
+}
+
+.fontsize-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-dark);
+  transition: all 0.15s ease;
+}
+
+.fontsize-btn.active {
+  background: #2f5fff;
+  color: #fff;
+  border-color: #2f5fff;
+}
+
+/* ==================== نموذج عام (باسورد/تواصل) ==================== */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-form input,
+.settings-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: #fff;
+  color: var(--text-dark);
+  resize: vertical;
+}
+
+.settings-save-btn {
+  background: #2f5fff;
+  color: #fff;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.settings-save-btn:hover {
+  background: #1f4fe0;
+}
+
+.settings-success-msg {
+  color: #16a34a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-error-msg {
+  color: #ea4335;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==================== إدارة الأجهزة ==================== */
+.device-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.device-item:last-child {
+  border-bottom: none;
+}
+
+.device-info h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.device-info p {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.device-current-badge {
+  background: #eef1ff;
+  color: #2f5fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.device-signout-btn {
+  background: #fff1f1;
+  color: #ea4335;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.device-signout-btn:hover {
+  background: #ea4335;
+  color: #fff;
+}
+
+/* ==================== المساعدة ==================== */
+.help-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.faq-item {
+  margin-bottom: 14px;
+}
+
+.faq-item h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.faq-item p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ==================== تقييم التطبيق ==================== */
+.stars-row {
+  display: flex;
+  gap: 8px;
+  font-size: 28px;
+  margin-top: 4px;
+}
+
+.stars-row .star {
+  color: #d7dae3;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.stars-row .star.filled {
+  color: #ffb800;
+}
+
+/* ==================== تسجيل الخروج ==================== */
+.logout-btn-settings {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #ea4335;
+  color: #ea4335;
+  padding: 15px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn-settings:hover {
+  background: #ea4335;
+  color: #ffffff;
+}
