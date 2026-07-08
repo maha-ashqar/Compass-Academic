@@ -8,6 +8,8 @@ import EditProfile from './EditProfile';
 import { CoursesProvider } from './CoursesContext';
 import { DeadlinesProvider } from './DeadlinesContext';
 import { SettingsProvider } from './SettingsContext';
+import ForgotPassword from './ForgotPasswordPage';
+import SignupPage from './SignupPage';
 import './App.css';
 
 function App() {
@@ -47,6 +49,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Homepage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/signup" element={<SignupPage />} />
               <Route path="/trainer-login" element={<TrainerLogin />} />
               <Route
                 path="/student-dashboard"

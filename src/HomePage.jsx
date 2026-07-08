@@ -71,12 +71,12 @@ const Homepage = () => {
       {/* قسم الميزات بتنسيق العمودين */}
       <div className="features">
         <div className="features-column">
-          <span>✔️ Accredited Certificates</span>
-          <span>✔️ Expert instructors</span>
+          <span> Accredited Certificates</span>
+          <span> Expert instructors</span>
         </div>
         <div className="features-column">
-          <span>✔️ AI-powered learning</span>
-          <span>✔️ Career-focused curriculum</span>
+          <span> AI-powered learning</span>
+          <span> Career-focused curriculum</span>
         </div>
       </div>
 

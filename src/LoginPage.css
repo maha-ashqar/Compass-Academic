@@ -186,3 +186,14 @@
     height: 100px;
   }
 }
+.forgot-password {
+  align-self: flex-end;
+  font-size: 13px;
+  color: #2f69d3;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}

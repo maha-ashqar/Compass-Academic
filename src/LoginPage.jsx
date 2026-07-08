@@ -87,6 +87,13 @@ function LoginPage() {
                 </svg>
               </span>
             </div>
+            <span
+              className="forgot-password"
+              onClick={() => navigate('/forgot-password')}
+              style={{ cursor: 'pointer' }}
+            >
+              Forgot password?
+            </span>
           </div>
 
           <button type="submit" className="btn-login">
@@ -118,3 +125,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
