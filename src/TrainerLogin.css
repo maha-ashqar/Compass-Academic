@@ -2,149 +2,299 @@
   box-sizing: border-box;
 }
 
+/* ==================== Design Tokens (نفس هوية صفحة تسجيل دخول الطالب) ==================== */
 .trainer-login-page {
+  --navy-950: #001233;
+  --navy-900: #0a0f2c;
+  --blue-600: #0056d2;
+  --blue-700: #002766;
+  --blue-tint: #eef4ff;
+  --brass: #b98c4b;
+  --ink-900: #0f1729;
+  --slate-500: #667085;
+  --slate-400: #4b5468;
+  --line: #eef0f4;
+  --logo-navy: #000a33;
+  --logo-gold: #cca43b;
+
+  position: relative;
   min-height: 100vh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  font-family: Arial, sans-serif;
+  overflow: hidden;
   background: linear-gradient(
-    180deg,
-    #030a37 0%,
-    #171e48 15%,
-    #2d335b 30%,
-    #42476c 45%,
-    #5b6081 60%,
-    #7c7f9a 75%,
-    #9b9eb2 90%,
-    #b1b3c3 100%
+    160deg,
+    var(--navy-950) 0%,
+    var(--blue-700) 55%,
+    var(--blue-600) 100%
   );
+  background-size: 200% 200%;
+  animation: trainerBgDrift 18s ease-in-out infinite;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
+@keyframes trainerBgDrift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* ==================== طبقة الخلفية الزخرفية ==================== */
+.trainer-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.trainer-bg-radar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 900px;
+  height: 900px;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(185, 140, 75, 0.16) 25deg,
+    transparent 55deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  filter: blur(2px);
+  animation: trainerRadarSpin 10s linear infinite;
+}
+
+@keyframes trainerRadarSpin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.trainer-bg-ring {
+  position: absolute;
+  width: 640px;
+  height: 640px;
+  color: rgba(255, 255, 255, 0.14);
+}
+
+.trainer-bg-ring-1 {
+  top: -160px;
+  right: -160px;
+  animation: trainerRingSpinSlow 90s linear infinite;
+}
+
+.trainer-bg-ring-2 {
+  bottom: -220px;
+  left: -220px;
+  width: 520px;
+  height: 520px;
+  color: rgba(185, 140, 75, 0.16);
+  animation: trainerRingSpinSlow 70s linear infinite reverse;
+}
+
+@keyframes trainerRingSpinSlow {
+  to { transform: rotate(360deg); }
+}
+
+.trainer-bg-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  animation: trainerFloatDot 6s ease-in-out infinite;
+}
+
+.trainer-bg-dot.dot-1 { top: 18%; left: 12%; animation-delay: 0s; }
+.trainer-bg-dot.dot-2 { top: 32%; left: 82%; background: var(--brass); animation-delay: 1.2s; }
+.trainer-bg-dot.dot-3 { top: 68%; left: 20%; animation-delay: 2.4s; }
+.trainer-bg-dot.dot-4 { top: 78%; left: 74%; background: var(--brass); animation-delay: 0.6s; }
+.trainer-bg-dot.dot-5 { top: 48%; left: 6%; animation-delay: 3s; }
+
+@keyframes trainerFloatDot {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(-16px); opacity: 1; }
+}
+
+/* ==================== كارد تسجيل الدخول ==================== */
 .trainer-login-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 480px;
-  background: #e6e7ec;
-  border-radius: 32px;
-  padding: 48px 48px 40px;
-  box-shadow: 0 25px 60px rgba(3, 10, 55, 0.35);
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 44px 44px 36px;
+  box-shadow:
+    0 30px 70px rgba(0, 18, 51, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  animation: trainerCardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.logo {
+@keyframes trainerCardEnter {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.trainer-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--logo-navy) 0%, var(--brass) 50%, var(--logo-gold) 100%);
+}
+
+/* ==================== اللوجو + البادج ==================== */
+.trainer-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px auto 16px;
+}
+
+.trainer-badge {
   display: block;
-  width: 110px;
-  height: 110px;
-  object-fit: contain;
-  margin: 0 auto 20px;
-  align-self: center;
+  width: fit-content;
+  margin: 0 auto 16px;
+  background: var(--blue-tint);
+  color: var(--navy-950);
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  border-radius: 20px;
 }
 
-.subtitle {
+.trainer-subtitle {
   text-align: center;
-  color: #333;
-  font-size: 15px;
-  line-height: 1.5;
-  margin: 0 0 28px;
+  font-size: 13.5px;
+  color: var(--slate-500);
+  line-height: 1.6;
+  margin-bottom: 28px;
 }
 
-.login-form {
+/* دوران إبرة البوصلة داخل شعار CompassWordmark فقط عند تفعيل spin */
+.compass-wordmark-spin .compass-wordmark-needle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: trainerNeedleSpin 8s linear infinite;
+}
+
+@keyframes trainerNeedleSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== الفورم ==================== */
+.trainer-form {
   display: flex;
   flex-direction: column;
 }
 
 .input-group {
-  margin-bottom: 20px;
-  text-align: left;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
 }
 
 .input-group label {
-  display: block;
-  font-size: 14px;
+  font-size: 13.5px;
   margin-bottom: 8px;
-  color: #8a8fa3;
-  font-weight: 500;
+  color: var(--slate-500);
+  font-weight: 600;
 }
 
-.input-wrapper {
+.input-with-icon {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.input-wrapper input {
+.input-with-icon input {
   width: 100%;
   padding: 14px 42px 14px 16px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
-  background: #eceef4;
+  background: var(--blue-tint);
   font-size: 15px;
-  color: #333;
-  box-sizing: border-box;
-  transition: box-shadow 0.2s ease, background 0.2s ease;
+  color: var(--ink-900);
+  font-family: inherit;
+  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
-.input-wrapper input::placeholder {
-  color: #9a9ea8;
+.input-with-icon input::placeholder {
+  color: #9aa5c3;
 }
 
-.input-wrapper input:focus {
+.input-with-icon input:focus {
   outline: none;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(3, 11, 61, 0.15);
+  background: #ffffff;
+  border-color: var(--blue-600);
+  box-shadow: 0 0 0 3px rgba(0, 86, 210, 0.14);
 }
 
 .input-icon {
   position: absolute;
   right: 14px;
-  color: #8a8fa3;
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  color: var(--slate-400);
   pointer-events: none;
 }
 
 .forgot-password {
-  text-align: right;
-  margin-top: -8px;
-  margin-bottom: 20px;
-}
-
-.forgot-password a {
+  align-self: flex-end;
   font-size: 13px;
-  color: #4a7fd6;
-  text-decoration: none;
+  color: var(--blue-600);
+  font-weight: 600;
+  margin-top: 8px;
 }
 
-.forgot-password a:hover {
+.forgot-password:hover {
   text-decoration: underline;
 }
 
-.login-btn {
+/* ==================== الأزرار ==================== */
+.btn-trainer-login {
   width: 100%;
   padding: 15px;
-  background: #030b3d;
+  background: var(--navy-950);
   color: #fff;
   border: none;
   border-radius: 14px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15.5px;
+  font-weight: 700;
+  margin-top: 10px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.login-btn:hover {
-  background: #060f4a;
-  transform: translateY(-1px);
+.btn-trainer-login:hover {
+  background: var(--blue-700);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 18, 51, 0.3);
+}
+
+.btn-trainer-login:active {
+  transform: translateY(0);
 }
 
 .divider {
   text-align: center;
-  margin: 28px 0 20px;
-  color: #8a8fa3;
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  margin: 26px 0 20px;
+  color: var(--slate-500);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
   position: relative;
 }
 
@@ -153,59 +303,81 @@
   content: '';
   position: absolute;
   top: 50%;
-  width: 28%;
+  width: 26%;
   height: 1px;
-  background: #c7cad6;
+  background: var(--line);
 }
 
-.divider::before {
-  left: 0;
-}
+.divider::before { left: 0; }
+.divider::after { right: 0; }
 
-.divider::after {
-  right: 0;
-}
-
-.google-btn {
+.btn-google {
   width: 100%;
-  background: none;
-  border: none;
-  color: #1c1c1e;
-  font-size: 15px;
-  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink-900);
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 13px;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
-.google-btn:hover {
-  text-decoration: underline;
+.btn-google:hover {
+  background: var(--blue-tint);
+  border-color: var(--blue-600);
+  transform: translateY(-1px);
 }
 
-.footer-text {
+.trainer-footer-text {
   text-align: center;
-  margin-top: 28px;
-  font-size: 14px;
-  color: #333;
+  margin-top: 26px;
+  font-size: 13.5px;
+  color: var(--slate-500);
 }
 
-.footer-text a {
-  color: #2f69d3;
+.trainer-footer-text a {
+  color: var(--blue-600);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
 }
 
-.footer-text a:hover {
+.trainer-footer-text a:hover {
   text-decoration: underline;
 }
 
+/* ==================== احترام تفضيل تقليل الحركة ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .trainer-login-page,
+  .trainer-bg-radar,
+  .trainer-bg-ring,
+  .trainer-bg-dot,
+  .trainer-login-card,
+  .compass-wordmark-spin .compass-wordmark-needle {
+    animation: none !important;
+  }
+}
+
+/* ==================== استجابة الشاشات ==================== */
 @media (max-width: 520px) {
   .trainer-login-card {
-    padding: 36px 28px 32px;
-    border-radius: 24px;
+    padding: 34px 26px 28px;
+    border-radius: 22px;
   }
 
-  .logo {
-    width: 90px;
-    height: 90px;
+  .trainer-bg-ring {
+    width: 420px;
+    height: 420px;
+  }
+
+  .trainer-bg-radar {
+    width: 600px;
+    height: 600px;
   }
 }

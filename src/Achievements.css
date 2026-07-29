@@ -1,0 +1,462 @@
+.ach-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ach-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ach-page-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0 0 6px;
+}
+
+.ach-page-header p {
+  font-size: 14px;
+  color: #7e84a3;
+  margin: 0;
+  max-width: 520px;
+}
+
+.ach-summary-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #001233;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 14px 24px;
+  flex-shrink: 0;
+}
+
+.ach-summary-count {
+  font-size: 24px;
+  font-weight: 800;
+  color: #cca43b;
+}
+
+.ach-summary-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==================== شبكة الشارات ==================== */
+.ach-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.ach-badge-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  position: relative;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.ach-badge-card.unlocked:hover {
+  box-shadow: 0 12px 28px rgba(0, 10, 51, 0.08);
+  transform: translateY(-4px);
+}
+
+.ach-badge-card.locked {
+  opacity: 0.65;
+}
+
+.ach-badge-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f5f6f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.ach-badge-card.unlocked.bronze .ach-badge-icon { background: #fdf1e2; }
+.ach-badge-card.unlocked.silver .ach-badge-icon { background: #eef0f4; }
+.ach-badge-card.unlocked.gold .ach-badge-icon { background: #fff8e0; }
+
+.ach-badge-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+}
+
+.ach-badge-desc {
+  font-size: 12px;
+  color: #7e84a3;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ach-badge-progress {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.ach-badge-progress-bg {
+  width: 100%;
+  height: 6px;
+  background: #eef0f4;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.ach-badge-progress-fill {
+  height: 100%;
+  background: #cca43b;
+  border-radius: 20px;
+  transition: width 0.4s ease;
+}
+
+.ach-badge-progress-text {
+  display: block;
+  font-size: 10.5px;
+  color: #7e84a3;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.ach-badge-unlocked-tag {
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #16a34a;
+  background: #eafbf0;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* ==================== قسم الشهادات ==================== */
+.ach-certificates-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ach-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ach-section-header h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+}
+
+.ach-cert-count {
+  font-size: 13px;
+  color: #7e84a3;
+  font-weight: 600;
+}
+
+.ach-certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.ach-certificate-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 16px;
+  padding: 18px 20px;
+  transition: box-shadow 0.2s ease;
+}
+
+.ach-certificate-card:hover {
+  box-shadow: 0 10px 26px rgba(0, 18, 51, 0.06);
+}
+
+.ach-certificate-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fff8e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.ach-certificate-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ach-certificate-category {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #cca43b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ach-certificate-info h4 {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 2px 0;
+}
+
+.ach-certificate-info p {
+  font-size: 12px;
+  color: #7e84a3;
+  margin: 0;
+}
+
+.ach-view-cert-btn {
+  flex-shrink: 0;
+  background: #001233;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.ach-view-cert-btn:hover {
+  background: #0056d2;
+}
+
+/* ==================== حالة عدم وجود شهادات ==================== */
+.ach-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #dcdfef;
+  border-radius: 20px;
+}
+
+.ach-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.ach-empty h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #000a33;
+  margin-bottom: 6px;
+}
+
+.ach-empty p {
+  font-size: 13px;
+  color: #7e84a3;
+}
+
+/* ==================== صفحة الشهادة ==================== */
+.ach-back-button {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #383e5c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.ach-back-button:hover {
+  background: #f5f6f8;
+  border-color: #dcdfef;
+}
+
+.ach-certificate-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.ach-certificate {
+  width: 100%;
+  max-width: 760px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 12px;
+  box-shadow: 0 20px 50px rgba(0, 18, 51, 0.12);
+}
+
+.ach-cert-border {
+  border: 2px solid #cca43b;
+  border-radius: 14px;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.ach-cert-brand {
+  font-size: 13px;
+  font-weight: 800;
+  color: #001233;
+  letter-spacing: 2px;
+}
+
+.ach-cert-subtitle {
+  font-size: 15px;
+  color: #cca43b;
+  font-weight: 700;
+  margin: 0 0 24px;
+}
+
+.ach-cert-presented {
+  font-size: 13px;
+  color: #7e84a3;
+  margin: 0;
+}
+
+.ach-cert-name {
+  font-size: 30px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 8px 0 20px;
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+}
+
+.ach-cert-body {
+  font-size: 13px;
+  color: #7e84a3;
+  margin: 0;
+}
+
+.ach-cert-course {
+  font-size: 18px;
+  font-weight: 800;
+  color: #001233;
+  margin: 8px 0 4px;
+}
+
+.ach-cert-course-title {
+  font-size: 12.5px;
+  color: #7e84a3;
+  max-width: 480px;
+  line-height: 1.6;
+  margin: 0 0 32px;
+}
+
+.ach-cert-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 480px;
+  margin-top: 20px;
+}
+
+.ach-cert-signature,
+.ach-cert-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000a33;
+}
+
+.ach-cert-line {
+  width: 140px;
+  height: 1px;
+  background: #dcdfef;
+  margin-bottom: 6px;
+}
+
+.ach-cert-role {
+  font-size: 10.5px;
+  color: #7e84a3;
+  font-weight: 500;
+}
+
+.ach-print-btn {
+  background: #001233;
+  color: #ffffff;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ach-print-btn:hover {
+  background: #0056d2;
+}
+
+@media print {
+  .ach-back-button,
+  .ach-print-btn,
+  .sidebar,
+  .main-header {
+    display: none !important;
+  }
+}
+
+/* ==================== استجابة الشاشات ==================== */
+@media (max-width: 1100px) {
+  .ach-badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .ach-badges-grid {
+    grid-template-columns: 1fr;
+  }
+  .ach-certificates-grid {
+    grid-template-columns: 1fr;
+  }
+  .ach-cert-border {
+    padding: 32px 20px;
+  }
+  .ach-cert-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+}

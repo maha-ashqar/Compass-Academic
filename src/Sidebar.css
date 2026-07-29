@@ -1,0 +1,123 @@
+.sidebar {
+  --sidebar-bg: #001233;
+  --gold-card: #cca43b;
+  --text-menu: rgba(255, 255, 255, 0.55);
+  --danger: #f35252;
+
+  background-color: var(--sidebar-bg);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+  height: 100vh;
+  width: 260px;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.sidebar-brand h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.sidebar-brand h2 span {
+  color: var(--gold-card);
+  margin-left: 2px;
+}
+
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  color: var(--text-menu);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.menu-item:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.menu-item.active {
+  color: var(--sidebar-bg) !important;
+  background-color: var(--gold-card);
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(204, 164, 59, 0.28);
+}
+
+.menu-item.active .menu-icon,
+.menu-item.active .menu-text {
+  color: var(--sidebar-bg) !important;
+}
+
+.menu-item.active:hover {
+  background-color: var(--gold-card);
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+}
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: auto;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.sidebar-footer:hover {
+  background: rgba(243, 82, 82, 0.1);
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: relative;
+    height: auto;
+    width: 100%;
+  }
+}

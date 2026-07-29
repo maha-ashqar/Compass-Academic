@@ -1,68 +1,132 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Homepage from './HomePage';
 import LoginPage from './LoginPage';
-import TrainerLogin from './TrainerLogin'
+import TrainerLogin from './TrainerLogin';
+import TrainerDashboard from './TrainerDashboard';
 import StudentDashboard from './StudentDashboard';
 import EditProfile from './EditProfile';
 import { CoursesProvider } from './CoursesContext';
+import { CoursesCatalogProvider } from './CoursesCatalogContext';
 import { DeadlinesProvider } from './DeadlinesContext';
 import { SettingsProvider } from './SettingsContext';
+import { MessagesProvider } from './MessagesContext';
+import { TrainerMessagesProvider } from './TrainerMessagesContext';
+import { ProjectsProvider } from './ProjectsContext';
+import { TrainerAssignmentsProvider } from './TrainerAssignmentsContext';
+import { TrainerStudentsProvider } from './TrainerStudentsContext';
 import ForgotPassword from './ForgotPasswordPage';
 import SignupPage from './SignupPage';
+import { NotificationsProvider } from './NotificationsContext';
+import { CompetitionsProvider } from './CompetitionsContext';
+import { getOrCreateStudent, getCurrentUserEmail, saveStudent, clearCurrentUser } from './studentsData';
+import { getOrCreateTrainer, getCurrentTrainerEmail, saveTrainer, clearCurrentTrainer } from './trainersData';
 import './App.css';
 
 function App() {
-  const [studentData, setStudentData] = useState({
-    fullName: 'mohammed ahmed mohammed ali',
-    displayName: 'mohammed ali',
-    major: 'MIS — Active Student',
-    status: 'active',
-    gender: 'male',
-    dob: '14 مارس 2002',
-    nationality: 'فلسطين',
-    phone: '+970 59 123 4567',
-    email: 'mohammed@university.edu.sa',
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    advisor: { name: 'Dr. Sarah Al-Mansour', dept: 'Computer Engineering Department' },
-    college: 'College of Computer and Information Sciences',
-    graduation: 'June 2027',
-    overview: '',
-    skills: ['UX Design', 'Data Structures'],
-    connections: {
-      github: '',
-      linkedin: '',
-      gmail: '',
-    },
-    stats: {
-      activeCompetitions: 3,
-      projectProgress: 74,
-      certificatesEarned: 4,
+
+  const [studentData, setStudentData] = useState(() => {
+    const savedEmail = getCurrentUserEmail();
+    if (savedEmail) {
+      const restored = getOrCreateStudent(savedEmail);
+      if (restored) return restored;
     }
+    return getOrCreateStudent('mohammed@university.edu.sa');
   });
+
+  const [trainerData, setTrainerData] = useState(() => {
+    const savedEmail = getCurrentTrainerEmail();
+    if (savedEmail) {
+      const restored = getOrCreateTrainer(savedEmail);
+      if (restored) return restored;
+    }
+    return getOrCreateTrainer('ahmad@compass.edu.sa');
+  });
+
+  useEffect(() => {
+    if (studentData?.email) {
+      saveStudent(studentData);
+    }
+  }, [studentData]);
+
+  useEffect(() => {
+    if (trainerData?.email) {
+      saveTrainer(trainerData);
+    }
+  }, [trainerData]);
+
+  const handleLogin = (email) => {
+    const student = getOrCreateStudent(email);
+    setStudentData(student);
+  };
+
+  const handleTrainerLogin = (email) => {
+    const trainer = getOrCreateTrainer(email);
+    setTrainerData(trainer);
+  };
+
+  const handleLogout = () => {
+    clearCurrentUser();
+  };
+
+  const handleTrainerLogout = () => {
+    clearCurrentTrainer();
+  };
 
   return (
     <SettingsProvider>
       <CoursesProvider>
-        <DeadlinesProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/trainer-login" element={<TrainerLogin />} />
-              <Route
-                path="/student-dashboard"
-                element={<StudentDashboard studentData={studentData} setStudentData={setStudentData} />}
-              />
-              <Route
-                path="/edit-profile"
-                element={<EditProfile student={studentData} onSave={setStudentData} />}
-              />
-            </Routes>
-          </BrowserRouter>
-        </DeadlinesProvider>
+        <CoursesCatalogProvider>
+          <DeadlinesProvider>
+            <MessagesProvider>
+              <TrainerMessagesProvider>
+                <ProjectsProvider>
+                  <TrainerAssignmentsProvider>
+                    <TrainerStudentsProvider>
+                      <NotificationsProvider>
+                        <CompetitionsProvider>
+                          <BrowserRouter>
+                            <Routes>
+                              <Route path="/" element={<Homepage />} />
+                              <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+                              <Route path="/forgot-password" element={<ForgotPassword />} />
+                              <Route path="/signup" element={<SignupPage onSignup={handleLogin} />} />
+                              <Route path="/trainer-login" element={<TrainerLogin onLogin={handleTrainerLogin} />} />
+                              <Route
+                                path="/trainer-dashboard"
+                                element={
+                                  <TrainerDashboard
+                                    trainerData={trainerData}
+                                    onLogout={handleTrainerLogout}
+                                  />
+                                }
+                              />
+
+                              <Route
+                                path="/student-dashboard"
+                                element={
+                                  <StudentDashboard
+                                    studentData={studentData}
+                                    setStudentData={setStudentData}
+                                    onLogout={handleLogout}
+                                  />
+                                }
+                              />
+                              <Route
+                                path="/edit-profile"
+                                element={<EditProfile student={studentData} onSave={setStudentData} />}
+                              />
+                            </Routes>
+                          </BrowserRouter>
+                        </CompetitionsProvider>
+                      </NotificationsProvider>
+                    </TrainerStudentsProvider>
+                  </TrainerAssignmentsProvider>
+                </ProjectsProvider>
+              </TrainerMessagesProvider>
+            </MessagesProvider>
+          </DeadlinesProvider>
+        </CoursesCatalogProvider>
       </CoursesProvider>
     </SettingsProvider>
   );

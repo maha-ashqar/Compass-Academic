@@ -1,0 +1,463 @@
+/* ==================== نموذج إضافة عنصر (كورس / واجب) ==================== */
+.td-form-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.td-form-card h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+}
+
+.td-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.td-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.td-form-field.full {
+  grid-column: 1 / -1;
+}
+
+.td-form-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #7e84a3;
+}
+
+.td-form-field input,
+.td-form-field select,
+.td-form-field textarea {
+  padding: 12px 14px;
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+  background: #f5f6f8;
+  font-size: 13.5px;
+  color: #000a33;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.td-form-field input:focus,
+.td-form-field select:focus,
+.td-form-field textarea:focus {
+  border-color: #0056d2;
+  background: #ffffff;
+}
+
+.td-form-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.td-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.td-submit-btn {
+  background: #001233;
+  color: #ffffff;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.td-submit-btn:hover {
+  background: #0056d2;
+}
+
+.td-section-toggle {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.td-toggle-btn {
+  background: #eef4ff;
+  color: #0056d2;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.td-toggle-btn:hover {
+  background: #dce9ff;
+}
+
+/* ==================== بطاقات إدارة الكورسات (المدرب) ==================== */
+.td-manage-course-card {
+  position: relative;
+}
+
+.td-delete-course-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #fff1f1;
+  color: #ea4335;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.td-delete-course-btn:hover {
+  background: #ea4335;
+  color: #fff;
+}
+
+/* ==================== قائمة الطلاب ==================== */
+.td-students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.td-student-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.td-student-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.td-student-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.td-student-name {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+}
+
+.td-student-course {
+  font-size: 12px;
+  color: #7e84a3;
+  margin: 2px 0 0;
+}
+
+.td-student-progress-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7e84a3;
+}
+
+.td-student-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #eef0f4;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.td-student-progress-fill {
+  height: 100%;
+  background: #cca43b;
+  border-radius: 20px;
+}
+
+.td-rating-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.td-star-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #dcdfef;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.td-star-btn.filled {
+  color: #cca43b;
+}
+
+.td-feedback-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+  background: #f5f6f8;
+  font-size: 12.5px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+}
+
+.td-save-rating-btn {
+  align-self: flex-start;
+  background: #001233;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.td-save-rating-btn:hover {
+  background: #0056d2;
+}
+
+/* ==================== المشاريع ==================== */
+.td-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.td-project-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.td-project-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.td-project-student {
+  font-size: 11px;
+  font-weight: 800;
+  color: #cca43b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.td-project-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.td-project-status.pending { background: #fff4e5; color: #b98c4b; }
+.td-project-status.approved { background: #eafbf0; color: #16a34a; }
+.td-project-status.rejected { background: #fff1f1; color: #ea4335; }
+
+.td-project-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+}
+
+.td-project-desc {
+  font-size: 13px;
+  color: #7e84a3;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.td-project-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.td-approve-btn,
+.td-reject-btn,
+.td-delete-btn {
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.td-approve-btn { background: #16a34a; color: #fff; }
+.td-approve-btn:hover { background: #128a3e; }
+
+.td-reject-btn { background: #f5f6f8; color: #383e5c; }
+.td-reject-btn:hover { background: #eef0f4; }
+
+.td-delete-btn { background: #fff1f1; color: #ea4335; }
+.td-delete-btn:hover { background: #ea4335; color: #fff; }
+
+.td-delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==================== الواجبات (إدارة المدرب) ==================== */
+.td-assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.td-grade-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0f4;
+}
+
+.td-grade-form input {
+  width: 90px;
+  padding: 8px 10px;
+  border: 1px solid #eef0f4;
+  border-radius: 8px;
+  background: #f5f6f8;
+  font-size: 13px;
+  outline: none;
+}
+
+.td-grade-form input.feedback {
+  width: auto;
+  flex: 1;
+  min-width: 180px;
+}
+
+.td-grade-form button {
+  background: #001233;
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.td-grade-form button:hover {
+  background: #0056d2;
+}
+
+.td-graded-summary {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #16a34a;
+  margin-top: 8px;
+}
+
+/* ==================== التوجيهات (Guidance) ==================== */
+.td-guidance-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+}
+
+.td-guidance-card textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 14px 16px;
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  background: #f5f6f8;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.td-guidance-sent {
+  font-size: 13px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+/* ==================== حالة عدم وجود بيانات ==================== */
+.td-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #dcdfef;
+  border-radius: 20px;
+}
+
+.td-empty-icon {
+  font-size: 38px;
+  margin-bottom: 12px;
+}
+
+.td-empty h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #000a33;
+  margin-bottom: 6px;
+}
+
+.td-empty p {
+  font-size: 13px;
+  color: #7e84a3;
+}
+
+@media (max-width: 700px) {
+  .td-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

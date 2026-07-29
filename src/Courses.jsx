@@ -1,9 +1,27 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useCourses } from './CoursesContext';
-import { coursesData } from './coursesData';
+import { useCoursesCatalog } from './CoursesCatalogContext';
+import CourseLearningPage from './CourseLearningPage';
 import './Courses.css';
 
 const ITEMS_PER_PAGE = 6;
+
+const TRACKS = [
+  { id: 'all', label: 'All Tracks' },
+  { id: 'internships', label: 'Internships' },
+  { id: 'workshops', label: 'Workshops' },
+  { id: 'research', label: 'Research' },
+];
+
+// فلترة تقريبية مبنية على نص التصنيف/العنوان — لعدم وجود حقل "type" صريح بالبيانات حاليًا
+const matchesTrack = (course, trackId) => {
+  if (trackId === 'all') return true;
+  const text = `${course.category} ${course.title}`.toLowerCase();
+  if (trackId === 'workshops') return text.includes('masterclass') || text.includes('design');
+  if (trackId === 'research') return text.includes('ai') || text.includes('machine learning');
+  if (trackId === 'internships') return course.level === 'Beginner';
+  return true;
+};
 
 const getInitials = (category) => {
   return category
@@ -17,30 +35,50 @@ const getInitials = (category) => {
 const Courses = ({ initialCourseId, onConsumeInitial }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [learningCourse, setLearningCourse] = useState(null);
+  const [activeTrack, setActiveTrack] = useState('all');
   const { enrollCourse, isEnrolled } = useCourses();
+  const { courses: coursesData } = useCoursesCatalog();
 
-  const totalPages = Math.ceil(coursesData.length / ITEMS_PER_PAGE);
+  const filteredCourses = useMemo(() => {
+    return coursesData.filter((c) => matchesTrack(c, activeTrack));
+  }, [coursesData, activeTrack]);
+
+  const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
 
   const currentCourses = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return coursesData.slice(start, start + ITEMS_PER_PAGE);
-  }, [currentPage]);
+    return filteredCourses.slice(start, start + ITEMS_PER_PAGE);
+  }, [currentPage, filteredCourses]);
+
+  const handleTrackChange = (trackId) => {
+    setActiveTrack(trackId);
+    setCurrentPage(1);
+  };
 
   // لو المستخدم اختار كورس من نتائج البحث، افتحيه مباشرة
   useEffect(() => {
     if (initialCourseId) {
       const found = coursesData.find((c) => c.id === initialCourseId);
       if (found) {
-        setSelectedCourse(found);
+        if (isEnrolled(found.id)) {
+          setLearningCourse(found);
+        } else {
+          setSelectedCourse(found);
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       if (onConsumeInitial) onConsumeInitial();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialCourseId]);
+  }, [initialCourseId, coursesData]);
 
   const handleCourseClick = (course) => {
-    setSelectedCourse(course);
+    if (isEnrolled(course.id)) {
+      setLearningCourse(course);
+    } else {
+      setSelectedCourse(course);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -56,8 +94,22 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
 
   const handleEnrollFree = () => {
     enrollCourse(selectedCourse);
+    setLearningCourse({ ...selectedCourse, enrolledAt: new Date().toISOString() });
+    setSelectedCourse(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // ===== صفحة التعلّم الكاملة (تُعرض بعد التسجيل أو عند فتح كورس مسجّلة فيه بالفعل) =====
+  if (learningCourse) {
+    return (
+      <CourseLearningPage
+        course={learningCourse}
+        onBack={() => setLearningCourse(null)}
+      />
+    );
+  }
+
+  // ===== صفحة تفاصيل الكورس قبل التسجيل =====
   if (selectedCourse) {
     const enrolled = isEnrolled(selectedCourse.id);
 
@@ -104,7 +156,7 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
             <section className="details-section">
               <h3>What you will learn</h3>
               <ul className="details-list">
-                {selectedCourse.whatYouWillLearn.map((item, i) => (
+                {(selectedCourse.whatYouWillLearn || []).map((item, i) => (
                   <li key={i}>
                     <span className="check-icon">✓</span> {item}
                   </li>
@@ -115,7 +167,7 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
             <section className="details-section">
               <h3>Requirements</h3>
               <ul className="details-list plain">
-                {selectedCourse.requirements.map((item, i) => (
+                {(selectedCourse.requirements || []).map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
@@ -126,8 +178,11 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
             {enrolled ? (
               <>
                 <p className="already-enrolled">✓ You are already enrolled in this course</p>
-                <button className="enroll-free-btn enrolled" disabled>
-                  🎓 Enrolled
+                <button
+                  className="enroll-free-btn"
+                  onClick={() => setLearningCourse(selectedCourse)}
+                >
+                  ▶ Continue Learning
                 </button>
               </>
             ) : (
@@ -148,11 +203,34 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
     );
   }
 
+  // ===== شبكة كل الكورسات =====
   return (
     <div className="courses-tab-container">
-      <div className="courses-header">
-        <h2>All Courses</h2>
-        <span className="courses-count">{coursesData.length} courses available</span>
+      {/* ===== هيدر الصفحة: عنوان + وصف + تبويبات المسارات ===== */}
+      <div className="courses-page-header">
+        <h1 className="courses-page-title">Training Opportunities</h1>
+        <p className="courses-page-subtitle">
+          Find your next professional leap. Browse vetted internships, intensive
+          workshops, and research positions curated for your academic path.
+        </p>
+
+        <div className="courses-tracks-row">
+          <div className="courses-tracks-tabs">
+            {TRACKS.map((track) => (
+              <button
+                key={track.id}
+                className={`track-tab ${activeTrack === track.id ? 'active' : ''}`}
+                onClick={() => handleTrackChange(track.id)}
+              >
+                {track.label}
+              </button>
+            ))}
+          </div>
+
+          <button className="more-filters-btn">
+            <span className="filter-icon">⚙</span> More Filters
+          </button>
+        </div>
       </div>
 
       <div className="courses-grid">
@@ -195,6 +273,14 @@ const Courses = ({ initialCourseId, onConsumeInitial }) => {
           </div>
         ))}
       </div>
+
+      {filteredCourses.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-icon">🔍</div>
+          <h3>No courses match this track</h3>
+          <p>Try a different track or check back later.</p>
+        </div>
+      )}
 
       {totalPages > 1 && (
         <div className="pagination">

@@ -1,0 +1,450 @@
+.proj-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.proj-page-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0 0 6px;
+}
+
+.proj-page-header p {
+  font-size: 14px;
+  color: #7e84a3;
+  margin: 0;
+}
+
+/* ==================== أدوات التحكم ==================== */
+.proj-controls {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.proj-search-box {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f5f6f8;
+  border-radius: 10px;
+  padding: 11px 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.proj-search-box:focus-within {
+  box-shadow: 0 0 0 3px rgba(0, 86, 210, 0.14);
+}
+
+.proj-search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 13.5px;
+  color: #000a33;
+}
+
+.proj-sort-select {
+  background: #f5f6f8;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #383e5c;
+  cursor: pointer;
+}
+
+/* ==================== تبويبات الفئات ==================== */
+.proj-category-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.proj-category-tab {
+  background: #f5f6f8;
+  border: 1px solid transparent;
+  color: #383e5c;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.proj-category-tab:hover {
+  background: #eef0f4;
+}
+
+.proj-category-tab.active {
+  background: #001233;
+  color: #ffffff;
+}
+
+/* ==================== الشبكة ==================== */
+.proj-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.proj-card {
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.proj-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 10, 51, 0.08);
+  transform: translateY(-4px);
+  border-color: #dcdfef;
+}
+
+.proj-card-visual {
+  height: 90px;
+  background: linear-gradient(135deg, #001233 0%, #0056d2 100%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.proj-card-category-tag {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.proj-card-featured {
+  font-size: 16px;
+}
+
+.proj-card-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.proj-card-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.proj-card-desc {
+  font-size: 12.5px;
+  color: #7e84a3;
+  line-height: 1.6;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.proj-card-tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proj-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.proj-card-team {
+  display: flex;
+}
+
+/* ==================== شارات تقنية ==================== */
+.proj-tech-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0056d2;
+  background: #eef4ff;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.proj-tech-tag.small {
+  font-size: 10.5px;
+  padding: 3px 8px;
+}
+
+.proj-tech-tag.small.more {
+  background: #f5f6f8;
+  color: #7e84a3;
+}
+
+/* ==================== أفاتار الفريق ==================== */
+.proj-team-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #001233;
+  color: #cca43b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 2px solid #ffffff;
+}
+
+.proj-team-avatar.small {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+  margin-left: -8px;
+}
+
+.proj-team-avatar.small:first-child {
+  margin-left: 0;
+}
+
+/* ==================== زر الإعجاب ==================== */
+.proj-like-btn {
+  background: #f5f6f8;
+  border: none;
+  color: #383e5c;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.proj-like-btn:hover {
+  background: #eef0f4;
+}
+
+.proj-like-btn.active {
+  background: #fff1f1;
+  color: #ea4335;
+}
+
+.proj-like-btn.small {
+  padding: 6px 12px;
+  font-size: 11.5px;
+}
+
+/* ==================== حالة عدم وجود نتائج ==================== */
+.proj-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #dcdfef;
+  border-radius: 20px;
+}
+
+.proj-empty-icon {
+  font-size: 42px;
+  margin-bottom: 14px;
+}
+
+.proj-empty h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #000a33;
+  margin-bottom: 6px;
+}
+
+.proj-empty p {
+  font-size: 13.5px;
+  color: #7e84a3;
+}
+
+/* ==================== صفحة تفاصيل المشروع ==================== */
+.proj-back-button {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #383e5c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.proj-back-button:hover {
+  background: #f5f6f8;
+  border-color: #dcdfef;
+}
+
+.proj-detail-card {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.proj-detail-visual {
+  height: 140px;
+  background: linear-gradient(135deg, #001233 0%, #0056d2 100%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 32px;
+}
+
+.proj-detail-category-tag {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.proj-featured-tag {
+  background: #cca43b;
+  color: #001233;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 20px;
+}
+
+.proj-detail-body {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.proj-detail-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0 0 4px;
+}
+
+.proj-detail-course {
+  font-size: 13px;
+  color: #cca43b;
+  font-weight: 700;
+  margin: 0;
+}
+
+.proj-detail-desc {
+  font-size: 14px;
+  color: #4a4f6a;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.proj-detail-section h4 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000a33;
+  margin: 0 0 10px;
+}
+
+.proj-team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.proj-team-member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #383e5c;
+}
+
+.proj-detail-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid #eef0f4;
+}
+
+.proj-link-btn {
+  background: #001233;
+  color: #ffffff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.proj-link-btn:hover {
+  background: #0056d2;
+}
+
+.proj-link-btn.outline {
+  background: transparent;
+  color: #000a33;
+  border: 1px solid #dcdfef;
+}
+
+.proj-link-btn.outline:hover {
+  border-color: #cca43b;
+  background: #fffaf0;
+}
+
+/* ==================== استجابة الشاشات ==================== */
+@media (max-width: 1100px) {
+  .proj-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .proj-grid {
+    grid-template-columns: 1fr;
+  }
+  .proj-detail-body {
+    padding: 20px;
+  }
+  .proj-detail-visual {
+    padding: 20px;
+    height: 110px;
+  }
+}

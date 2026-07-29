@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './ForgotPasswordPage.css';
+import CompassWordmark from './CompassWordmark';
 
 function ForgotPasswordPage() {
-  const [step, setStep] = useState(1); // 1: email, 2: code, 3: reset password
+  const [step, setStep] = useState(1); 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -12,8 +13,12 @@ function ForgotPasswordPage() {
   const [success, setSuccess] = useState('');
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // لاحقًا هيكون فيه كود حقيقي مرسل من الباك اند
+  const origin = location.state?.from === 'trainer' ? 'trainer' : 'student';
+  const loginPath = origin === 'trainer' ? '/trainer-login' : '/login';
+  const loginLabel = origin === 'trainer' ? 'Trainer Login' : 'Login';
+
   const DUMMY_CODE = '123456';
 
   const handleSendCode = (e) => {
@@ -25,7 +30,6 @@ function ForgotPasswordPage() {
       return;
     }
 
-    // لاحقًا: هنا هتبعتي طلب فعلي للباك اند لإرسال كود التحقق
     setSuccess('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
     setStep(2);
   };
@@ -40,7 +44,6 @@ function ForgotPasswordPage() {
       return;
     }
 
-    // لاحقًا: هنا هتبعتي الكود للباك اند للتحقق منه
     if (code !== DUMMY_CODE) {
       setError('رمز التحقق غير صحيح');
       return;
@@ -52,7 +55,6 @@ function ForgotPasswordPage() {
   const handleResendCode = () => {
     setError('');
     setSuccess('تم إعادة إرسال رمز التحقق');
-    // لاحقًا: هنا هتبعتي طلب فعلي لإعادة إرسال الكود
   };
 
   const handleResetPassword = (e) => {
@@ -69,13 +71,56 @@ function ForgotPasswordPage() {
       return;
     }
 
-    // لاحقًا: هنا هتبعتي طلب فعلي لتحديث كلمة المرور في الباك اند
-    navigate('/login');
+    navigate(loginPath);
   };
 
   return (
     <div className="forgot-password-page">
+      {/* خلفية زخرفية موحّدة مع صفحة تسجيل الدخول */}
+      <div className="fp-bg" aria-hidden="true">
+        <div className="fp-bg-radar"></div>
+
+        <svg className="fp-bg-ring fp-bg-ring-1" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" />
+          <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.5" />
+          {[...Array(12)].map((_, i) => (
+            <line
+              key={i}
+              x1="100"
+              y1="10"
+              x2="100"
+              y2="22"
+              stroke="currentColor"
+              strokeWidth="2"
+              transform={`rotate(${i * 30} 100 100)`}
+            />
+          ))}
+        </svg>
+
+        <svg className="fp-bg-ring fp-bg-ring-2" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" strokeDasharray="4 8" />
+        </svg>
+
+        <span className="fp-bg-dot dot-1"></span>
+        <span className="fp-bg-dot dot-2"></span>
+        <span className="fp-bg-dot dot-3"></span>
+        <span className="fp-bg-dot dot-4"></span>
+        <span className="fp-bg-dot dot-5"></span>
+      </div>
+
       <div className="forgot-password-card">
+        <div className="fp-card-accent"></div>
+
+        <div
+          className="fp-logo"
+          onClick={() => navigate('/')}
+          style={{ cursor: 'pointer' }}
+        >
+          <CompassWordmark size={24} navy="#000a33" gold="#cca43b" />
+        </div>
+
+        {origin === 'trainer' && <span className="fp-badge">TRAINER PORTAL</span>}
+
         {/* الخطوة 1: إدخال الإيميل */}
         {step === 1 && (
           <>
@@ -198,8 +243,8 @@ function ForgotPasswordPage() {
         )}
 
         <p className="back-to-login">
-          <a onClick={() => navigate('/login')} style={{ cursor: 'pointer' }}>
-            ← Back to Login
+          <a onClick={() => navigate(loginPath)} style={{ cursor: 'pointer' }}>
+            ← Back to {loginLabel}
           </a>
         </p>
       </div>

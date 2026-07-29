@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './EditProfile.css';
-import mdiCompass from './assets/mdi-compass.png';
+import CompassWordmark from './CompassWordmark';
 import {
   FiHome, FiUser, FiBookOpen, FiAward, FiFileText,
   FiMessageSquare, FiSettings, FiLogOut, FiSearch,
-  FiBell, FiMail, FiInfo, FiGithub, FiX, FiPlus
+  FiBell, FiMail, FiInfo, FiGithub, FiX, FiPlus, FiCamera
 } from 'react-icons/fi';
 import { FaLinkedin } from 'react-icons/fa';
+
+const MAX_AVATAR_SIZE = 1.5 * 1024 * 1024; // 1.5MB — حد آمن لتخزين base64 بالـ localStorage
 
 const EditProfile = ({ student, onSave }) => {
   const navigate = useNavigate();
@@ -20,6 +22,33 @@ const EditProfile = ({ student, onSave }) => {
     specialty: student?.major || '',
     overview: student?.overview || '',
   });
+
+  // ============ الصورة الشخصية ============
+  const [avatar, setAvatar] = useState(student?.avatar || '');
+  const [avatarError, setAvatarError] = useState('');
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('الرجاء اختيار ملف صورة صالح');
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setAvatarError('حجم الصورة كبير جدًا — الرجاء اختيار صورة أصغر من 1.5MB');
+      return;
+    }
+
+    setAvatarError('');
+    const reader = new FileReader();
+    reader.onload = () => setAvatar(reader.result);
+    reader.onerror = () => setAvatarError('تعذّرت قراءة الصورة، حاولي مرة أخرى');
+    reader.readAsDataURL(file);
+
+    // نسمح باختيار نفس الملف مرة ثانية لاحقًا
+    e.target.value = '';
+  };
 
   const [skills, setSkills] = useState(student?.skills || []);
   const [skillInput, setSkillInput] = useState('');
@@ -139,6 +168,7 @@ const EditProfile = ({ student, onSave }) => {
       email: formData.email,
       major: formData.specialty || student?.major,
       overview: formData.overview,
+      avatar: avatar || student?.avatar,
       skills,
       connections: {
         github: githubLinked ? githubUrl : '',
@@ -158,12 +188,11 @@ const EditProfile = ({ student, onSave }) => {
     <div className="dashboard-container">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src={mdiCompass} alt="Compass Logo" className="brand-logo" />
-          <h2>Compaass <span className="brand-highlight">Academic</span></h2>
+          <CompassWordmark size={22} navy="#ffffff" gold="#cca43b" />
         </div>
 
         <div className="sidebar-profile">
-          <img src={student?.avatar} alt={student?.displayName} className="profile-img" />
+          <img src={avatar} alt={student?.displayName} className="profile-img" />
           <h3 className="profile-name">{student?.displayName || 'mohammed ali'}</h3>
           <p className="profile-major">{student?.major || 'MIS — Active Student'}</p>
         </div>
@@ -200,7 +229,7 @@ const EditProfile = ({ student, onSave }) => {
             <FiMail className="header-icon" />
             <div className="header-user">
               <span className="user-name">{student?.displayName?.split(' ')[0] || 'mohammed'}</span>
-              <img src={student?.avatar} alt="User Avatar" className="header-avatar" />
+              <img src={avatar} alt="User Avatar" className="header-avatar" />
             </div>
           </div>
         </header>
@@ -208,7 +237,19 @@ const EditProfile = ({ student, onSave }) => {
         <section className="edit-profile-content">
           <div className="profile-hero-card">
             <div className="hero-left">
-              <img src={student?.avatar} alt="Student" className="hero-avatar" />
+              <div className="avatar-upload-wrapper">
+                <img src={avatar} alt="Student" className="hero-avatar" />
+                <label htmlFor="avatar-upload-input" className="avatar-upload-btn" title="Change photo">
+                  <FiCamera />
+                </label>
+                <input
+                  id="avatar-upload-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="avatar-upload-input"
+                />
+              </div>
               <div className="hero-info">
                 <h2>{student?.displayName || 'Mohammed Ali'}</h2>
                 <p className="hero-subtext">{student?.major || 'MIS — Active Student'}</p>
@@ -216,6 +257,8 @@ const EditProfile = ({ student, onSave }) => {
             </div>
             <span className="status-badge">active ✓</span>
           </div>
+
+          {avatarError && <p className="avatar-error-text">{avatarError}</p>}
 
           <div className="edit-form-card">
             <div className="form-card-header">

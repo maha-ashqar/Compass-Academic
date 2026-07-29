@@ -2,18 +2,26 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './StudentDashboard.css';
 import {
-  FiHome, FiUser, FiBookOpen, FiAward, FiFileText,
-  FiMessageSquare, FiSettings, FiLogOut, FiSearch,
-  FiBell, FiMail, FiBriefcase, FiTarget,  FiPlus, FiTrash2
+  FiBookOpen, FiAward, FiFileText,
+  FiSearch, FiBell, FiMail, FiBriefcase, FiTarget, FiPlus, FiTrash2, FiArrowRight
 } from 'react-icons/fi';
-import mdiCompass from './assets/mdi-compass.png';
+import Sidebar from './Sidebar';
+import { menuItems } from './menuItems';
 import StudentProfile from './StudentProfile';
 import Courses from './Courses';
 import MyCourses from './MyCourses';
+import Assignments from './Assignments';
 import { useCourses } from './CoursesContext';
 import { useDeadlines } from './DeadlinesContext';
 import { coursesData } from './coursesData';
 import Settings from './Settings';
+import Messages from './Messages';
+import { useMessages } from './MessagesContext';
+import Notifications from './Notifications';
+import Competitions from './Competitions';
+import Projects from './Projects';
+import Achievements from './Achievements';
+import { useNotifications } from './NotificationsContext';
 
 const deadlineIconMap = {
   priority: { icon: <FiFileText />, cls: 'red-icon', tagCls: 'priority-tag', label: 'Priority' },
@@ -27,32 +35,23 @@ const formatDate = (isoDate) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const StudentDashboard = ({ studentData }) => {
+const getInitials = (category) =>
+  category.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+const StudentDashboard = ({ studentData, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'Home');
 
   const { myCourses } = useCourses();
   const { deadlines, addDeadline, removeDeadline } = useDeadlines();
+  const { conversations } = useMessages();
 
   // ============ البحث ============
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [openCourseId, setOpenCourseId] = useState(null);
   const searchRef = useRef(null);
-
-  const menuItems = [
-    { id: 'Home', label: 'Home', icon: <FiHome /> },
-    { id: 'Profile', label: 'Profile', icon: <FiUser /> },
-    { id: 'Courses', label: 'Courses', icon: <FiBookOpen /> },
-    { id: 'MyCourses', label: 'My Courses', icon: <FiBookOpen /> },
-    { id: 'Competitions', label: 'Competitions', icon: <FiTarget/> },
-    { id: 'Assignments', label: 'Assignments', icon: <FiFileText /> },
-    { id: 'Projects gallery', label: 'Projects gallery', icon: <FiBriefcase /> },
-    { id: 'Messages', label: 'Messages', icon: <FiMessageSquare /> },
-    { id: 'Achievements', label: 'My Achievements', icon: <FiAward /> },
-    { id: 'Settings', label: 'Settings', icon: <FiSettings /> }
-  ];
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return { courses: [], pages: [] };
@@ -68,6 +67,12 @@ const StudentDashboard = ({ studentData }) => {
 
     return { courses, pages };
   }, [searchQuery]);
+
+  // ============ الكورسات المقترحة ============
+  const recommendedCourses = useMemo(() => {
+    const enrolledIds = myCourses.map((c) => c.id);
+    return coursesData.filter((c) => !enrolledIds.includes(c.id)).slice(0, 3);
+  }, [myCourses]);
 
   const handleSelectCourseResult = (course) => {
     setOpenCourseId(course.id);
@@ -93,22 +98,17 @@ const StudentDashboard = ({ studentData }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ============ الإشعارات ============
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'Your assignment "Database Systems ERD" is due tomorrow.', read: false },
-    { id: 2, text: 'You have been enrolled in a new competition.', read: false },
-    { id: 3, text: 'New message from Dr. Sarah Al-Mansour.', read: true },
-  ]);
+  // ============ الإشعارات (من الـ Context الحقيقي) ============
+  const { notifications, markAsRead, markAllRead, unreadCount } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markNotificationRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleNotificationClick = (n) => {
+    markAsRead(n.id);
+    if (n.actionTab) {
+      setActiveTab(n.actionTab);
+      setShowNotifications(false);
+    }
   };
 
   useEffect(() => {
@@ -121,24 +121,27 @@ const StudentDashboard = ({ studentData }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ============ الرسائل ============
-  const [messages] = useState([
-    { id: 1, from: 'Dr. Sarah Al-Mansour', text: 'Please review the graduation project proposal.', unread: true },
-    { id: 2, from: 'Eng. Ahmad Khalil', text: 'Great progress on the last assignment!', unread: false },
-  ]);
-  const [showMessages, setShowMessages] = useState(false);
+  // ============ معاينة الرسائل بالهيدر ============
+  const [showMessagesPreview, setShowMessagesPreview] = useState(false);
   const mailRef = useRef(null);
-  const unreadMessagesCount = messages.filter((m) => m.unread).length;
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (mailRef.current && !mailRef.current.contains(e.target)) {
-        setShowMessages(false);
+        setShowMessagesPreview(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const getPersonInitials = (name) =>
+    name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const openConversationFromPreview = () => {
+    setActiveTab('Messages');
+    setShowMessagesPreview(false);
+  };
 
   // ============ المواعيد النهائية (Deadlines) ============
   const [showAddDeadline, setShowAddDeadline] = useState(false);
@@ -152,41 +155,20 @@ const StudentDashboard = ({ studentData }) => {
     setShowAddDeadline(false);
   };
 
+  const handleLogoutClick = () => {
+    if (onLogout) onLogout();
+    navigate('/login');
+  };
+
   return (
     <div className="dashboard-container">
-      {/* Sidebar Section */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={mdiCompass} alt="Compass Logo" className="brand-logo" />
-          <h2>Compass <span className="brand-highlight">Academic</span></h2>
-        </div>
-
-        <div className="sidebar-profile">
-          <img src={studentData.avatar} alt={studentData.displayName} className="profile-img" />
-          <h3 className="profile-name">{studentData.displayName}</h3>
-          <p className="profile-major">{studentData.major}</p>
-        </div>
-
-        <nav className="sidebar-menu">
-          <ul>
-            {menuItems.map((item) => (
-              <li
-                key={item.id}
-                className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.id)}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                <span className="menu-text">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="sidebar-footer" onClick={() => navigate('/login')}>
-          <FiLogOut className="menu-icon" />
-          <span>Logout</span>
-        </div>
-      </aside>
+      {/* Sidebar Section — مكوّن مستقل، محكوم بنفس activeTab */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        onLogout={handleLogoutClick}
+        studentData={studentData}
+      />
 
       {/* Main Viewport Content */}
       <main className="main-viewport">
@@ -271,44 +253,74 @@ const StudentDashboard = ({ studentData }) => {
                     {notifications.length === 0 ? (
                       <p className="dropdown-empty">No notifications</p>
                     ) : (
-                      notifications.map((n) => (
+                      notifications.slice(0, 6).map((n) => (
                         <div
                           key={n.id}
                           className={`notif-item ${!n.read ? 'unread' : ''}`}
-                          onClick={() => markNotificationRead(n.id)}
+                          onClick={() => handleNotificationClick(n)}
                         >
                           {!n.read && <span className="unread-dot" />}
-                          <p>{n.text}</p>
+                          <span className="preview-avatar">{n.icon}</span>
+                          <div>
+                            <p className="message-from">{n.title}</p>
+                            <span className="message-text">{n.text}</span>
+                          </div>
                         </div>
                       ))
                     )}
+                  </div>
+                  <div
+                    className="dropdown-footer"
+                    onClick={() => {
+                      setActiveTab('Notifications');
+                      setShowNotifications(false);
+                    }}
+                  >
+                    View all notifications
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ============ الرسائل ============ */}
+            {/* ============ معاينة الرسائل ============ */}
             <div className="header-dropdown-wrapper" ref={mailRef}>
-              <div className="icon-btn" onClick={() => setShowMessages((p) => !p)}>
+              <div className="icon-btn" onClick={() => setShowMessagesPreview((p) => !p)}>
                 <FiMail className="header-icon" />
-                {unreadMessagesCount > 0 && <span className="notif-badge">{unreadMessagesCount}</span>}
               </div>
 
-              {showMessages && (
+              {showMessagesPreview && (
                 <div className="dropdown-panel">
                   <div className="dropdown-header">
                     <h4>Messages</h4>
+                    <span className="mark-all-read" onClick={openConversationFromPreview}>
+                      View all
+                    </span>
                   </div>
                   <div className="dropdown-list">
-                    {messages.map((m) => (
-                      <div key={m.id} className={`notif-item ${m.unread ? 'unread' : ''}`}>
-                        {m.unread && <span className="unread-dot" />}
-                        <div>
-                          <p className="message-from">{m.from}</p>
-                          <span className="message-text">{m.text}</span>
-                        </div>
-                      </div>
-                    ))}
+                    {conversations.length === 0 ? (
+                      <p className="dropdown-empty">No conversations</p>
+                    ) : (
+                      conversations.map((c) => {
+                        const lastMsg = c.messages[c.messages.length - 1];
+                        return (
+                          <div
+                            key={c.id}
+                            className="notif-item"
+                            onClick={openConversationFromPreview}
+                          >
+                            <div className="preview-avatar">
+                              {c.avatar ? <img src={c.avatar} alt={c.name} /> : getPersonInitials(c.name)}
+                            </div>
+                            <div>
+                              <p className="message-from">{c.name}</p>
+                              <span className="message-text">
+                                {lastMsg ? lastMsg.text : 'No messages yet'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
@@ -481,6 +493,39 @@ const StudentDashboard = ({ studentData }) => {
                   </div>
                 </div>
               </div>
+
+              {/* الكورسات المقترحة */}
+              {recommendedCourses.length > 0 && (
+                <div className="recommended-section">
+                  <div className="recommended-header">
+                    <h3>Recommended For You</h3>
+                    <span className="view-all-link" onClick={() => setActiveTab('Courses')}>
+                      Browse all <FiArrowRight style={{ verticalAlign: 'middle' }} />
+                    </span>
+                  </div>
+
+                  <div className="recommended-grid">
+                    {recommendedCourses.map((course) => (
+                      <div
+                        key={course.id}
+                        className="recommended-card"
+                        onClick={() => handleSelectCourseResult(course)}
+                      >
+                        <div className="recommended-top">
+                          <span className="recommended-avatar">{getInitials(course.category)}</span>
+                          <span className="recommended-level">{course.level}</span>
+                        </div>
+                        <p className="recommended-category">{course.category}</p>
+                        <h4 className="recommended-title">{course.title}</h4>
+                        <div className="recommended-footer">
+                          <span className="recommended-instructor">{course.instructor}</span>
+                          <span className="recommended-rating">★ {course.rating}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -495,13 +540,26 @@ const StudentDashboard = ({ studentData }) => {
 
           {activeTab === 'MyCourses' && <MyCourses />}
           {activeTab === 'Settings' && <Settings student={studentData} />}
+          {activeTab === 'Messages' && <Messages />}
+          {activeTab === 'Assignments' && <Assignments />}
+          {activeTab === 'Competitions' && <Competitions />}
+          {activeTab === 'Projects gallery' && <Projects />}
+          {activeTab === 'Achievements' && <Achievements studentData={studentData} />}
+          {activeTab === 'Notifications' && <Notifications onNavigate={setActiveTab} />}
 
-          {activeTab !== 'Home' && activeTab !== 'Profile' && activeTab !== 'Courses' && activeTab !== 'MyCourses' && (
-            <div className="tab-content" style={{ background: '#fff', padding: '30px', borderRadius: '20px' }}>
-              <h2>{activeTab} Section</h2>
-              <p style={{ color: '#a3aed0', marginTop: '10px' }}>This section is ready for integrating your sub-components.</p>
-            </div>
-          )}
+          {activeTab !== 'Home' &&
+            activeTab !== 'Profile' &&
+            activeTab !== 'Courses' &&
+            activeTab !== 'MyCourses' &&
+            activeTab !== 'Settings' &&
+            activeTab !== 'Messages' &&
+            activeTab !== 'Assignments' &&
+            activeTab !== 'Notifications' && (
+              <div className="tab-content" style={{ background: '#fff', padding: '30px', borderRadius: '20px' }}>
+                <h2>{activeTab} Section</h2>
+                <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>This section is ready for integrating your sub-components.</p>
+              </div>
+            )}
         </section>
       </main>
     </div>
