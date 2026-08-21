@@ -1,49 +1,84 @@
-import { FiLogOut } from 'react-icons/fi';
+import { createElement } from 'react';
+import { FiChevronDown, FiHelpCircle, FiLogOut } from 'react-icons/fi';
 import CompassWordmark from './CompassWordmark';
 import { menuItems as defaultMenuItems } from './menuItems';
 import './Sidebar.css';
 
-const Sidebar = ({ activeTab, onSelect, onLogout, studentData, menuItems = defaultMenuItems }) => {
+function Sidebar({
+  activeTab,
+  onSelect,
+  onLogout,
+  studentData,
+  menuItems = defaultMenuItems,
+}) {
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <CompassWordmark size={22} navy="#ffffff" gold="#cca43b" />
+    <aside className="student-sidebar" dir="ltr">
+      {/* ---------- Brand ---------- */}
+      {/* Reuses the shared CompassWordmark component instead of a hand-rolled
+          SVG, so the logo only ever needs to be edited in one place. */}
+      <div className="student-sidebar-brand">
+        <CompassWordmark size={19} navy="#ffffff" academyColor="#24b8ec" />
       </div>
 
+      {/* ---------- Student profile shortcut ---------- */}
       {studentData && (
-        <div className="sidebar-profile">
-          <img src={studentData.avatar} alt={studentData.displayName} className="profile-img" />
-          <h3 className="profile-name">{studentData.displayName}</h3>
-          <p className="profile-major">{studentData.major}</p>
-        </div>
+        <button
+          type="button"
+          className="student-sidebar-profile"
+          onClick={() => onSelect?.('Profile')}
+        >
+          <img
+            src={studentData.avatar}
+            alt={studentData.displayName || 'Student'}
+          />
+          <span className="student-sidebar-profile-copy">
+            <strong>{studentData.displayName || 'Student'}</strong>
+            <small>{studentData.program || studentData.major || 'Student account'}</small>
+          </span>
+          <FiChevronDown className="student-sidebar-chevron" />
+        </button>
       )}
 
-      <nav className="sidebar-menu">
+      {/* ---------- Navigation ---------- */}
+      <nav className="student-sidebar-nav" aria-label="Student navigation">
         <ul>
           {menuItems.map((item) => {
-            const IconComponent = item.icon;
+            const isActive = activeTab === item.id;
             return (
-              <li
-                key={item.id}
-                className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => onSelect(item.id)}
-              >
-                <span className="menu-icon">
-                  <IconComponent />
-                </span>
-                <span className="menu-text">{item.label}</span>
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`student-sidebar-item${isActive ? ' is-active' : ''}`}
+                  onClick={() => onSelect?.(item.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  title={item.label}
+                >
+                  <span className="student-sidebar-icon">
+                    {createElement(item.icon)}
+                  </span>
+                  <span className="student-sidebar-label">{item.label}</span>
+                </button>
               </li>
             );
           })}
         </ul>
       </nav>
 
-      <div className="sidebar-footer" onClick={onLogout}>
-        <FiLogOut className="menu-icon" />
+      {/* ---------- Help + logout ---------- */}
+      <button className="student-sidebar-help" type="button">
+        <FiHelpCircle />
+        <span>
+          <strong>Need help?</strong>
+          <small>Visit the student help center</small>
+        </span>
+      </button>
+
+      <button className="student-sidebar-logout" type="button" onClick={onLogout}>
+        <FiLogOut />
         <span>Logout</span>
-      </div>
+      </button>
     </aside>
   );
-};
+}
 
 export default Sidebar;

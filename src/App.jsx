@@ -19,6 +19,7 @@ import ForgotPassword from './ForgotPasswordPage';
 import SignupPage from './SignupPage';
 import { NotificationsProvider } from './NotificationsContext';
 import { CompetitionsProvider } from './CompetitionsContext';
+import { AnnouncementsProvider } from './AnnouncementsContext';
 import { getOrCreateStudent, getCurrentUserEmail, saveStudent, clearCurrentUser } from './studentsData';
 import { getOrCreateTrainer, getCurrentTrainerEmail, saveTrainer, clearCurrentTrainer } from './trainersData';
 import './App.css';
@@ -65,6 +66,12 @@ function App() {
     setTrainerData(trainer);
   };
 
+  const handleTrainerUpdate = (profile) => {
+    if (!profile?.email) return;
+    setTrainerData(profile);
+    saveTrainer(profile);
+  };
+
   const handleLogout = () => {
     clearCurrentUser();
   };
@@ -84,7 +91,8 @@ function App() {
                   <TrainerAssignmentsProvider>
                     <TrainerStudentsProvider>
                       <NotificationsProvider>
-                        <CompetitionsProvider>
+                        <AnnouncementsProvider>
+                          <CompetitionsProvider>
                           <BrowserRouter>
                             <Routes>
                               <Route path="/" element={<Homepage />} />
@@ -93,17 +101,18 @@ function App() {
                               <Route path="/signup" element={<SignupPage onSignup={handleLogin} />} />
                               <Route path="/trainer-login" element={<TrainerLogin onLogin={handleTrainerLogin} />} />
                               <Route
-                                path="/trainer-dashboard"
+                                path="/trainer-dashboard/*"
                                 element={
                                   <TrainerDashboard
                                     trainerData={trainerData}
+                                    onTrainerUpdate={handleTrainerUpdate}
                                     onLogout={handleTrainerLogout}
                                   />
                                 }
                               />
 
                               <Route
-                                path="/student-dashboard"
+                                path="/student-dashboard/*"
                                 element={
                                   <StudentDashboard
                                     studentData={studentData}
@@ -118,7 +127,8 @@ function App() {
                               />
                             </Routes>
                           </BrowserRouter>
-                        </CompetitionsProvider>
+                          </CompetitionsProvider>
+                        </AnnouncementsProvider>
                       </NotificationsProvider>
                     </TrainerStudentsProvider>
                   </TrainerAssignmentsProvider>

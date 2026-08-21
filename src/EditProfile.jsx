@@ -1,479 +1,329 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './EditProfile.css';
-import CompassWordmark from './CompassWordmark';
 import {
-  FiHome, FiUser, FiBookOpen, FiAward, FiFileText,
-  FiMessageSquare, FiSettings, FiLogOut, FiSearch,
-  FiBell, FiMail, FiInfo, FiGithub, FiX, FiPlus, FiCamera
+  FiBell,
+  FiCamera,
+  FiCheck,
+  FiGithub,
+  FiInfo,
+  FiLink,
+  FiMail,
+  FiPlus,
+  FiSearch,
+  FiX,
 } from 'react-icons/fi';
-import { FaLinkedin } from 'react-icons/fa';
+import Sidebar from './Sidebar';
+import './EditProfile.css';
 
-const MAX_AVATAR_SIZE = 1.5 * 1024 * 1024; // 1.5MB — حد آمن لتخزين base64 بالـ localStorage
+/* ============================================
+   CONSTANTS
+   ============================================ */
 
-const EditProfile = ({ student, onSave }) => {
+const MAX_AVATAR_SIZE = 1.5 * 1024 * 1024; // 1.5 MB
+
+/**
+ * Common skills shown as one-click chips under the skill input.
+ * Feel free to extend this list — it's just plain strings, no wiring
+ * needed elsewhere. Chips already added to the student's profile are
+ * hidden automatically (see `availableSuggestions` below).
+ */
+const SUGGESTED_SKILLS = [
+  'React',
+  'JavaScript',
+  'HTML & CSS',
+  'Python',
+  'UI/UX Design',
+  'Figma',
+  'Node.js',
+  'SQL',
+  'Git & GitHub',
+  'Data Structures',
+  'Project Management',
+  'Problem Solving',
+  'Public Speaking',
+  'Team Leadership',
+];
+
+/* ============================================
+   HELPERS
+   ============================================ */
+
+/** Splits a student's full/display name into first + last name for the form fields. */
+const splitName = (student) => {
+  const name = (student?.fullName || student?.displayName || '').trim();
+  const [firstName = '', ...rest] = name.split(/\s+/);
+  return { firstName, lastName: rest.join(' ') };
+};
+
+/** Case-insensitive check for whether a skill is already in a list. */
+const hasSkill = (list, skill) =>
+  list.some((item) => item.toLowerCase() === skill.toLowerCase());
+
+function EditProfile({ student = {}, onSave }) {
   const navigate = useNavigate();
+  const initialName = useMemo(() => splitName(student), [student]);
 
-  const [formData, setFormData] = useState({
-    firstName: student?.displayName?.split(' ')[0] || '',
-    lastName: student?.displayName?.split(' ')[1] || '',
-    phone: student?.phone || '',
-    email: student?.email || '',
-    specialty: student?.major || '',
-    overview: student?.overview || '',
+  /* ---------- Avatar ---------- */
+  const [avatar, setAvatar] = useState(student.avatar || '');
+  const [error, setError] = useState('');
+
+  /* ---------- Skills ---------- */
+  const [skillInput, setSkillInput] = useState('');
+  const [skills, setSkills] = useState(Array.isArray(student.skills) ? student.skills : []);
+
+  /* ---------- Form fields ---------- */
+  const [form, setForm] = useState({
+    ...initialName,
+    phone: student.phone || '',
+    email: student.email || '',
+    specialty: student.program || student.major || '',
+    overview: student.overview || '',
+    github: student.connections?.github || '',
+    linkedin: student.connections?.linkedin || '',
+    gmail: student.connections?.gmail || student.email || '',
   });
 
-  // ============ الصورة الشخصية ============
-  const [avatar, setAvatar] = useState(student?.avatar || '');
-  const [avatarError, setAvatarError] = useState('');
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setAvatarError('الرجاء اختيار ملف صورة صالح');
-      return;
-    }
-    if (file.size > MAX_AVATAR_SIZE) {
-      setAvatarError('حجم الصورة كبير جدًا — الرجاء اختيار صورة أصغر من 1.5MB');
-      return;
-    }
-
-    setAvatarError('');
-    const reader = new FileReader();
-    reader.onload = () => setAvatar(reader.result);
-    reader.onerror = () => setAvatarError('تعذّرت قراءة الصورة، حاولي مرة أخرى');
-    reader.readAsDataURL(file);
-
-    // نسمح باختيار نفس الملف مرة ثانية لاحقًا
-    e.target.value = '';
-  };
-
-  const [skills, setSkills] = useState(student?.skills || []);
-  const [skillInput, setSkillInput] = useState('');
-  const [suggestedSkills, setSuggestedSkills] = useState(
-    ['React', 'JavaScript', 'Python', 'UI/UX Design', 'Figma',
-      'Node.js', 'SQL', 'Project Management', 'Communication', 'Java']
-      .filter((s) => !(student?.skills || []).includes(s))
+  /** Suggested chips that aren't already on the student's skill list. */
+  const availableSuggestions = useMemo(
+    () => SUGGESTED_SKILLS.filter((skill) => !hasSkill(skills, skill)),
+    [skills],
   );
 
-  const [githubLinked, setGithubLinked] = useState(!!student?.connections?.github);
-  const [githubUrl, setGithubUrl] = useState(student?.connections?.github || '');
-  const [githubEditing, setGithubEditing] = useState(false);
-  const [githubInput, setGithubInput] = useState('');
+  /* ============================================
+     HANDLERS
+     ============================================ */
 
-  const [linkedinLinked, setLinkedinLinked] = useState(!!student?.connections?.linkedin);
-  const [linkedinUrl, setLinkedinUrl] = useState(student?.connections?.linkedin || '');
-  const [linkedinEditing, setLinkedinEditing] = useState(false);
-  const [linkedinInput, setLinkedinInput] = useState('');
+  const change = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const [gmailLinked, setGmailLinked] = useState(!!student?.connections?.gmail);
-  const [gmailUrl, setGmailUrl] = useState(student?.connections?.gmail || '');
-  const [gmailEditing, setGmailEditing] = useState(false);
-  const [gmailInput, setGmailInput] = useState('');
+  const changeAvatar = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return setError('Please select a valid image.');
+    if (file.size > MAX_AVATAR_SIZE) return setError('The image must be smaller than 1.5 MB.');
 
-  const menuItems = [
-    { id: 'Home', label: 'Home', icon: <FiHome /> },
-    { id: 'Profile', label: 'Profile', icon: <FiUser /> },
-    { id: 'Courses', label: 'Courses', icon: <FiBookOpen /> },
-    { id: 'Competitions', label: 'Competitions', icon: <FiAward /> },
-    { id: 'Assignments', label: 'Assignments', icon: <FiFileText /> },
-    { id: 'Messages', label: 'Messages', icon: <FiMessageSquare /> },
-    { id: 'Settings', label: 'Settings', icon: <FiSettings /> },
-  ];
-
-  const handleChange = (field) => (e) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatar(String(reader.result));
+      setError('');
+    };
+    reader.readAsDataURL(file);
   };
 
-  const addSkill = () => {
-    const trimmed = skillInput.trim();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills((prev) => [...prev, trimmed]);
-      setSuggestedSkills((prev) => prev.filter((s) => s.toLowerCase() !== trimmed.toLowerCase()));
+  /**
+   * Adds a skill to the list. Used both by the free-text input (Enter /
+   * "+" button) and by clicking a suggested chip — `skillText` lets a
+   * chip pass its own label directly instead of relying on the input.
+   */
+  const addSkill = (skillText = skillInput) => {
+    const skill = skillText.trim();
+    if (skill && !hasSkill(skills, skill)) {
+      setSkills((current) => [...current, skill]);
     }
     setSkillInput('');
   };
 
-  const addSuggestedSkill = (skill) => {
-    if (!skills.includes(skill)) {
-      setSkills((prev) => [...prev, skill]);
-    }
-    setSuggestedSkills((prev) => prev.filter((s) => s !== skill));
-  };
-
   const removeSkill = (skill) => {
-    setSkills((prev) => prev.filter((s) => s !== skill));
-    setSuggestedSkills((prev) => [...prev, skill]);
+    setSkills((current) => current.filter((item) => item !== skill));
   };
 
-  const handleSkillKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addSkill();
-    }
-  };
+  const backToProfile = () =>
+    navigate('/student-dashboard', { state: { activeTab: 'Profile' } });
 
-  const saveGithub = () => {
-    const trimmed = githubInput.trim();
-    setGithubUrl(trimmed);
-    setGithubLinked(trimmed.length > 0);
-    setGithubEditing(false);
-  };
+  const save = (event) => {
+    event.preventDefault();
+    const fullName = `${form.firstName} ${form.lastName}`.trim();
 
-  const removeGithub = () => {
-    setGithubUrl('');
-    setGithubLinked(false);
-    setGithubEditing(false);
-    setGithubInput('');
-  };
-
-  const saveLinkedin = () => {
-    const trimmed = linkedinInput.trim();
-    setLinkedinUrl(trimmed);
-    setLinkedinLinked(trimmed.length > 0);
-    setLinkedinEditing(false);
-  };
-
-  const removeLinkedin = () => {
-    setLinkedinUrl('');
-    setLinkedinLinked(false);
-    setLinkedinEditing(false);
-    setLinkedinInput('');
-  };
-
-  const saveGmail = () => {
-    const trimmed = gmailInput.trim();
-    setGmailUrl(trimmed);
-    setGmailLinked(trimmed.length > 0);
-    setGmailEditing(false);
-  };
-
-  const removeGmail = () => {
-    setGmailUrl('');
-    setGmailLinked(false);
-    setGmailEditing(false);
-    setGmailInput('');
-  };
-
-  const handleSave = () => {
-    const updatedStudent = {
+    onSave?.({
       ...student,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      displayName: `${formData.firstName} ${formData.lastName}`.trim() || student?.displayName,
-      fullName: `${formData.firstName} ${formData.lastName}`.trim() || student?.fullName,
-      phone: formData.phone,
-      email: formData.email,
-      major: formData.specialty || student?.major,
-      overview: formData.overview,
-      avatar: avatar || student?.avatar,
+      fullName,
+      displayName: form.firstName.trim() || fullName,
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      major: form.specialty.trim(),
+      program: form.specialty.trim(),
+      overview: form.overview.trim(),
+      avatar: avatar || student.avatar,
       skills,
       connections: {
-        github: githubLinked ? githubUrl : '',
-        linkedin: linkedinLinked ? linkedinUrl : '',
-        gmail: gmailLinked ? gmailUrl : '',
+        ...student.connections,
+        github: form.github.trim(),
+        linkedin: form.linkedin.trim(),
+        gmail: form.gmail.trim(),
       },
-    };
-
-    if (onSave) {
-      onSave(updatedStudent);
-    }
-
-    navigate('/student-dashboard', { state: { activeTab: 'Profile' } });
+    });
+    backToProfile();
   };
 
+  /* ============================================
+     RENDER
+     ============================================ */
+
   return (
-    <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <CompassWordmark size={22} navy="#ffffff" gold="#cca43b" />
-        </div>
+    <div className="compass-edit-layout" dir="ltr">
+      <Sidebar
+        activeTab="Profile"
+        studentData={{ ...student, avatar }}
+        onSelect={(activeTab) => navigate('/student-dashboard', { state: { activeTab } })}
+        onLogout={() => navigate('/login')}
+      />
 
-        <div className="sidebar-profile">
-          <img src={avatar} alt={student?.displayName} className="profile-img" />
-          <h3 className="profile-name">{student?.displayName || 'mohammed ali'}</h3>
-          <p className="profile-major">{student?.major || 'MIS — Active Student'}</p>
-        </div>
-
-        <nav className="sidebar-menu">
-          <ul>
-            {menuItems.map((item) => (
-              <li
-                key={item.id}
-                className={`menu-item ${item.id === 'Profile' ? 'active' : ''}`}
-                onClick={() => navigate('/student-dashboard')}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                <span className="menu-text">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="sidebar-footer" onClick={() => navigate('/login')}>
-          <FiLogOut className="menu-icon" />
-          <span>Logout</span>
-        </div>
-      </aside>
-
-      <main className="main-viewport">
-        <header className="main-header">
-          <div className="search-box">
-            <FiSearch className="search-icon" />
-            <input type="text" placeholder="Search research, courses, or events..." />
+      <main className="cep-main">
+        {/* ---------- Top bar ---------- */}
+        <header className="cep-topbar">
+          <div className="cep-search">
+            <FiSearch />
+            <span>Search research, courses, or events...</span>
           </div>
-          <div className="header-controls">
-            <FiBell className="header-icon" />
-            <FiMail className="header-icon" />
-            <div className="header-user">
-              <span className="user-name">{student?.displayName?.split(' ')[0] || 'mohammed'}</span>
-              <img src={avatar} alt="User Avatar" className="header-avatar" />
-            </div>
-          </div>
+          <FiBell />
+          <FiMail />
+          <strong>{form.firstName || 'Student'}</strong>
+          <img src={avatar} alt="" />
         </header>
 
-        <section className="edit-profile-content">
-          <div className="profile-hero-card">
-            <div className="hero-left">
-              <div className="avatar-upload-wrapper">
-                <img src={avatar} alt="Student" className="hero-avatar" />
-                <label htmlFor="avatar-upload-input" className="avatar-upload-btn" title="Change photo">
-                  <FiCamera />
-                </label>
-                <input
-                  id="avatar-upload-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="avatar-upload-input"
-                />
+        <div className="cep-page">
+          {/* ---------- Avatar + name hero ---------- */}
+          <section className="cep-hero">
+            <div className="cep-avatar">
+              <img src={avatar} alt={student.displayName || 'Student'} />
+              <label htmlFor="cep-photo">
+                <FiCamera />
+              </label>
+              <input id="cep-photo" type="file" accept="image/*" onChange={changeAvatar} />
+            </div>
+            <div>
+              <h1>{`${form.firstName} ${form.lastName}`.trim() || 'Student'}</h1>
+              <p>{form.specialty || 'Student'}</p>
+            </div>
+            <span className="cep-status">Active ✓</span>
+          </section>
+
+          {error && <p className="cep-error">{error}</p>}
+
+          <form className="cep-form-card" onSubmit={save}>
+            {/* ---------- Personal information ---------- */}
+            <header className="cep-form-heading">
+              <div>
+                <h2>Personal Information</h2>
+                <p>Update your personal and professional profile details.</p>
               </div>
-              <div className="hero-info">
-                <h2>{student?.displayName || 'Mohammed Ali'}</h2>
-                <p className="hero-subtext">{student?.major || 'MIS — Active Student'}</p>
-              </div>
-            </div>
-            <span className="status-badge">active ✓</span>
-          </div>
+              <FiInfo />
+            </header>
 
-          {avatarError && <p className="avatar-error-text">{avatarError}</p>}
+            <EditField label="First name" value={form.firstName} onChange={change('firstName')} required />
+            <EditField label="Last name" value={form.lastName} onChange={change('lastName')} required />
+            <EditField label="Phone" value={form.phone} onChange={change('phone')} />
+            <EditField label="Email" type="email" value={form.email} onChange={change('email')} required />
+            <EditField label="Specialty" value={form.specialty} onChange={change('specialty')} />
 
-          <div className="edit-form-card">
-            <div className="form-card-header">
-              <h3>Personal Information</h3>
-              <FiInfo className="info-icon" />
-            </div>
+            <label className="cep-field">
+              Overview
+              <textarea rows="5" maxLength="300" value={form.overview} onChange={change('overview')} />
+              <small>{form.overview.length} / 300</small>
+            </label>
 
-            <div className="form-field">
-              <label>First Name</label>
-              <input type="text" value={formData.firstName} onChange={handleChange('firstName')} />
-            </div>
-
-            <div className="form-field">
-              <label>last name</label>
-              <input type="text" value={formData.lastName} onChange={handleChange('lastName')} />
-            </div>
-
-            <div className="form-field">
-              <label>phone</label>
-              <input type="text" value={formData.phone} onChange={handleChange('phone')} />
-            </div>
-
-            <div className="form-field">
-              <label>email</label>
-              <input type="email" value={formData.email} onChange={handleChange('email')} />
-            </div>
-
-            <div className="form-field">
-              <label>specialty</label>
-              <input type="text" value={formData.specialty} onChange={handleChange('specialty')} />
-            </div>
-
-            <div className="form-field">
-              <label>Overview</label>
-              <textarea
-                rows="4"
-                value={formData.overview}
-                onChange={handleChange('overview')}
-                placeholder="Write a short overview about yourself..."
-              />
-            </div>
-
-            <div className="sub-card connect-card">
+            {/* ---------- Connect (social links) ---------- */}
+            <section className="cep-subcard">
               <h3>Connect</h3>
+              <LinkField icon={<FiGithub />} label="GitHub" value={form.github} onChange={change('github')} />
+              <LinkField icon={<FiLink />} label="LinkedIn" value={form.linkedin} onChange={change('linkedin')} />
+              <LinkField icon={<FiMail />} label="Gmail" value={form.gmail} onChange={change('gmail')} type="email" />
+            </section>
 
-              <div className="connect-row">
-                <div className="connect-item">
-                  <div className="connect-icon dark-icon"><FiGithub /></div>
-                  <span>GitHub</span>
-                  {githubLinked && !githubEditing ? (
-                    <a href={githubUrl} target="_blank" rel="noreferrer" className="connected-link">
-                      {githubUrl}
-                    </a>
-                  ) : null}
-                </div>
-
-                {githubEditing ? (
-                  <div className="link-input-row">
-                    <input
-                      type="text"
-                      className="link-input"
-                      placeholder="https://github.com/username"
-                      value={githubInput}
-                      onChange={(e) => setGithubInput(e.target.value)}
-                      autoFocus
-                    />
-                    <button type="button" className="link-save-btn" onClick={saveGithub}>Save</button>
-                  </div>
-                ) : (
-                  <div className="connect-actions">
-                    {githubLinked ? (
-                      <>
-                        <button type="button" className="link-edit-btn" onClick={() => { setGithubInput(githubUrl); setGithubEditing(true); }}>Edit</button>
-                        <button type="button" className="link-remove-btn" onClick={removeGithub}><FiX /></button>
-                      </>
-                    ) : (
-                      <button type="button" className="add-link-btn" onClick={() => setGithubEditing(true)}>
-                        <FiPlus /> Add link
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="connect-row">
-                <div className="connect-item">
-                  <div className="connect-icon blue-icon"><FaLinkedin /></div>
-                  <span>LinkedIn</span>
-                  {linkedinLinked && !linkedinEditing ? (
-                    <a href={linkedinUrl} target="_blank" rel="noreferrer" className="connected-link">
-                      {linkedinUrl}
-                    </a>
-                  ) : null}
-                </div>
-
-                {linkedinEditing ? (
-                  <div className="link-input-row">
-                    <input
-                      type="text"
-                      className="link-input"
-                      placeholder="https://linkedin.com/in/username"
-                      value={linkedinInput}
-                      onChange={(e) => setLinkedinInput(e.target.value)}
-                      autoFocus
-                    />
-                    <button type="button" className="link-save-btn" onClick={saveLinkedin}>Save</button>
-                  </div>
-                ) : (
-                  <div className="connect-actions">
-                    {linkedinLinked ? (
-                      <>
-                        <button type="button" className="link-edit-btn" onClick={() => { setLinkedinInput(linkedinUrl); setLinkedinEditing(true); }}>Edit</button>
-                        <button type="button" className="link-remove-btn" onClick={removeLinkedin}><FiX /></button>
-                      </>
-                    ) : (
-                      <button type="button" className="add-link-btn" onClick={() => setLinkedinEditing(true)}>
-                        <FiPlus /> Add link
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="connect-row">
-                <div className="connect-item">
-                  <div className="connect-icon red-icon"><FiMail /></div>
-                  <span>Gmail</span>
-                  {gmailLinked && !gmailEditing ? (
-                    <span className="connected-link">{gmailUrl}</span>
-                  ) : null}
-                </div>
-
-                {gmailEditing ? (
-                  <div className="link-input-row">
-                    <input
-                      type="email"
-                      className="link-input"
-                      placeholder="name@gmail.com"
-                      value={gmailInput}
-                      onChange={(e) => setGmailInput(e.target.value)}
-                      autoFocus
-                    />
-                    <button type="button" className="link-save-btn" onClick={saveGmail}>Save</button>
-                  </div>
-                ) : (
-                  <div className="connect-actions">
-                    {gmailLinked ? (
-                      <>
-                        <button type="button" className="link-edit-btn" onClick={() => { setGmailInput(gmailUrl); setGmailEditing(true); }}>Edit</button>
-                        <button type="button" className="link-remove-btn" onClick={removeGmail}><FiX /></button>
-                      </>
-                    ) : (
-                      <button type="button" className="add-link-btn" onClick={() => setGmailEditing(true)}>
-                        <FiPlus /> Add link
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="sub-card skills-card">
+            {/* ---------- Skills ---------- */}
+            <section className="cep-subcard">
               <h3>Skills</h3>
 
-              <div className="skills-input-row">
+              {/* Free-text entry: type anything and press Enter or the + button */}
+              <div className="cep-skill-input">
                 <input
-                  type="text"
-                  className="skill-input"
-                  placeholder="Add a skill and press Enter"
                   value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={handleSkillKeyDown}
+                  onChange={(event) => setSkillInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      addSkill();
+                    }
+                  }}
+                  placeholder="Add a skill"
                 />
-                <button type="button" className="add-skill-btn" onClick={addSkill}>
+                <button type="button" onClick={() => addSkill()} aria-label="Add skill">
                   <FiPlus />
                 </button>
               </div>
 
-              <div className="skills-tags">
-                {skills.map((skill) => (
-                  <span key={skill} className="skill-tag">
-                    {skill}
-                    <FiX className="remove-skill" onClick={() => removeSkill(skill)} />
-                  </span>
-                ))}
-              </div>
-
-              {suggestedSkills.length > 0 && (
-                <div className="suggested-skills-section">
-                  <p className="suggested-skills-label">Suggested skills</p>
-                  <div className="suggested-skills-tags">
-                    {suggestedSkills.map((skill) => (
+              {/* One-click suggestions — clicking adds the skill immediately,
+                  and the chip disappears from this list since it's now
+                  filtered out by `availableSuggestions`. */}
+              {availableSuggestions.length > 0 && (
+                <div className="cep-suggested-skills">
+                  <small>Suggested</small>
+                  <div className="cep-suggested-skills-list">
+                    {availableSuggestions.map((skill) => (
                       <button
-                        key={skill}
                         type="button"
-                        className="suggested-skill-tag"
-                        onClick={() => addSuggestedSkill(skill)}
+                        key={skill}
+                        className="cep-suggested-skill"
+                        onClick={() => addSkill(skill)}
                       >
-                        <FiPlus className="suggested-skill-icon" />
-                        {skill}
+                        <FiPlus /> {skill}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
 
-            <div className="form-actions">
-              <button className="save-btn" onClick={handleSave}>Save changes</button>
-            </div>
-          </div>
-        </section>
+              {/* Skills already added to the profile — click to remove */}
+              {skills.length > 0 && (
+                <div className="cep-tags">
+                  {skills.map((skill) => (
+                    <button type="button" key={skill} onClick={() => removeSkill(skill)}>
+                      {skill} <FiX />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <footer className="cep-actions">
+              <button type="button" onClick={backToProfile}>
+                Cancel
+              </button>
+              <button type="submit">
+                <FiCheck /> Save changes
+              </button>
+            </footer>
+          </form>
+        </div>
       </main>
     </div>
   );
-};
+}
+
+/* ============================================
+   SMALL FIELD COMPONENTS
+   ============================================ */
+
+function EditField({ label, type = 'text', ...props }) {
+  return (
+    <label className="cep-field">
+      {label}
+      <input type={type} {...props} />
+    </label>
+  );
+}
+
+function LinkField({ icon, label, type = 'text', ...props }) {
+  return (
+    <label className="cep-link-field">
+      <span>
+        {icon}
+        <strong>{label}</strong>
+      </span>
+      <input type={type} {...props} />
+    </label>
+  );
+}
 
 export default EditProfile;

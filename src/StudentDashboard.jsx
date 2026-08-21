@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './StudentDashboard.css';
 import {
   FiBookOpen, FiAward, FiFileText,
-  FiSearch, FiBell, FiMail, FiBriefcase, FiTarget, FiPlus, FiTrash2, FiArrowRight
+  FiSearch, FiBell, FiMessageSquare, FiBriefcase, FiTarget,
+  FiBarChart2, FiCalendar, FiCode, FiFlag, FiPlay,
+  FiLayers, FiClock, FiStar, FiChevronRight, FiChevronDown, FiPenTool,
+  FiPlus, FiX, FiUser, FiSettings, FiLogOut,
 } from 'react-icons/fi';
 import Sidebar from './Sidebar';
 import { menuItems } from './menuItems';
@@ -19,7 +22,8 @@ import Messages from './Messages';
 import { useMessages } from './MessagesContext';
 import Notifications from './Notifications';
 import Competitions from './Competitions';
-import Projects from './Projects';
+import StudentProjects from './StudentProjects';
+import StudentAnnouncement from './StudentAnnouncement';
 import Achievements from './Achievements';
 import { useNotifications } from './NotificationsContext';
 
@@ -35,13 +39,41 @@ const formatDate = (isoDate) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const getInitials = (category) =>
-  category.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+// Turns an ISO date into a short, human "time left" label so the
+// deadline badge tells you something useful at a glance instead of
+// just repeating the category tag.
+const daysUntil = (isoDate) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(isoDate);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+};
+
+const urgencyLabel = (days) => {
+  if (days < 0) return { text: 'Overdue', cls: 'urgency-overdue' };
+  if (days === 0) return { text: 'Due today', cls: 'urgency-today' };
+  if (days <= 3) return { text: `In ${days}d`, cls: 'urgency-soon' };
+  return { text: `In ${days}d`, cls: 'urgency-normal' };
+};
 
 const StudentDashboard = ({ studentData, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'Home');
+  const [activeTab, setActiveTab] = useState(
+    location.pathname.startsWith('/student-dashboard/announcements/')
+      ? 'Announcement detail'
+      : location.pathname.startsWith('/student-dashboard/projects')
+      ? 'Projects gallery'
+      : location.state?.activeTab || 'Home'
+  );
+  const isProjectsRoute = location.pathname.startsWith('/student-dashboard/projects');
+
+  const handleSidebarSelect = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'Projects gallery') navigate('/student-dashboard/projects');
+    else if (isProjectsRoute) navigate('/student-dashboard');
+  };
 
   const { myCourses } = useCourses();
   const { deadlines, addDeadline, removeDeadline } = useDeadlines();
@@ -105,7 +137,11 @@ const StudentDashboard = ({ studentData, onLogout }) => {
 
   const handleNotificationClick = (n) => {
     markAsRead(n.id);
-    if (n.actionTab) {
+    if (n.actionPath) {
+      navigate(n.actionPath);
+      setActiveTab('Announcement detail');
+      setShowNotifications(false);
+    } else if (n.actionTab) {
       setActiveTab(n.actionTab);
       setShowNotifications(false);
     }
@@ -143,6 +179,20 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     setShowMessagesPreview(false);
   };
 
+  // ============ قائمة المستخدم في الهيدر ============
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // ============ المواعيد النهائية (Deadlines) ============
   const [showAddDeadline, setShowAddDeadline] = useState(false);
   const [newDeadline, setNewDeadline] = useState({ title: '', date: '', type: 'priority' });
@@ -165,7 +215,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
       {/* Sidebar Section — مكوّن مستقل، محكوم بنفس activeTab */}
       <Sidebar
         activeTab={activeTab}
-        onSelect={setActiveTab}
+        onSelect={handleSidebarSelect}
         onLogout={handleLogoutClick}
         studentData={studentData}
       />
@@ -236,10 +286,16 @@ const StudentDashboard = ({ studentData, onLogout }) => {
           <div className="header-controls">
             {/* ============ الإشعارات ============ */}
             <div className="header-dropdown-wrapper" ref={notifRef}>
-              <div className="icon-btn" onClick={() => setShowNotifications((p) => !p)}>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowNotifications((p) => !p)}
+                aria-label="Notifications"
+                aria-expanded={showNotifications}
+              >
                 <FiBell className="header-icon" />
                 {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
-              </div>
+              </button>
 
               {showNotifications && (
                 <div className="dropdown-panel">
@@ -284,9 +340,15 @@ const StudentDashboard = ({ studentData, onLogout }) => {
 
             {/* ============ معاينة الرسائل ============ */}
             <div className="header-dropdown-wrapper" ref={mailRef}>
-              <div className="icon-btn" onClick={() => setShowMessagesPreview((p) => !p)}>
-                <FiMail className="header-icon" />
-              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowMessagesPreview((p) => !p)}
+                aria-label="Messages"
+                aria-expanded={showMessagesPreview}
+              >
+                <FiMessageSquare className="header-icon" />
+              </button>
 
               {showMessagesPreview && (
                 <div className="dropdown-panel">
@@ -326,103 +388,182 @@ const StudentDashboard = ({ studentData, onLogout }) => {
               )}
             </div>
 
-            <div className="header-user">
-              <span className="user-name">{studentData.displayName.split(' ')[0]}</span>
-              <img src={studentData.avatar} alt="User Avatar" className="header-avatar" />
+            {/* ============ قائمة المستخدم ============ */}
+            <div className="header-dropdown-wrapper" ref={userMenuRef}>
+              <button
+                type="button"
+                className="header-user"
+                onClick={() => setShowUserMenu((p) => !p)}
+                aria-label="Account menu"
+                aria-expanded={showUserMenu}
+              >
+                <img src={studentData.avatar} alt="User Avatar" className="header-avatar" />
+                <span className="user-name">{studentData.displayName.split(' ')[0]}</span>
+                <FiChevronDown className="header-user-chevron" />
+              </button>
+
+              {showUserMenu && (
+                <div className="dropdown-panel user-menu-panel">
+                  <div className="user-menu-identity">
+                    <img src={studentData.avatar} alt="" className="user-menu-avatar" />
+                    <div>
+                      <p className="message-from">{studentData.displayName}</p>
+                      <span className="message-text">{studentData.email}</span>
+                    </div>
+                  </div>
+                  <div className="dropdown-list">
+                    <button
+                      type="button"
+                      className="user-menu-item"
+                      onClick={() => { setActiveTab('Profile'); setShowUserMenu(false); }}
+                    >
+                      <FiUser /> View profile
+                    </button>
+                    <button
+                      type="button"
+                      className="user-menu-item"
+                      onClick={() => { setActiveTab('Settings'); setShowUserMenu(false); }}
+                    >
+                      <FiSettings /> Settings
+                    </button>
+                    <button
+                      type="button"
+                      className="user-menu-item danger"
+                      onClick={handleLogoutClick}
+                    >
+                      <FiLogOut /> Log out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         <section className="dashboard-body">
+          {activeTab === 'Announcement detail' && <StudentAnnouncement studentData={studentData} />}
           {activeTab === 'Home' && (
             <div className="tab-content">
               <div className="welcome-section">
                 <div className="welcome-text">
-                  <h1>Welcome back, {studentData.displayName.split(' ')[0]} 👋</h1>
-                  <p>Continue your academic journey and track your progress through the university ecosystem.</p>
+                  <h1>Welcome back, {studentData.displayName.split(' ')[0]}</h1>
+                  <p>Continue your academic journey and stay on track.</p>
+                  <button
+                    className="view-report-btn"
+                    onClick={() => setActiveTab('Achievements')}
+                  >
+                    <FiBarChart2 /> View progress report
+                  </button>
                 </div>
-                <button className="view-report-btn">View Report</button>
               </div>
 
               {/* شبكة الإحصائيات */}
               <div className="stats-grid">
-                <div className="stat-box">
+                <button
+                  type="button"
+                  className="stat-box"
+                  onClick={() => setActiveTab('MyCourses')}
+                >
                   <div className="icon-wrapper blue-bg">
                     <FiBookOpen />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-label">ENROLLED COURSES</span>
                     <span className="stat-number">{myCourses.length}</span>
+                    <span className="stat-label">Enrolled courses</span>
+                    <span className="stat-status blue-status">On track</span>
                   </div>
-                </div>
+                </button>
 
-                <div className="stat-box gold-bg">
-                  <div className="icon-wrapper dark-bg">
-                    <FiTarget />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-label">ACTIVE COMPETITIONS</span>
-                    <span className="stat-number">{studentData.stats.activeCompetitions}</span>
-                  </div>
-                </div>
-
-                <div className="stat-box">
-                  <div className="icon-wrapper blue-bg">
-                    <FiBriefcase />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-label">PROJECT PROGRESS</span>
-                    <span className="stat-number">{studentData.stats.projectProgress}%</span>
-                  </div>
-                </div>
-
-                <div className="stat-box">
+                <button
+                  type="button"
+                  className="stat-box"
+                  onClick={() => setActiveTab('Competitions')}
+                >
                   <div className="icon-wrapper blue-bg">
                     <FiAward />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-label">CERTIFICATES EARNED</span>
-                    <span className="stat-number">{studentData.stats.certificatesEarned}</span>
+                    <span className="stat-number">{studentData.stats.activeCompetitions}</span>
+                    <span className="stat-label">Active competitions</span>
+                    <span className="stat-status blue-status">Active</span>
                   </div>
-                </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="stat-box"
+                  onClick={() => setActiveTab('Projects gallery')}
+                >
+                  <div className="icon-wrapper blue-bg">
+                    <FiBarChart2 />
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-number">{studentData.stats.projectProgress}%</span>
+                    <span className="stat-label">Project progress</span>
+                    <span className="stat-mini-progress"><i style={{ width: `${studentData.stats.projectProgress}%` }} /></span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="stat-box"
+                  onClick={() => setActiveTab('Achievements')}
+                >
+                  <div className="icon-wrapper blue-bg">
+                    <FiAward />
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-number">{studentData.stats.certificatesEarned}</span>
+                    <span className="stat-label">Certificates earned</span>
+                    <span className="stat-status green-status">Completed</span>
+                  </div>
+                </button>
               </div>
 
               {/* القسم السفلي: التقدم + المواعيد النهائية */}
               <div className="bottom-grid">
                 <div className="progress-card">
                   <div className="progress-header">
-                    <h3>Current Progress</h3>
-                    <span className="progress-percentage">64%</span>
+                    <h3>Current learning path</h3>
                   </div>
-
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{ width: '64%' }}></div>
-                  </div>
-
-                  <div className="progress-details">
-                    <div>
-                      <span className="detail-label">Modules</span>
-                      <h4>8/12</h4>
+                  <div className="learning-path">
+                    <div className="learning-visual"><FiCode /></div>
+                    <div className="learning-content">
+                      <h4>Front-End Development Fundamentals</h4>
+                      <div className="learning-progress-row">
+                        <div className="progress-bar-container">
+                          <div className="progress-bar-fill" style={{ width: '64%' }} />
+                        </div>
+                        <span>64%</span>
+                      </div>
+                      <div className="progress-details">
+                        <div><span className="detail-label"><FiClock /> Lesson time</span><h4>2h 15m</h4><small>of 3h 20m</small></div>
+                        <div><span className="detail-label"><FiLayers /> Modules</span><h4>8 / 12</h4><small>Completed</small></div>
+                        <div><span className="detail-label"><FiFlag /> Next milestone</span><h4>Final Project</h4><small>Due in 7 days</small></div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="detail-label">Next Milestone</span>
-                      <h4>Final Project</h4>
-                    </div>
                   </div>
-
                   <div className="progress-actions">
-                    <button className="resume-btn">Resume Lecture</button>
-                    <button className="bookmark-btn">🔖</button>
+                    <button className="resume-btn" onClick={() => setActiveTab('MyCourses')}>
+                      <FiPlay /> Resume lesson
+                    </button>
+                    <button className="learning-path-link" onClick={() => setActiveTab('MyCourses')}>
+                      View learning path <FiChevronRight />
+                    </button>
                   </div>
                 </div>
 
                 <div className="deadlines-card">
                   <div className="deadlines-header">
-                    <h3>Upcoming Deadlines</h3>
-                    <span className="view-all-link" onClick={() => setShowAddDeadline((p) => !p)}>
-                      <FiPlus style={{ verticalAlign: 'middle', marginRight: 4 }} />
-                      Add
-                    </span>
+                    <h3>Upcoming deadlines</h3>
+                    <button
+                      type="button"
+                      className="icon-add-btn"
+                      onClick={() => setShowAddDeadline((p) => !p)}
+                      aria-expanded={showAddDeadline}
+                    >
+                      {showAddDeadline ? <><FiX /> Close</> : <><FiPlus /> Add</>}
+                    </button>
                   </div>
 
                   {showAddDeadline && (
@@ -468,23 +609,24 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                     ) : (
                       deadlines.map((d) => {
                         const meta = deadlineIconMap[d.type] || deadlineIconMap.priority;
+                        const urgency = urgencyLabel(daysUntil(d.date));
                         return (
                           <div className="deadline-item" key={d.id}>
                             <div className="deadline-main-info">
                               <div className={`deadline-icon ${meta.cls}`}>{meta.icon}</div>
                               <div className="deadline-info">
                                 <h4>{d.title}</h4>
-                                <p>
-                                  {formatDate(d.date)} · <span className={meta.tagCls}>{meta.label}</span>
-                                </p>
+                                <p>{meta.label} · {formatDate(d.date)}</p>
                               </div>
                             </div>
+                            <span className={`deadline-days ${urgency.cls}`}>{urgency.text}</span>
                             <button
-                              className="delete-deadline-btn"
+                              type="button"
+                              className="deadline-remove"
                               onClick={() => removeDeadline(d.id)}
-                              title="Remove"
+                              aria-label={`Remove ${d.title}`}
                             >
-                              <FiTrash2 />
+                              <FiX />
                             </button>
                           </div>
                         );
@@ -498,9 +640,9 @@ const StudentDashboard = ({ studentData, onLogout }) => {
               {recommendedCourses.length > 0 && (
                 <div className="recommended-section">
                   <div className="recommended-header">
-                    <h3>Recommended For You</h3>
+                    <h3>Recommended for you</h3>
                     <span className="view-all-link" onClick={() => setActiveTab('Courses')}>
-                      Browse all <FiArrowRight style={{ verticalAlign: 'middle' }} />
+                      Explore all courses <FiChevronRight />
                     </span>
                   </div>
 
@@ -511,15 +653,17 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                         className="recommended-card"
                         onClick={() => handleSelectCourseResult(course)}
                       >
-                        <div className="recommended-top">
-                          <span className="recommended-avatar">{getInitials(course.category)}</span>
-                          <span className="recommended-level">{course.level}</span>
+                        <div className="recommended-avatar">
+                          {course.category.toLowerCase().includes('design') ? <FiPenTool /> : course.title.toLowerCase().includes('react') ? <span>{'{}'}</span> : <FiCode />}
                         </div>
-                        <p className="recommended-category">{course.category}</p>
-                        <h4 className="recommended-title">{course.title}</h4>
-                        <div className="recommended-footer">
-                          <span className="recommended-instructor">{course.instructor}</span>
-                          <span className="recommended-rating">★ {course.rating}</span>
+                        <div className="recommended-content">
+                          <h4 className="recommended-title">{course.title}</h4>
+                          <p className="recommended-description">{course.description || `Build a strong foundation in ${course.category} through practical lessons.`}</p>
+                        </div>
+                        <div className="recommended-meta">
+                          <span><FiBarChart2 /> {course.level}</span>
+                          <span><FiClock /> {course.duration || '16h'}</span>
+                          <span className="recommended-rating">{course.rating} <FiStar /></span>
                         </div>
                       </div>
                     ))}
@@ -541,11 +685,11 @@ const StudentDashboard = ({ studentData, onLogout }) => {
           {activeTab === 'MyCourses' && <MyCourses />}
           {activeTab === 'Settings' && <Settings student={studentData} />}
           {activeTab === 'Messages' && <Messages />}
-          {activeTab === 'Assignments' && <Assignments />}
-          {activeTab === 'Competitions' && <Competitions />}
-          {activeTab === 'Projects gallery' && <Projects />}
+          {activeTab === 'Assignments' && <Assignments studentData={studentData} />}
+          {activeTab === 'Competitions' && <Competitions studentData={studentData} />}
+          {activeTab === 'Projects gallery' && <StudentProjects studentData={studentData} />}
           {activeTab === 'Achievements' && <Achievements studentData={studentData} />}
-          {activeTab === 'Notifications' && <Notifications onNavigate={setActiveTab} />}
+          {activeTab === 'Notifications' && <Notifications onNavigateTab={setActiveTab} studentData={studentData} />}
 
           {activeTab !== 'Home' &&
             activeTab !== 'Profile' &&
@@ -554,7 +698,11 @@ const StudentDashboard = ({ studentData, onLogout }) => {
             activeTab !== 'Settings' &&
             activeTab !== 'Messages' &&
             activeTab !== 'Assignments' &&
-            activeTab !== 'Notifications' && (
+            activeTab !== 'Notifications' &&
+            activeTab !== 'Competitions' &&
+            activeTab !== 'Projects gallery' &&
+            activeTab !== 'Achievements' &&
+            activeTab !== 'Announcement detail' && (
               <div className="tab-content" style={{ background: '#fff', padding: '30px', borderRadius: '20px' }}>
                 <h2>{activeTab} Section</h2>
                 <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>This section is ready for integrating your sub-components.</p>

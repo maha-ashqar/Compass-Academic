@@ -1,0 +1,111 @@
+/* Detail-screen refinements matching the supplied trainer projects design. */
+.trainer-projects-page {
+  --tp: #064b68;
+  --blue: #078ed6;
+  --ink: #0b2c54;
+  padding: 24px 30px 48px;
+}
+
+.tp-page-header h1,
+.tp-detail-header h1 {
+  font-size: 31px;
+  line-height: 1.15;
+}
+
+.tp-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 14px;
+  border-radius: 9px;
+  color: #304b6a;
+}
+
+.tp-detail-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, .92fr);
+  gap: 14px;
+}
+
+.tp-detail-main section,
+.tp-evaluation section {
+  padding: 17px;
+  border-radius: 9px;
+}
+
+.tp-overview-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin: 14px 0;
+}
+
+.tp-overview-columns > div + div {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+
+.tp-overview-columns h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+}
+
+.tp-overview-columns p {
+  margin: 0;
+  color: #49627d;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.tp-score-title strong {
+  min-width: 128px;
+  padding: 8px 14px;
+  border: 1px solid #c9d8e4;
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 23px;
+  text-align: left;
+}
+
+.tp-rubric > div {
+  grid-template-columns: 100px 1fr;
+}
+
+.tp-evaluation section > label.tp-check,
+.tp-modal label.tp-check {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 8px;
+  text-transform: none;
+}
+
+.tp-check input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.tp-decisions .tp-delete-link,
+.tp-unpublish {
+  text-align: left;
+}
+
+.tp-decisions > small {
+  display: block;
+  margin: 2px 0 0 8px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+@media (max-width: 1000px) {
+  .tp-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .tp-summary-bar { grid-template-columns: 1fr 1fr; }
+  .tp-overview-columns { grid-template-columns: 1fr; }
+  .tp-overview-columns > div + div {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { useCourses } from './CoursesContext';
 import './CourseLearningPage.css';
 
-const getInitials = (name) =>
-  name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+const getInitials = (name = '') =>
+  name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 const CourseLearningPage = ({ course, onBack }) => {
   const {
@@ -14,18 +14,28 @@ const CourseLearningPage = ({ course, onBack }) => {
     toggleBookmark,
   } = useCourses();
 
-  const [activeTab, setActiveTab] = useState('Lessons');
+  // افتح النظرة العامة أولاً حتى لا تظهر صفحة فارغة للكورسات الجديدة
+  // التي لم يضف المدرب دروسها بعد.
+  const [activeTab, setActiveTab] = useState('Overview');
   const [showFullBio, setShowFullBio] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+  const assignments = Array.isArray(course?.assignments) ? course.assignments : [];
+  const resources = Array.isArray(course?.resources) ? course.resources : [];
+  const learningOutcomes = Array.isArray(course?.whatYouWillLearn)
+    ? course.whatYouWillLearn
+    : [];
+  const requirements = Array.isArray(course?.requirements) ? course.requirements : [];
 
   // تسطيح كل الدروس بترتيبها عبر الموديولات، عشان نعرف أي درس "قبل" أي درس
   const flatLessons = useMemo(() => {
     const list = [];
-    (course.modules || []).forEach((mod) => {
-      mod.lessons.forEach((lesson) => list.push({ ...lesson, moduleId: mod.id, moduleTitle: mod.title }));
+    modules.forEach((mod) => {
+      (mod.lessons || []).forEach((lesson) => list.push({ ...lesson, moduleId: mod.id, moduleTitle: mod.title }));
     });
     return list;
-  }, [course]);
+  }, [modules]);
 
   const [activeLessonId, setActiveLessonId] = useState(flatLessons[0]?.id);
 
@@ -37,6 +47,7 @@ const CourseLearningPage = ({ course, onBack }) => {
   const activeLesson = flatLessons[activeIndex];
 
   const isUnlocked = (index) => {
+    if (index < 0 || index >= flatLessons.length) return false;
     if (index === 0) return true;
     return isLessonComplete(course.id, flatLessons[index - 1].id);
   };
@@ -48,6 +59,7 @@ const CourseLearningPage = ({ course, onBack }) => {
   };
 
   const handleMarkComplete = () => {
+    if (!activeLesson) return;
     toggleLessonComplete(course.id, activeLesson.id);
   };
 
@@ -69,7 +81,7 @@ const CourseLearningPage = ({ course, onBack }) => {
     ? Math.floor((Date.now() - new Date(course.enrolledAt).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
-  const assignmentsWithStatus = (course.assignments || [])
+  const assignmentsWithStatus = assignments
     .map((a) => ({ ...a, daysLeft: a.dueInDays - daysSinceEnrollment }))
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
@@ -129,7 +141,7 @@ const CourseLearningPage = ({ course, onBack }) => {
               <section className="clp-section">
                 <h3>What you will learn</h3>
                 <ul className="clp-check-list">
-                  {course.whatYouWillLearn.map((item, i) => (
+                  {learningOutcomes.map((item, i) => (
                     <li key={i}><span className="clp-check">✓</span> {item}</li>
                   ))}
                 </ul>
@@ -138,7 +150,7 @@ const CourseLearningPage = ({ course, onBack }) => {
               <section className="clp-section">
                 <h3>Requirements</h3>
                 <ul className="clp-plain-list">
-                  {course.requirements.map((item, i) => (
+                  {requirements.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
@@ -189,7 +201,7 @@ const CourseLearningPage = ({ course, onBack }) => {
                 <div className="clp-keypoints">
                   <h4>Key concepts we cover today</h4>
                   <ul>
-                    {activeLesson.keyPoints.map((point, i) => (
+                    {(activeLesson.keyPoints || []).map((point, i) => (
                       <li key={i}>{point}</li>
                     ))}
                   </ul>
@@ -232,6 +244,17 @@ const CourseLearningPage = ({ course, onBack }) => {
             </div>
           )}
 
+          {activeTab === 'Lessons' && !activeLesson && (
+            <div className="clp-content-empty">
+              <span className="clp-content-empty-icon">📘</span>
+              <h2>Course content is being prepared</h2>
+              <p>This course is enrolled successfully, but no lessons have been published yet.</p>
+              <button type="button" onClick={() => setActiveTab('Overview')}>
+                View course overview
+              </button>
+            </div>
+          )}
+
           {activeTab === 'Assignments' && (
             <div className="clp-assignments">
               {assignmentsWithStatus.map((a) => (
@@ -261,7 +284,7 @@ const CourseLearningPage = ({ course, onBack }) => {
 
           {activeTab === 'Resources' && (
             <div className="clp-resources">
-              {(course.resources || []).map((r) => (
+              {resources.map((r) => (
                 <div key={r.id} className="clp-resource-card">
                   <span className="clp-resource-icon">{r.type === 'pdf' ? '📄' : '🔗'}</span>
                   <span className="clp-resource-title">{r.title}</span>
@@ -270,7 +293,7 @@ const CourseLearningPage = ({ course, onBack }) => {
                   </button>
                 </div>
               ))}
-              {(!course.resources || course.resources.length === 0) && (
+              {resources.length === 0 && (
                 <p className="clp-empty-note">No resources added for this course yet.</p>
               )}
             </div>
@@ -286,10 +309,10 @@ const CourseLearningPage = ({ course, onBack }) => {
             </div>
 
             <div className="clp-modules-list">
-              {course.modules.map((mod, modIndex) => {
-                const modLessons = mod.lessons;
+              {modules.map((mod, modIndex) => {
+                const modLessons = mod.lessons || [];
                 const modDoneCount = modLessons.filter((l) => isLessonComplete(course.id, l.id)).length;
-                const modComplete = modDoneCount === modLessons.length;
+                const modComplete = modLessons.length > 0 && modDoneCount === modLessons.length;
 
                 return (
                   <div key={mod.id} className="clp-module-block">
@@ -324,6 +347,9 @@ const CourseLearningPage = ({ course, onBack }) => {
                   </div>
                 );
               })}
+              {modules.length === 0 && (
+                <p className="clp-empty-note">Course lessons are being prepared.</p>
+              )}
             </div>
           </div>
 

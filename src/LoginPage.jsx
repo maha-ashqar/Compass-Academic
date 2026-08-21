@@ -1,182 +1,183 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './LoginPage.css';
 import CompassWordmark from './CompassWordmark';
-
+import heroImg from './assets/hero.jpg';
+import { MailIcon, LockIcon, EyeIcon, EyeOffIcon, GoogleIcon } from './AuthIcons';
+import './LoginPage.css';
 
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const handleLogin = (event) => {
+    event.preventDefault();
     if (onLogin) onLogin(email);
     navigate('/student-dashboard');
   };
 
   return (
-    <div className="login-page">
-      {/* ==== خلفية متحركة: حلقة بوصلة + رادار + نقاط عائمة ==== */}
-      <div className="login-bg" aria-hidden="true">
-        <div className="login-bg-radar"></div>
-
-        <svg className="login-bg-ring login-bg-ring-1" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" />
-          <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.5" />
-          {[...Array(12)].map((_, i) => (
-            <line
-              key={i}
-              x1="100"
-              y1="10"
-              x2="100"
-              y2="22"
-              stroke="currentColor"
-              strokeWidth="2"
-              transform={`rotate(${i * 30} 100 100)`}
-            />
-          ))}
-        </svg>
-
-        <svg className="login-bg-ring login-bg-ring-2" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" strokeDasharray="4 8" />
-        </svg>
-
-        <span className="login-bg-dot dot-1"></span>
-        <span className="login-bg-dot dot-2"></span>
-        <span className="login-bg-dot dot-3"></span>
-        <span className="login-bg-dot dot-4"></span>
-        <span className="login-bg-dot dot-5"></span>
-      </div>
-
-      {/* ==== كارد تسجيل الدخول ==== */}
-      <div className="login-card">
-        <div className="login-card-accent"></div>
-
-        <div
-          className="login-logo"
-          onClick={() => navigate('/')}
-          style={{ cursor: 'pointer' }}
-        >
-          <CompassWordmark size={26} navy="#000a33" gold="#cca43b" spin />
-        </div>
-
-        <p className="login-subtitle">أهلاً فيكِ من جديد — سجّلي دخولك وتابعي رحلتك</p>
-
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="input-group">
-            <label htmlFor="email">Email Address</label>
-            <div className="input-with-icon">
-              <input
-                id="email"
-                type="email"
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <span className="input-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M3 6.5C3 5.67 3.67 5 4.5 5h15c.83 0 1.5.67 1.5 1.5v11c0 .83-.67 1.5-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="m4 6.5 8 6.5 8-6.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <div className="input-with-icon">
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <span className="input-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <rect
-                    x="4"
-                    y="10.5"
-                    width="16"
-                    height="10"
-                    rx="2"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              </span>
-            </div>
-            <span
-              className="forgot-password"
-              onClick={() => navigate('/forgot-password')}
-              style={{ cursor: 'pointer' }}
-            >
-              Forgot password?
-            </span>
-          </div>
-
-          <button type="submit" className="btn-login">
-            Sign in
-          </button>
-        </form>
-
-        <div className="divider">OR CONTINUE WITH</div>
+    <main className="student-login-page">
+      {/* ============================================
+          LEFT — VISUAL / BRAND PANEL
+          ============================================ */}
+      <section className="student-login-visual">
+        <img src={heroImg} alt="Students collaborating on their academic projects" />
+        <div className="student-login-overlay" />
 
         <button
           type="button"
-          className="btn-google"
-          onClick={() => {
-            /* لاحقًا: تفعيل تسجيل الدخول بجوجل */
-          }}
+          className="student-login-brand"
+          onClick={() => navigate('/')}
+          aria-label="Back to Compass Academy home"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3.02h3.88c2.27-2.09 3.57-5.17 3.57-8.84Z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 24c3.24 0 5.96-1.08 7.95-2.9l-3.88-3.02c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.95H1.26v3.11C3.24 21.3 7.28 24 12 24Z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.26A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l4.01-3.11Z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 4.77c1.77 0 3.35.6 4.6 1.8l3.45-3.45C17.95 1.19 15.23 0 12 0 7.28 0 3.24 2.7 1.26 6.61l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77Z"
-            />
-          </svg>
-          Continue with Google
+          {/* was: gold="#12a7df" (invalid prop, had no effect) */}
+          <CompassWordmark size={30} navy="#ffffff" academyColor="#12a7df" />
         </button>
 
-        <p className="signup-link">
-          Don't have an account?{' '}
-          <a onClick={() => navigate('/signup')} style={{ cursor: 'pointer' }}>
-            Create a new account
-          </a>
-        </p>
-      </div>
-    </div>
+        <span className="student-platform-badge">
+          <i />
+          Student platform
+        </span>
+
+        <div className="student-visual-copy">
+          <h1>
+            One place for your
+            <br />
+            academic journey.
+          </h1>
+          <p>
+            Continue learning, follow deadlines, build projects,
+            and keep every opportunity within reach.
+          </p>
+
+          <div className="student-visual-features">
+            <span><i />Guided courses</span>
+            <span><i />Practical projects</span>
+            <span><i />Mentor support</span>
+          </div>
+        </div>
+
+        <small className="student-login-copyright">
+          © 2026 Compass Academy · Independent student platform
+        </small>
+      </section>
+
+      {/* ============================================
+          RIGHT — LOGIN FORM PANEL
+          ============================================ */}
+      <section className="student-login-panel">
+        <div className="trainer-access">
+          <span>Joining as an instructor?</span>
+          <button type="button" onClick={() => navigate('/trainer-login')}>
+            Trainer portal
+          </button>
+        </div>
+
+        <div className="student-login-content">
+          <span className="student-signin-label">
+            <i />
+            Student sign in
+          </span>
+          <h2>Welcome back</h2>
+          <p className="student-login-intro">Enter your details to continue to your dashboard.</p>
+
+          <form className="student-login-form" onSubmit={handleLogin}>
+            {/* --- Email field --- */}
+            <div className="student-field">
+              <label htmlFor="student-email">University email</label>
+              <div className="student-input">
+                <MailIcon />
+                <input
+                  id="student-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@university.edu"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* --- Password field --- */}
+            <div className="student-field">
+              <div className="student-password-row">
+                <label htmlFor="student-password">Password</label>
+                <button type="button" onClick={() => navigate('/forgot-password')}>
+                  Forgot password?
+                </button>
+              </div>
+              <div className="student-input">
+                <LockIcon />
+                <input
+                  id="student-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="student-password-toggle"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
+
+            {/* --- Remember me --- */}
+            <label className="student-remember">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
+              <span />
+              Remember me on this device
+            </label>
+
+            <button type="submit" className="student-submit">
+              Continue to dashboard
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
+            </button>
+          </form>
+
+          <div className="student-divider">
+            <span>Or sign in with</span>
+          </div>
+
+          <button type="button" className="student-google">
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
+          <div className="student-create-account">
+            <div>
+              <strong>New to Compass Academy?</strong>
+              <span>Create a free account and start exploring.</span>
+            </div>
+            <button type="button" onClick={() => navigate('/signup')}>
+              Create account →
+            </button>
+          </div>
+
+          <div className="student-secure-note">
+            <i />
+            Secure access · Your data is protected
+          </div>
+          <div className="student-legal-links">Privacy Policy · Terms of Use · Help Center</div>
+        </div>
+      </section>
+    </main>
   );
 }
 

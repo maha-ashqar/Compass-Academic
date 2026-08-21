@@ -1,13 +1,49 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
+import { coursesData } from './coursesData';
 
-const CoursesContext = createContext(null);
+export const CoursesContext = createContext(null);
+
+const restoreCourseImages = (courses) => {
+  if (!Array.isArray(courses)) return [];
+
+  return courses.map((course) => {
+    const currentCatalogCourse = coursesData.find(
+      (item) => String(item.id) === String(course.id)
+    );
+
+    return currentCatalogCourse
+      ? {
+          ...currentCatalogCourse,
+          ...course,
+          coverImage: currentCatalogCourse.coverImage,
+          // بيانات localStorage القديمة قد تحتوي modules فارغة؛ في هذه الحالة
+          // نعيد الدروس الأصلية من كاتالوج المشروع.
+          modules: Array.isArray(course.modules) && course.modules.length > 0
+            ? course.modules
+            : currentCatalogCourse.modules || [],
+          assignments: Array.isArray(course.assignments)
+            ? course.assignments
+            : currentCatalogCourse.assignments || [],
+          resources: Array.isArray(course.resources)
+            ? course.resources
+            : currentCatalogCourse.resources || [],
+          whatYouWillLearn: Array.isArray(course.whatYouWillLearn)
+            ? course.whatYouWillLearn
+            : currentCatalogCourse.whatYouWillLearn || [],
+          requirements: Array.isArray(course.requirements)
+            ? course.requirements
+            : currentCatalogCourse.requirements || [],
+        }
+      : course;
+  });
+};
 
 export const CoursesProvider = ({ children }) => {
   const [myCourses, setMyCourses] = useState(() => {
     try {
       const saved = localStorage.getItem('myCourses');
-      return saved ? JSON.parse(saved) : [];
+      return saved ? restoreCourseImages(JSON.parse(saved)) : [];
     } catch (error) {
       console.error('Failed to load courses from storage:', error);
       return [];
@@ -100,14 +136,25 @@ export const CoursesProvider = ({ children }) => {
 
   const enrollCourse = (course) => {
     setMyCourses((prev) => {
-      const alreadyEnrolled = prev.some((c) => c.id === course.id);
+      const alreadyEnrolled = prev.some(
+        (item) => String(item.id) === String(course.id)
+      );
       if (alreadyEnrolled) return prev;
-      return [...prev, { ...course, enrolledAt: new Date().toISOString(), progress: 0 }];
+      return [
+        ...prev,
+        {
+          ...course,
+          enrolledAt: new Date().toISOString(),
+          lastOpenedAt: new Date().toISOString(),
+        },
+      ];
     });
   };
 
   const unenrollCourse = (courseId) => {
-    setMyCourses((prev) => prev.filter((c) => c.id !== courseId));
+    setMyCourses((prev) =>
+      prev.filter((item) => String(item.id) !== String(courseId))
+    );
     setCompletedLessons((prev) => {
       const next = { ...prev };
       delete next[courseId];
@@ -121,7 +168,7 @@ export const CoursesProvider = ({ children }) => {
   };
 
   const isEnrolled = (courseId) => {
-    return myCourses.some((c) => c.id === courseId);
+    return myCourses.some((item) => String(item.id) === String(courseId));
   };
 
   const isLessonComplete = (courseId, lessonId) => {
@@ -142,6 +189,24 @@ export const CoursesProvider = ({ children }) => {
     if (!totalLessons) return 0;
     const done = (completedLessons[courseId] || []).length;
     return Math.round((done / totalLessons) * 100);
+  };
+
+  const getCompletedLessonCount = (courseId) => {
+    return (completedLessons[courseId] || []).length;
+  };
+
+  const getNextLesson = (course) => {
+    const lessons = (course?.modules || []).flatMap((module) =>
+      (module.lessons || []).map((lesson) => ({
+        ...lesson,
+        moduleId: module.id,
+        moduleTitle: module.title,
+      }))
+    );
+
+    return lessons.find(
+      (lesson) => !(completedLessons[course.id] || []).includes(lesson.id)
+    ) || null;
   };
 
   const isBookmarked = (courseId, lessonId) => {
@@ -198,6 +263,9 @@ export const CoursesProvider = ({ children }) => {
         isLessonComplete,
         toggleLessonComplete,
         getCourseProgress,
+        getCompletedLessonCount,
+        getNextLesson,
+        completedLessons,
         isBookmarked,
         toggleBookmark,
         isAssignmentSubmitted,

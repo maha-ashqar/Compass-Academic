@@ -1,123 +1,326 @@
-.sidebar {
-  --sidebar-bg: #001233;
-  --gold-card: #cca43b;
-  --text-menu: rgba(255, 255, 255, 0.55);
-  --danger: #f35252;
+/* ============================================
+   COMPASS ACADEMY — STUDENT SIDEBAR
+   ============================================ */
 
-  background-color: var(--sidebar-bg);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  padding: 32px 24px;
-  height: 100vh;
-  width: 260px;
+/* ---------- Design tokens (scoped to the sidebar) ---------- */
+.student-sidebar {
+  --ss-width: 232px;
+  --ss-bg: #074c67;
+  --ss-bg-end: #086a85;
+  --ss-accent: #28c2f2;
+
   position: sticky;
   top: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: var(--ss-width);
+  min-width: var(--ss-width);
+  height: 100vh;
+  padding: 22px 12px 18px;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(180deg, var(--ss-bg), var(--ss-bg-end));
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  direction: ltr;
+  text-align: left;
 }
 
-.sidebar::-webkit-scrollbar {
-  display: none;
+.student-sidebar,
+.student-sidebar * {
+  box-sizing: border-box;
 }
 
-.sidebar-brand {
+/* ============================================
+   BRAND (logo)
+   ============================================ */
+
+.student-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 48px;
+  min-height: 32px;
+  margin: 0 10px 22px;
 }
 
-.brand-logo {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
+/* ============================================
+   PROFILE SHORTCUT (avatar + name + chevron)
+   ============================================ */
+
+.student-sidebar-profile {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 16px;
+  align-items: center;
+  width: calc(100% - 12px);
+  margin: 0 6px 20px;
+  padding: 10px;
+  gap: 11px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
-.sidebar-brand h2 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
+.student-sidebar-profile:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.student-sidebar-profile img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.student-sidebar-profile-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.student-sidebar-profile-copy strong,
+.student-sidebar-profile-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sidebar-brand h2 span {
-  color: var(--gold-card);
-  margin-left: 2px;
+.student-sidebar-profile-copy strong {
+  color: #fff;
+  font-size: 13px;
 }
 
-.sidebar-menu {
+.student-sidebar-profile-copy small {
+  color: #c8e4ed;
+  font-size: 9px;
+}
+
+.student-sidebar-chevron {
+  color: #d9edf3;
+  font-size: 15px;
+  transition: transform 0.18s ease;
+}
+
+.student-sidebar-profile:hover .student-sidebar-chevron {
+  transform: translateY(1px);
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+
+.student-sidebar-nav {
+  min-height: 0;
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.menu-item {
+.student-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.student-sidebar-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-sidebar-nav li {
+  margin: 0;
+  padding: 0;
+}
+
+.student-sidebar-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  color: var(--text-menu);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 6px;
+  width: 100%;
+  min-height: 43px;
+  margin: 0 0 2px;
+  padding: 9px 14px;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.82);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.menu-item:hover {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.06);
+.student-sidebar-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.menu-item.active {
-  color: var(--sidebar-bg) !important;
-  background-color: var(--gold-card);
+.student-sidebar-item.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.17);
   font-weight: 700;
-  box-shadow: 0 8px 20px rgba(204, 164, 59, 0.28);
 }
 
-.menu-item.active .menu-icon,
-.menu-item.active .menu-text {
-  color: var(--sidebar-bg) !important;
+.student-sidebar-item.is-active::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+  background: var(--ss-accent);
 }
 
-.menu-item.active:hover {
-  background-color: var(--gold-card);
+.student-sidebar-icon {
+  display: grid;
+  width: 20px;
+  min-width: 20px;
+  place-items: center;
+  font-size: 17px;
 }
 
-.menu-icon {
+.student-sidebar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================
+   HELP CARD
+   ============================================ */
+
+.student-sidebar-help {
+  display: flex;
+  align-items: flex-start;
+  width: calc(100% - 12px);
+  min-height: 60px;
+  margin: 13px 6px 0;
+  padding: 11px 12px;
+  gap: 10px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.11);
+  border: 0;
+  border-radius: 11px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.student-sidebar-help:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.student-sidebar-help > svg {
+  flex: 0 0 auto;
+  color: #52d4fa;
+  font-size: 20px;
+}
+
+.student-sidebar-help span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.student-sidebar-help strong {
+  font-size: 10px;
+}
+
+.student-sidebar-help small {
+  color: #cee5ed;
+  font-size: 8px;
+}
+
+/* ============================================
+   LOGOUT
+   ============================================ */
+
+.student-sidebar-logout {
   display: flex;
   align-items: center;
-  font-size: 18px;
-}
-
-.sidebar-footer {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  color: var(--danger);
-  font-size: 14px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 14px 8px;
+  gap: 14px;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.17);
+  font: inherit;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: auto;
-  border-radius: 8px;
-  transition: background 0.2s ease;
 }
 
-.sidebar-footer:hover {
-  background: rgba(243, 82, 82, 0.1);
+.student-sidebar-logout > svg {
+  font-size: 17px;
 }
 
-@media (max-width: 900px) {
-  .sidebar {
-    position: relative;
-    height: auto;
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+/* Collapsed / icon-only sidebar on tablets */
+@media (max-width: 1050px) and (min-width: 701px) {
+  .student-sidebar {
+    --ss-width: 76px;
+    padding-inline: 8px;
+  }
+
+  .student-sidebar-brand {
+    justify-content: center;
+    margin-inline: 0;
+  }
+
+  .student-sidebar-brand .compass-wordmark-academy,
+  .student-sidebar-profile-copy,
+  .student-sidebar-chevron,
+  .student-sidebar-label,
+  .student-sidebar-help span,
+  .student-sidebar-logout span {
+    display: none;
+  }
+
+  .student-sidebar-profile {
+    display: flex;
+    justify-content: center;
     width: 100%;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .student-sidebar-item,
+  .student-sidebar-logout {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .student-sidebar-help {
+    width: 52px;
+    min-height: 52px;
+    justify-content: center;
+    margin-inline: 4px;
+    padding: 12px;
+  }
+}
+
+/* Stacked layout on phones */
+@media (max-width: 700px) {
+  .student-sidebar {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: none;
   }
 }

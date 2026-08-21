@@ -12,6 +12,6 @@ export const menuItems = [
   { id: 'Assignments', label: 'Assignments', icon: FiFileText },
   { id: 'Projects gallery', label: 'Projects gallery', icon: FiBriefcase },
   { id: 'Messages', label: 'Messages', icon: FiMessageSquare },
-  { id: 'Achievements', label: 'My Achievements', icon: FiAward },
+  { id: 'Achievements', label: 'Career Portfolio', icon: FiAward },
   { id: 'Settings', label: 'Settings', icon: FiSettings },
 ];

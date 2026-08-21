@@ -1,8 +1,8 @@
-import coverFlutter from './assets/flutter.png.png';
-import coverBusiness from './assets/full-stak.png.png';
-import coverUiux from './assets/uiux.png.png';
-import coverAi from './assets/ai.png.png';
-import coverSoftwareEng from './assets/software-eng.png';
+import coverFlutter from './assets/course-flutter-workshop.jpg';
+import coverBusiness from './assets/course-fullstack-development.jpg';
+import coverUiux from './assets/course-uiux-design.jpg';
+import coverAi from './assets/course-ai-machine-learning.jpg';
+import coverSoftwareEng from './assets/course-software-engineering.jpg';
 
 export const coursesData = [
   {

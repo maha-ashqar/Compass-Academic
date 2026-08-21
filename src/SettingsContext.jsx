@@ -1,99 +1,169 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const SettingsContext = createContext(null);
+const STORAGE_KEY = 'compass_student_settings_v3';
 
-const defaultDevices = [
-  { id: 1, name: 'Chrome on Windows', location: 'Nablus, Palestine', lastActive: 'Active now', current: true },
-  { id: 2, name: 'Safari on iPhone', location: 'Nablus, Palestine', lastActive: '2 days ago', current: false },
+export const DEFAULT_SETTINGS = {
+  language: 'en',
+  timeZone: 'Asia/Gaza',
+  dateFormat: 'DD/MM/YYYY',
+  weekStartsOn: 'sunday',
+  showProgress: true,
+  weeklySummary: true,
+  deadlineCountdowns: true,
+  recommendedContent: false,
+  theme: 'light',
+  compactMode: false,
+  notifications: {
+    assignment: true, message: true, project: true, team: true,
+    grade: true, course: true, browser: false,
+  },
+  privacy: {
+    profileVisibility: 'academy',
+    showActivity: true,
+    showAchievements: true,
+    allowInstructorMessages: true,
+  },
+  security: { twoFactor: false, loginAlerts: true },
+  accessibility: { fontSize: 'medium', reduceMotion: false, highContrast: false },
+  connectedServices: { google: true, github: false, linkedin: false },
+};
+
+export const DEFAULT_DEVICES = [
+  { id: 1, name: 'Chrome on Windows', location: 'Gaza, Palestine', lastActive: 'Active now', current: true },
+  { id: 2, name: 'Safari on iPhone', location: 'Gaza, Palestine', lastActive: '2 days ago', current: false },
   { id: 3, name: 'Chrome on Android', location: 'Ramallah, Palestine', lastActive: '1 week ago', current: false },
 ];
 
-const loadFromStorage = (key, fallback) => {
+const safelyRead = (key, fallback) => {
   try {
-    const saved = localStorage.getItem(key);
-    return saved !== null ? JSON.parse(saved) : fallback;
-  } catch (error) {
-    console.error(`Failed to load ${key} from storage:`, error);
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
     return fallback;
   }
 };
 
-export const SettingsProvider = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(() => loadFromStorage('settings_darkMode', false));
-  const [language, setLanguageState] = useState(() => loadFromStorage('settings_language', 'en'));
-  const [fontSize, setFontSizeState] = useState(() => loadFromStorage('settings_fontSize', 'medium'));
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(() => loadFromStorage('settings_twoFactor', false));
-  const [permissions, setPermissions] = useState(() =>
-    loadFromStorage('settings_permissions', { camera: false, microphone: false, location: true })
-  );
-  const [devices, setDevices] = useState(() => loadFromStorage('settings_devices', defaultDevices));
+const mergeSettings = (value = {}) => ({
+  ...DEFAULT_SETTINGS,
+  ...value,
+  notifications: { ...DEFAULT_SETTINGS.notifications, ...value.notifications },
+  privacy: { ...DEFAULT_SETTINGS.privacy, ...value.privacy },
+  security: { ...DEFAULT_SETTINGS.security, ...value.security },
+  accessibility: { ...DEFAULT_SETTINGS.accessibility, ...value.accessibility },
+  connectedServices: { ...DEFAULT_SETTINGS.connectedServices, ...value.connectedServices },
+});
 
-  // تطبيق الوضع الليلي على مستوى التطبيق كامل
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark-theme', darkMode);
-    localStorage.setItem('settings_darkMode', JSON.stringify(darkMode));
-  }, [darkMode]);
+export function SettingsProvider({ children }) {
+  const [settings, setSettings] = useState(() => mergeSettings(safelyRead(STORAGE_KEY, DEFAULT_SETTINGS)));
+  const [devices, setDevices] = useState(() => safelyRead(`${STORAGE_KEY}_devices`, DEFAULT_DEVICES));
+  const [syncState, setSyncState] = useState('saved');
+  const [error, setError] = useState(null);
 
-  // تطبيق اللغة واتجاه الصفحة
-  useEffect(() => {
-    document.documentElement.setAttribute('lang', language);
-    document.documentElement.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
-    localStorage.setItem('settings_language', JSON.stringify(language));
-  }, [language]);
+  const applySettings = useCallback((next) => {
+    const root = document.documentElement;
+    root.lang = next.language;
+    root.dir = next.language === 'ar' ? 'rtl' : 'ltr';
+    root.dataset.fontSize = next.accessibility.fontSize;
+    root.classList.toggle('dark-theme', next.theme === 'dark');
+    root.classList.toggle('high-contrast', next.accessibility.highContrast);
+    root.classList.toggle('reduce-motion', next.accessibility.reduceMotion);
+    root.classList.toggle('compact-ui', next.compactMode);
+  }, []);
 
-  // تطبيق حجم واجهة لوحة التحكم (تكبير/تصغير)
-  useEffect(() => {
-    const zoomMap = { small: '0.92', medium: '1', large: '1.12' };
-    document.documentElement.style.setProperty('--ui-zoom', zoomMap[fontSize] || '1');
-    localStorage.setItem('settings_fontSize', JSON.stringify(fontSize));
-  }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('settings_twoFactor', JSON.stringify(twoFactorEnabled));
-  }, [twoFactorEnabled]);
+  useEffect(() => applySettings(settings), [settings, applySettings]);
 
   useEffect(() => {
-    localStorage.setItem('settings_permissions', JSON.stringify(permissions));
-  }, [permissions]);
+    const onStorage = (event) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try {
+        setSettings(mergeSettings(JSON.parse(event.newValue)));
+        setSyncState('synced');
+      } catch {
+        setError('Settings from another session could not be synchronized.');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('settings_devices', JSON.stringify(devices));
-  }, [devices]);
+  const saveSettings = useCallback((nextSettings) => {
+    const normalized = mergeSettings(nextSettings);
+    setSyncState('saving');
+    setError(null);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      setSettings(normalized);
+      applySettings(normalized);
+      setSyncState('saved');
+      return { ok: true };
+    } catch {
+      setSyncState('error');
+      setError('Your settings could not be saved on this device.');
+      return { ok: false };
+    }
+  }, [applySettings]);
 
-  const toggleDarkMode = () => setDarkMode((prev) => !prev);
-  const setLanguage = (lang) => setLanguageState(lang);
-  const setFontSize = (size) => setFontSizeState(size);
-  const toggleTwoFactor = () => setTwoFactorEnabled((prev) => !prev);
+  const resetSettings = useCallback(() => saveSettings(DEFAULT_SETTINGS), [saveSettings]);
+  const updateSetting = useCallback((key, value) => saveSettings({ ...settings, [key]: value }), [settings, saveSettings]);
 
-  const togglePermission = (key) => {
-    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const persistDevices = useCallback((updater) => {
+    setDevices((current) => {
+      const next = updater(current);
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_devices`, JSON.stringify(next));
+      } catch {
+        setError('Device sessions could not be updated.');
+      }
+      return next;
+    });
+  }, []);
 
-  const removeDevice = (id) => {
-    setDevices((prev) => prev.filter((d) => d.id !== id));
-  };
+  const removeDevice = useCallback((id) => {
+    persistDevices((current) => current.filter((device) => device.id !== id || device.current));
+  }, [persistDevices]);
 
-  return (
-    <SettingsContext.Provider
-      value={{
-        darkMode, toggleDarkMode,
-        language, setLanguage,
-        fontSize, setFontSize,
-        twoFactorEnabled, toggleTwoFactor,
-        permissions, togglePermission,
-        devices, removeDevice,
-      }}
-    >
-      {children}
-    </SettingsContext.Provider>
-  );
-};
+  const signOutOtherSessions = useCallback(() => {
+    persistDevices((current) => current.filter((device) => device.current));
+  }, [persistDevices]);
 
-export const useSettings = () => {
+  const formatDate = useCallback((value, includeTime = false) => {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    const locale = settings.language === 'ar' ? 'ar-PS' : 'en-GB';
+    const options = {
+      timeZone: settings.timeZone,
+      day: '2-digit', month: settings.dateFormat === 'MMM D, YYYY' ? 'short' : '2-digit', year: 'numeric',
+      ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+    };
+    if (settings.dateFormat === 'YYYY-MM-DD') {
+      const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(date);
+      const part = (type) => parts.find((item) => item.type === type)?.value;
+      return `${part('year')}-${part('month')}-${part('day')}`;
+    }
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  }, [settings]);
+
+  const value = useMemo(() => ({
+    settings, devices, syncState, error,
+    saveSettings, resetSettings, updateSetting,
+    removeDevice, signOutOtherSessions, formatDate,
+    darkMode: settings.theme === 'dark',
+    toggleDarkMode: () => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark'),
+    language: settings.language,
+    setLanguage: (language) => updateSetting('language', language),
+    fontSize: settings.accessibility.fontSize,
+    setFontSize: (fontSize) => saveSettings({ ...settings, accessibility: { ...settings.accessibility, fontSize } }),
+    twoFactorEnabled: settings.security.twoFactor,
+    toggleTwoFactor: () => saveSettings({ ...settings, security: { ...settings.security, twoFactor: !settings.security.twoFactor } }),
+  }), [settings, devices, syncState, error, saveSettings, resetSettings, updateSetting, removeDevice, signOutOtherSessions, formatDate]);
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+}
+
+export function useSettings() {
   const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
+  if (!context) throw new Error('useSettings must be used within a SettingsProvider');
   return context;
-};
+}

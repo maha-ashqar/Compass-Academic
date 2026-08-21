@@ -1,153 +1,137 @@
-import './StudentProfile.css';
-import { FiUser, FiBookOpen, FiEdit2, FiCalendar, FiGithub, FiMail } from 'react-icons/fi';
-import { FaLinkedin } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import {
+  FiBookOpen,
+  FiCalendar,
+  FiEdit2,
+  FiHome,
+  FiMail,
+  FiPhone,
+  FiUser,
+} from 'react-icons/fi';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
-import { useNavigate } from 'react-router-dom'
+import './StudentProfile.css';
 
-const StudentProfile = ({ student }) => {
-    const navigate = useNavigate();
+const valueOrDash = (value) =>
+  value && String(value).trim() ? value : '—';
+
+function StudentProfile({ student = {} }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="profile-tab-container">
-
-      <div className="profile-hero-card">
-      
-        <div className="hero-left">
-          <img src={student.avatar} alt="Student Profile" className="hero-avatar" />
-          <div className="hero-info">
-            <div className="name-status-row">
-              <h2>{student.displayName}</h2>
-              <span className="status-badge">{student.status} ✓</span>
-            </div>
-            <p className="hero-subtext">{student.major}</p>
+    <div className="compass-profile-view" dir="ltr">
+      <section className="cpv-hero">
+        <div className="cpv-hero-person">
+          <img
+            src={student.avatar}
+            alt={student.displayName || 'Student'}
+          />
+          <div>
+            <h1>{valueOrDash(student.fullName || student.displayName)}</h1>
+            <p>{valueOrDash(student.program || student.major)}</p>
           </div>
         </div>
-     <button
-          className="edit-profile-btn"
+
+        <span className="cpv-status">Active ✓</span>
+
+        <button
+          type="button"
+          className="cpv-edit-button"
           onClick={() => navigate('/edit-profile')}
         >
-          Edit Profile <FiEdit2 className="btn-icon" />
+          Edit profile <FiEdit2 />
         </button>
-      </div>
+      </section>
 
-      <div className="profile-details-grid">
+      <div className="cpv-details-grid">
+        <section className="cpv-card cpv-personal-card">
+          <header>
+            <h2>Personal Information</h2>
+            <FiUser />
+          </header>
 
-        <div className="details-card personal-info-card">
-          <div className="card-title-header">
-            <h3>Personal Information</h3>
-            <FiUser className="title-icon" />
-          </div>
-
-          <div className="info-data-grid">
-            <div className="info-item">
-              <label>GENDER</label>
-              <p>{student.gender}</p>
-            </div>
-            <div className="info-item">
-              <label>FULL NAME</label>
-              <p className="truncated-text">{student.fullName}</p>
-            </div>
-            <div className="info-item">
-              <label>DATE OF BIRTH</label>
-              <p>{student.dob}</p>
-            </div>
-            <div className="info-item">
-              <label>NATIONALITY</label>
-              <p>{student.nationality}</p>
-            </div>
-            <div className="info-item">
-              <label>PHONE</label>
-              <p>{student.phone}</p>
-            </div>
-            <div className="info-item">
-              <label>EMAIL</label>
-              <p className="truncated-text">{student.email}</p>
-            </div>
+          <div className="cpv-personal-grid">
+            <Info label="Gender" value={student.gender} />
+            <Info label="Full name" value={student.fullName || student.displayName} />
+            <Info label="Date of birth" value={student.dob} />
+            <Info label="Nationality" value={student.nationality} />
+            <Info label="Phone" value={student.phone} />
+            <Info label="Email" value={student.email} />
           </div>
 
           {student.overview && (
-            <div className="overview-section">
-              <label>OVERVIEW</label>
-              <p className="overview-text">{student.overview}</p>
+            <div className="cpv-overview">
+              <span>Overview</span>
+              <p>{student.overview}</p>
             </div>
           )}
+        </section>
 
-          {student.skills && student.skills.length > 0 && (
-            <div className="skills-section">
-              <label>SKILLS</label>
-              <div className="skills-display-tags">
-                {student.skills.map((skill) => (
-                  <span key={skill} className="skill-display-tag">{skill}</span>
-                ))}
-              </div>
-            </div>
-          )}
+        <section className="cpv-card cpv-academic-card">
+          <header>
+            <h2>Academic Information</h2>
+            <HiOutlineAcademicCap />
+          </header>
 
-          {student.connections && (student.connections.github || student.connections.linkedin || student.connections.gmail) && (
-            <div className="connections-section">
-              <label>CONNECT</label>
-              <div className="connections-display-list">
-                {student.connections.github && (
-                  <a href={student.connections.github} target="_blank" rel="noreferrer" className="connection-display-item">
-                    <FiGithub /> GitHub
-                  </a>
-                )}
-                {student.connections.linkedin && (
-                  <a href={student.connections.linkedin} target="_blank" rel="noreferrer" className="connection-display-item">
-                    <FaLinkedin /> LinkedIn
-                  </a>
-                )}
-                {student.connections.gmail && (
-                  <span className="connection-display-item">
-                    <FiMail /> {student.connections.gmail}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+          <AcademicRow
+            icon={<FiUser />}
+            label="Academic advisor"
+            value={student.advisor?.name}
+            detail={student.advisor?.dept}
+            tone="blue"
+          />
+          <AcademicRow
+            icon={<FiHome />}
+            label="University & college"
+            value={student.university || 'Al-Azhar University – Gaza'}
+            detail={student.college}
+            tone="orange"
+          />
+          <AcademicRow
+            icon={<FiBookOpen />}
+            label="Program"
+            value={student.program || student.major}
+            tone="cyan"
+          />
+          <AcademicRow
+            icon={<FiCalendar />}
+            label="Expected graduation"
+            value={student.graduation}
+            tone="green"
+          />
+        </section>
+      </div>
 
-        <div className="details-card academic-info-card">
-          <div className="card-title-header">
-            <h3>Academic Information</h3>
-            <HiOutlineAcademicCap className="title-icon-cap" />
-          </div>
+      <section className="cpv-contact-card">
+        <div><FiMail /><span>{valueOrDash(student.email)}</span></div>
+        <div><FiPhone /><span>{valueOrDash(student.phone)}</span></div>
+        <button type="button" onClick={() => navigate('/edit-profile')}>
+          Manage profile
+        </button>
+      </section>
+    </div>
+  );
+}
 
-          <div className="academic-list">
-            <div className="academic-item">
-              <div className="academic-icon-wrapper blue-icon-bg">
-                <FiUser />
-              </div>
-              <div className="academic-text">
-                <span className="academic-label">Academic Advisor</span>
-                <h4>{student.advisor.name}</h4>
-                <p className="dept-text">{student.advisor.dept}</p>
-              </div>
-            </div>
+function Info({ label, value }) {
+  return (
+    <div className="cpv-info">
+      <span>{label}</span>
+      <strong>{valueOrDash(value)}</strong>
+    </div>
+  );
+}
 
-            <div className="academic-item">
-              <div className="academic-icon-wrapper orange-icon-bg">
-                <FiBookOpen />
-              </div>
-              <div className="academic-text">
-                <span className="academic-label">The College</span>
-                <h4>{student.college}</h4>
-              </div>
-            </div>
-
-            <div className="academic-item">
-              <div className="academic-icon-wrapper purple-icon-bg">
-                <FiCalendar />
-              </div>
-              <div className="academic-text">
-                <span className="academic-label">Expected Graduation</span>
-                <h4>{student.graduation}</h4>
-              </div>
-            </div>
-          </div>
-        </div>
+function AcademicRow({ icon, label, value, detail, tone }) {
+  return (
+    <div className="cpv-academic-row">
+      <span className={`cpv-academic-icon ${tone}`}>{icon}</span>
+      <div>
+        <small>{label}</small>
+        <strong>{valueOrDash(value)}</strong>
+        {detail && <p>{detail}</p>}
       </div>
     </div>
   );
-};
+}
 
 export default StudentProfile;

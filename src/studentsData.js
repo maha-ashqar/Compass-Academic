@@ -20,20 +20,29 @@ const presetStudents = {
     stats: { activeCompetitions: 3, projectProgress: 74, certificatesEarned: 4 },
   },
   maha: {
-    fullName: 'مها خالد أحمد',
-    displayName: 'مها خالد',
-    major: 'Computer Science — Active Student',
+    fullName: 'Maha Mahmoud Al-Ashqar',
+    displayName: 'Maha',
+    major: 'Computer Engineering',
+    program: 'Computer Engineering',
+    university: 'Al-Azhar University – Gaza',
     status: 'active',
     gender: 'female',
-    dob: '2 يناير 2003',
-    nationality: 'فلسطين',
-    phone: '+970 59 987 6543',
+    dob: '17 April 2004',
+    nationality: 'Palestinian',
+    location: 'Gaza, Palestine',
+    phone: '+970 59 561 4277',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    advisor: { name: 'Dr. Layla Odeh', dept: 'Computer Science Department' },
-    college: 'College of Computer and Information Sciences',
-    graduation: 'June 2026',
-    overview: '',
-    skills: ['React', 'UI/UX Design'],
+    advisor: { name: 'Dr. Layla Odeh', dept: 'Computer Engineering Department' },
+    college: 'Faculty of Engineering and Information Technology',
+    graduation: 'June 2027',
+    overview: 'Front-end developer and Computer Engineering student interested in building accessible digital products, practical learning experiences, and student-centered technology.',
+    currentFocus: 'Front-end development · Product design · Practical projects',
+    preferredLanguage: 'Arabic & English',
+    languages: [
+      { name: 'Arabic', level: 'Native' },
+      { name: 'English', level: 'Intermediate' },
+    ],
+    skills: ['React', 'JavaScript', 'UI/UX Design', 'Figma'],
     connections: { github: '', linkedin: '', gmail: '' },
     stats: { activeCompetitions: 1, projectProgress: 40, certificatesEarned: 2 },
   },
@@ -49,16 +58,25 @@ const buildDefaultStudent = (email) => {
     fullName: displayName,
     displayName,
     major: 'Undeclared — New Student',
+    program: 'Undeclared',
+    university: 'Al-Azhar University – Gaza',
     status: 'active',
     gender: '',
     dob: '',
     nationality: '',
+    location: '',
     phone: '',
     avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`,
     advisor: { name: 'Not assigned yet', dept: '—' },
     college: 'College of Computer and Information Sciences',
     graduation: '—',
     overview: '',
+    currentFocus: '',
+    preferredLanguage: 'Arabic & English',
+    languages: [
+      { name: 'Arabic', level: 'Native' },
+      { name: 'English', level: 'Intermediate' },
+    ],
     skills: [],
     connections: { github: '', linkedin: '', gmail: '' },
     stats: { activeCompetitions: 0, projectProgress: 0, certificatesEarned: 0 },
@@ -68,19 +86,53 @@ const buildDefaultStudent = (email) => {
 export const getOrCreateStudent = (rawEmail) => {
   const email = (rawEmail || '').trim().toLowerCase();
   if (!email) return null;
+  const localPart = email.split('@')[0];
+  const preset =
+    presetStudents[localPart] ||
+    (localPart.includes('maha') ? presetStudents.maha : null);
 
   try {
     const saved = localStorage.getItem(STORAGE_PREFIX + email);
     if (saved) {
-      return { ...JSON.parse(saved), email };
+      const parsed = JSON.parse(saved);
+      const hadPlaceholderMajor =
+        !parsed.major ||
+        String(parsed.major).toLowerCase().includes('undeclared');
+
+      return {
+        ...(preset || buildDefaultStudent(email)),
+        ...parsed,
+        major: hadPlaceholderMajor
+          ? (preset?.major || parsed.major)
+          : parsed.major,
+        program: hadPlaceholderMajor
+          ? (preset?.program || parsed.program)
+          : (parsed.program || parsed.major),
+        university:
+          parsed.university ||
+          preset?.university ||
+          'Al-Azhar University – Gaza',
+        advisor: {
+          ...(preset?.advisor || {}),
+          ...(parsed.advisor || {}),
+        },
+        connections: {
+          ...(preset?.connections || {}),
+          ...(parsed.connections || {}),
+        },
+        stats: {
+          ...(preset?.stats || {}),
+          ...(parsed.stats || {}),
+        },
+        email,
+      };
     }
   } catch {
     // تجاهل أخطاء القراءة (مثلاً وضع التصفح الخاص)
   }
 
-  const localPart = email.split('@')[0];
-  if (presetStudents[localPart]) {
-    return { ...presetStudents[localPart], email };
+  if (preset) {
+    return { ...preset, email };
   }
 
   return { ...buildDefaultStudent(email), email };
@@ -104,6 +156,29 @@ export const getCurrentUserEmail = () => {
   } catch {
     return null;
   }
+};
+
+/*
+ * تُرجع نشاطات الطالب بدون أن تتسبب في انهيار صفحة الملف الشخصي
+ * إذا لم تكن بيانات النشاط موجودة بعد.
+ *
+ * تقبل بيانات الطالب مباشرة أو بريده الإلكتروني لتظل متوافقة
+ * مع جميع أماكن الاستدعاء في المشروع.
+ */
+export const getRecentActivity = (studentOrEmail) => {
+  let student = studentOrEmail;
+
+  if (typeof studentOrEmail === 'string') {
+    student = getOrCreateStudent(studentOrEmail);
+  }
+
+  if (!student || typeof student !== 'object') {
+    return [];
+  }
+
+  return Array.isArray(student.recentActivity)
+    ? student.recentActivity
+    : [];
 };
 
 export const clearCurrentUser = () => {

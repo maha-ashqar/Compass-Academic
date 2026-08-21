@@ -17,7 +17,6 @@ function ForgotPasswordPage() {
 
   const origin = location.state?.from === 'trainer' ? 'trainer' : 'student';
   const loginPath = origin === 'trainer' ? '/trainer-login' : '/login';
-  const loginLabel = origin === 'trainer' ? 'Trainer Login' : 'Login';
 
   const DUMMY_CODE = '123456';
 
@@ -118,8 +117,6 @@ function ForgotPasswordPage() {
         >
           <CompassWordmark size={24} navy="#000a33" gold="#cca43b" />
         </div>
-
-        {origin === 'trainer' && <span className="fp-badge">TRAINER PORTAL</span>}
 
         {/* الخطوة 1: إدخال الإيميل */}
         {step === 1 && (
@@ -244,7 +241,7 @@ function ForgotPasswordPage() {
 
         <p className="back-to-login">
           <a onClick={() => navigate(loginPath)} style={{ cursor: 'pointer' }}>
-            ← Back to {loginLabel}
+            ← Back to Login
           </a>
         </p>
       </div>

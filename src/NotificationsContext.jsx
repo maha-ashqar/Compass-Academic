@@ -85,6 +85,10 @@ export const NotificationsProvider = ({ children }) => {
     actionLabel = null,
     actionTab = null,
     featured = false,
+    actionPath = null,
+    announcementId = null,
+    audienceType = 'all',
+    audienceValue = '',
   }) => {
     const newNotification = {
       id: Date.now(),
@@ -98,6 +102,10 @@ export const NotificationsProvider = ({ children }) => {
       featured,
       actionLabel,
       actionTab,
+      actionPath,
+      announcementId,
+      audienceType,
+      audienceValue,
     };
     setNotifications((prev) => [newNotification, ...prev]);
     return newNotification;
@@ -105,9 +113,19 @@ export const NotificationsProvider = ({ children }) => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const getStudentNotifications = (student) => notifications.filter((item) => {
+    if (!item.audienceType || item.audienceType === 'all') return true;
+    const expected = String(item.audienceValue || '').toLowerCase();
+    if (item.audienceType === 'faculty') return String(student?.faculty || '').toLowerCase() === expected;
+    if (item.audienceType === 'major') return String(student?.major || student?.program || '').toLowerCase() === expected;
+    if (item.audienceType === 'course') return (student?.courses || []).some((course) => String(course.id || course.title || course).toLowerCase() === expected);
+    if (item.audienceType === 'students') return expected.split(',').map((value) => value.trim()).includes(String(student?.email || student?.id).toLowerCase());
+    return true;
+  });
+
   return (
     <NotificationsContext.Provider
-      value={{ notifications, markAsRead, markAllRead, addNotification, unreadCount }}
+      value={{ notifications, getStudentNotifications, markAsRead, markAllRead, addNotification, unreadCount }}
     >
       {children}
     </NotificationsContext.Provider>

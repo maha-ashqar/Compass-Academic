@@ -1,383 +1,134 @@
-* {
-  box-sizing: border-box;
-}
+.trainer-auth-shell,
+.trainer-auth-shell * { box-sizing: border-box; }
 
-/* ==================== Design Tokens (نفس هوية صفحة تسجيل دخول الطالب) ==================== */
-.trainer-login-page {
-  --navy-950: #001233;
-  --navy-900: #0a0f2c;
-  --blue-600: #0056d2;
-  --blue-700: #002766;
-  --blue-tint: #eef4ff;
-  --brass: #b98c4b;
-  --ink-900: #0f1729;
-  --slate-500: #667085;
-  --slate-400: #4b5468;
-  --line: #eef0f4;
-  --logo-navy: #000a33;
-  --logo-gold: #cca43b;
-
-  position: relative;
+.trainer-auth-shell {
+  --ta-navy: #074b68;
+  --ta-deep: #063047;
+  --ta-cyan: #17aee2;
+  --ta-soft: #e8f7fc;
+  --ta-ink: #0b2942;
+  --ta-muted: #6f8398;
+  --ta-border: #cddde7;
+  display: grid;
   min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  overflow: hidden;
-  background: linear-gradient(
-    160deg,
-    var(--navy-950) 0%,
-    var(--blue-700) 55%,
-    var(--blue-600) 100%
-  );
-  background-size: 200% 200%;
-  animation: trainerBgDrift 18s ease-in-out infinite;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  grid-template-columns: minmax(420px, .92fr) minmax(560px, 1.08fr);
+  color: var(--ta-ink);
+  background: #f8fafc;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif;
 }
 
-@keyframes trainerBgDrift {
-  0%   { background-position: 0% 0%; }
-  50%  { background-position: 100% 100%; }
-  100% { background-position: 0% 0%; }
-}
-
-/* ==================== طبقة الخلفية الزخرفية ==================== */
-.trainer-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.trainer-bg-radar {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 900px;
-  height: 900px;
-  transform: translate(-50%, -50%);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(185, 140, 75, 0.16) 25deg,
-    transparent 55deg,
-    transparent 360deg
-  );
-  border-radius: 50%;
-  filter: blur(2px);
-  animation: trainerRadarSpin 10s linear infinite;
-}
-
-@keyframes trainerRadarSpin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-.trainer-bg-ring {
-  position: absolute;
-  width: 640px;
-  height: 640px;
-  color: rgba(255, 255, 255, 0.14);
-}
-
-.trainer-bg-ring-1 {
-  top: -160px;
-  right: -160px;
-  animation: trainerRingSpinSlow 90s linear infinite;
-}
-
-.trainer-bg-ring-2 {
-  bottom: -220px;
-  left: -220px;
-  width: 520px;
-  height: 520px;
-  color: rgba(185, 140, 75, 0.16);
-  animation: trainerRingSpinSlow 70s linear infinite reverse;
-}
-
-@keyframes trainerRingSpinSlow {
-  to { transform: rotate(360deg); }
-}
-
-.trainer-bg-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  animation: trainerFloatDot 6s ease-in-out infinite;
-}
-
-.trainer-bg-dot.dot-1 { top: 18%; left: 12%; animation-delay: 0s; }
-.trainer-bg-dot.dot-2 { top: 32%; left: 82%; background: var(--brass); animation-delay: 1.2s; }
-.trainer-bg-dot.dot-3 { top: 68%; left: 20%; animation-delay: 2.4s; }
-.trainer-bg-dot.dot-4 { top: 78%; left: 74%; background: var(--brass); animation-delay: 0.6s; }
-.trainer-bg-dot.dot-5 { top: 48%; left: 6%; animation-delay: 3s; }
-
-@keyframes trainerFloatDot {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50%      { transform: translateY(-16px); opacity: 1; }
-}
-
-/* ==================== كارد تسجيل الدخول ==================== */
-.trainer-login-card {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 440px;
-  background: #ffffff;
-  border-radius: 28px;
-  padding: 44px 44px 36px;
-  box-shadow:
-    0 30px 70px rgba(0, 18, 51, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: trainerCardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes trainerCardEnter {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.trainer-card-accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, var(--logo-navy) 0%, var(--brass) 50%, var(--logo-gold) 100%);
-}
-
-/* ==================== اللوجو + البادج ==================== */
-.trainer-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin: 10px auto 16px;
-}
-
-.trainer-badge {
-  display: block;
-  width: fit-content;
-  margin: 0 auto 16px;
-  background: var(--blue-tint);
-  color: var(--navy-950);
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  padding: 6px 14px;
-  border-radius: 20px;
-}
-
-.trainer-subtitle {
-  text-align: center;
-  font-size: 13.5px;
-  color: var(--slate-500);
-  line-height: 1.6;
-  margin-bottom: 28px;
-}
-
-/* دوران إبرة البوصلة داخل شعار CompassWordmark فقط عند تفعيل spin */
-.compass-wordmark-spin .compass-wordmark-needle {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: trainerNeedleSpin 8s linear infinite;
-}
-
-@keyframes trainerNeedleSpin {
-  to { transform: rotate(360deg); }
-}
-
-/* ==================== الفورم ==================== */
-.trainer-form {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-group {
-  margin-bottom: 22px;
-  display: flex;
-  flex-direction: column;
-}
-
-.input-group label {
-  font-size: 13.5px;
-  margin-bottom: 8px;
-  color: var(--slate-500);
-  font-weight: 600;
-}
-
-.input-with-icon {
+.trainer-auth-story {
   position: relative;
   display: flex;
-  align-items: center;
-}
-
-.input-with-icon input {
-  width: 100%;
-  padding: 14px 42px 14px 16px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: var(--blue-tint);
-  font-size: 15px;
-  color: var(--ink-900);
-  font-family: inherit;
-  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.input-with-icon input::placeholder {
-  color: #9aa5c3;
-}
-
-.input-with-icon input:focus {
-  outline: none;
-  background: #ffffff;
-  border-color: var(--blue-600);
-  box-shadow: 0 0 0 3px rgba(0, 86, 210, 0.14);
-}
-
-.input-icon {
-  position: absolute;
-  right: 14px;
-  display: flex;
-  align-items: center;
-  color: var(--slate-400);
-  pointer-events: none;
-}
-
-.forgot-password {
-  align-self: flex-end;
-  font-size: 13px;
-  color: var(--blue-600);
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-.forgot-password:hover {
-  text-decoration: underline;
-}
-
-/* ==================== الأزرار ==================== */
-.btn-trainer-login {
-  width: 100%;
-  padding: 15px;
-  background: var(--navy-950);
+  min-height: 100vh;
+  flex-direction: column;
+  padding: 42px 54px 38px;
+  overflow: hidden;
   color: #fff;
-  border: none;
-  border-radius: 14px;
-  font-size: 15.5px;
-  font-weight: 700;
-  margin-top: 10px;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  isolation: isolate;
+  background: var(--ta-deep);
 }
 
-.btn-trainer-login:hover {
-  background: var(--blue-700);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0, 18, 51, 0.3);
-}
-
-.btn-trainer-login:active {
-  transform: translateY(0);
-}
-
-.divider {
-  text-align: center;
-  margin: 26px 0 20px;
-  color: var(--slate-500);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  position: relative;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
+.trainer-auth-story::before {
   position: absolute;
-  top: 50%;
-  width: 26%;
-  height: 1px;
-  background: var(--line);
+  z-index: -2;
+  inset: 0;
+  background-image: var(--trainer-hero);
+  background-position: center;
+  background-size: cover;
+  content: '';
 }
 
-.divider::before { left: 0; }
-.divider::after { right: 0; }
-
-.btn-google {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  color: var(--ink-900);
-  font-size: 14.5px;
-  font-weight: 600;
-  padding: 13px;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+.trainer-auth-story::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(4,51,74,.72), rgba(3,53,77,.8) 44%, rgba(3,51,75,.97));
+  content: '';
 }
 
-.btn-google:hover {
-  background: var(--blue-tint);
-  border-color: var(--blue-600);
-  transform: translateY(-1px);
+.trainer-auth-brand { align-self: flex-start; padding: 0; color: #fff; background: transparent; border: 0; cursor: pointer; }
+.trainer-auth-portal-badge { display: inline-flex; width: fit-content; align-items: center; margin-top: 70px; padding: 10px 16px; gap: 10px; color: var(--ta-ink); background: #eaf7fc; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+.trainer-auth-portal-badge span,
+.trainer-auth-heading-badge span,
+.trainer-auth-benefits i,
+.trainer-auth-secure span { display: inline-block; width: 9px; height: 9px; flex: 0 0 9px; background: var(--ta-cyan); border-radius: 50%; }
+.trainer-auth-story-copy { margin-top: auto; }
+.trainer-auth-story-copy h1 { margin: 0 0 20px; font-size: clamp(34px, 3.1vw, 52px); line-height: 1.17; letter-spacing: -.8px; }
+.trainer-auth-story-copy p { max-width: 510px; margin: 0; color: rgba(255,255,255,.82); font-size: 16px; line-height: 1.9; }
+.trainer-auth-benefits { display: flex; margin-top: 54px; padding-top: 24px; gap: 34px; border-top: 1px solid rgba(255,255,255,.2); }
+.trainer-auth-benefits span { display: inline-flex; align-items: center; gap: 10px; color: rgba(255,255,255,.78); font-size: 12px; white-space: nowrap; }
+.trainer-auth-benefits i { width: 8px; height: 8px; flex-basis: 8px; }
+.trainer-auth-story > small { margin-top: 72px; color: rgba(255,255,255,.36); font-size: 10px; }
+
+.trainer-auth-panel { position: relative; min-height: 100vh; padding: 32px 48px 38px; background: #f8fafc; }
+.trainer-auth-student-link { display: flex; align-items: center; justify-content: flex-end; gap: 18px; color: var(--ta-muted); font-size: 12px; }
+.trainer-auth-student-link button { padding: 11px 15px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 10px; cursor: pointer; font: inherit; font-weight: 800; }
+.trainer-auth-content { width: min(100%, 500px); margin: 95px auto 0; }
+.trainer-auth-heading-badge { display: flex; align-items: center; margin-bottom: 32px; padding: 14px 16px; gap: 12px; background: var(--ta-soft); border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .8px; }
+.trainer-auth-heading-badge span { width: 12px; height: 12px; flex-basis: 12px; }
+.trainer-auth-content h2 { margin: 0 0 8px; color: var(--ta-ink); font-size: clamp(36px, 3vw, 48px); line-height: 1.1; letter-spacing: -1px; }
+.trainer-auth-lead { margin: 0 0 40px; color: var(--ta-muted); font-size: 15px; }
+.trainer-auth-form { display: flex; flex-direction: column; }
+.trainer-auth-form > label,
+.trainer-auth-password-label label { margin-bottom: 10px; color: var(--ta-ink); font-size: 13px; font-weight: 800; }
+.trainer-auth-password-label { display: flex; align-items: center; justify-content: space-between; margin-top: 26px; }
+.trainer-auth-password-label label { margin: 0; }
+.trainer-auth-password-label button { padding: 0; color: #008ed0; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
+.trainer-auth-input { position: relative; display: flex; align-items: center; }
+.trainer-auth-input > svg { position: absolute; left: 20px; z-index: 1; color: #70879a; font-size: 22px; }
+.trainer-auth-input input { width: 100%; height: 64px; padding: 0 58px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 13px; outline: none; font: inherit; font-size: 15px; transition: border-color .18s ease, box-shadow .18s ease; }
+.trainer-auth-input input::placeholder { color: #9aacbc; }
+.trainer-auth-input input:focus { border-color: var(--ta-cyan); box-shadow: 0 0 0 4px rgba(23,174,226,.12); }
+.trainer-auth-password-toggle { position: absolute; right: 18px; display: grid; padding: 5px; place-items: center; color: #71889a; background: transparent; border: 0; cursor: pointer; font-size: 22px; }
+.trainer-auth-remember { display: inline-flex; width: fit-content; align-items: center; margin-top: 22px; gap: 10px; color: var(--ta-muted) !important; cursor: pointer; font-size: 12px !important; font-weight: 500 !important; }
+.trainer-auth-remember input { position: absolute; opacity: 0; pointer-events: none; }
+.trainer-auth-remember > span { display: grid; width: 19px; height: 19px; place-items: center; color: #fff; background: #fff; border: 1px solid var(--ta-border); border-radius: 5px; }
+.trainer-auth-remember input:checked + span { background: var(--ta-cyan); border-color: var(--ta-cyan); }
+.trainer-auth-error { margin: 14px 0 0; padding: 10px 12px; color: #a83838; background: #fff1f1; border-radius: 8px; font-size: 12px; line-height: 1.45; }
+.trainer-auth-submit { display: flex; width: 100%; height: 63px; align-items: center; justify-content: center; margin-top: 34px; padding: 0 24px; gap: 16px; color: #fff; background: var(--ta-navy); border: 0; border-radius: 13px; cursor: pointer; font: inherit; font-size: 15px; font-weight: 800; transition: background .18s ease, transform .18s ease; }
+.trainer-auth-submit svg { margin-left: auto; color: #2ec4f3; font-size: 22px; }
+.trainer-auth-submit:hover { background: #063b53; transform: translateY(-1px); }
+.trainer-auth-divider { display: flex; align-items: center; margin: 46px 0 32px; gap: 18px; color: #91a2b1; font-size: 10px; font-weight: 800; }
+.trainer-auth-divider::before, .trainer-auth-divider::after { height: 1px; flex: 1; background: #dae4ea; content: ''; }
+.trainer-auth-google { display: flex; width: 100%; height: 60px; align-items: center; justify-content: center; gap: 16px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 13px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; }
+.trainer-auth-google:hover, .trainer-auth-student-link button:hover { border-color: var(--ta-cyan); }
+.trainer-auth-apply { display: flex; align-items: center; justify-content: space-between; margin-top: 46px; padding: 20px 24px; gap: 20px; background: #eff8fb; border-radius: 13px; }
+.trainer-auth-apply div { display: flex; flex-direction: column; gap: 8px; }
+.trainer-auth-apply strong { font-size: 12px; }
+.trainer-auth-apply span { color: var(--ta-muted); font-size: 11px; }
+.trainer-auth-apply button { display: inline-flex; align-items: center; padding: 6px 0; gap: 6px; color: #008ed0; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.trainer-auth-secure { display: flex; align-items: center; justify-content: center; margin-top: 57px; gap: 9px; color: #9aacbc; font-size: 9px; }
+.trainer-auth-secure span { width: 7px; height: 7px; flex-basis: 7px; background: #2bb273; }
+.trainer-auth-legal { display: flex; align-items: center; justify-content: center; margin-top: 28px; color: #9aacbc; font-size: 9px; }
+.trainer-auth-legal button { padding: 3px 5px; color: inherit; background: transparent; border: 0; cursor: pointer; font: inherit; }
+
+@media (max-width: 1000px) {
+  .trainer-auth-shell { grid-template-columns: minmax(330px, .75fr) minmax(500px, 1.25fr); }
+  .trainer-auth-story { padding-inline: 36px; }
+  .trainer-auth-benefits { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .trainer-auth-content { margin-top: 60px; }
 }
 
-.trainer-footer-text {
-  text-align: center;
-  margin-top: 26px;
-  font-size: 13.5px;
-  color: var(--slate-500);
+@media (max-width: 760px) {
+  .trainer-auth-shell { display: block; background: #f8fafc; }
+  .trainer-auth-story { min-height: 270px; padding: 28px 24px; }
+  .trainer-auth-portal-badge { margin-top: 36px; }
+  .trainer-auth-story-copy { margin-top: 45px; }
+  .trainer-auth-story-copy h1 { margin-bottom: 0; font-size: 30px; }
+  .trainer-auth-story-copy p, .trainer-auth-benefits, .trainer-auth-story > small { display: none; }
+  .trainer-auth-panel { min-height: auto; padding: 22px 20px 42px; }
+  .trainer-auth-content { margin-top: 46px; }
 }
 
-.trainer-footer-text a {
-  color: var(--blue-600);
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
+@media (max-width: 480px) {
+  .trainer-auth-student-link span { display: none; }
+  .trainer-auth-heading-badge { margin-bottom: 24px; }
+  .trainer-auth-content h2 { font-size: 36px; }
+  .trainer-auth-input input { height: 58px; }
+  .trainer-auth-apply { align-items: flex-start; flex-direction: column; }
 }
 
-.trainer-footer-text a:hover {
-  text-decoration: underline;
-}
-
-/* ==================== احترام تفضيل تقليل الحركة ==================== */
 @media (prefers-reduced-motion: reduce) {
-  .trainer-login-page,
-  .trainer-bg-radar,
-  .trainer-bg-ring,
-  .trainer-bg-dot,
-  .trainer-login-card,
-  .compass-wordmark-spin .compass-wordmark-needle {
-    animation: none !important;
-  }
-}
-
-/* ==================== استجابة الشاشات ==================== */
-@media (max-width: 520px) {
-  .trainer-login-card {
-    padding: 34px 26px 28px;
-    border-radius: 22px;
-  }
-
-  .trainer-bg-ring {
-    width: 420px;
-    height: 420px;
-  }
-
-  .trainer-bg-radar {
-    width: 600px;
-    height: 600px;
-  }
+  .trainer-auth-shell *, .trainer-auth-shell *::before, .trainer-auth-shell *::after { scroll-behavior: auto !important; transition: none !important; }
 }

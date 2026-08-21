@@ -1,386 +1,441 @@
-import { useState, useRef } from "react";
-import "./HomePage.css";
-import heroImg from "./assets/heroo.png";
-import CompassWordmark from "./CompassWordmark";
+import { useState } from "react";
+import { ArrowRight, Check, Menu, Star, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import CompassWordmark from "./CompassWordmark";
 import { coursesData } from "./coursesData";
+import heroImg from "./assets/hero.jpg";
+import mentorAhmad from "./assets/mentor-ahmad-khalil.jpg";
+import mentorSara from "./assets/mentor-sara-youssef.jpg";
+import studentMaha from "./assets/student-maha.jpg";
+import studentAnas from "./assets/student-anas.jpg";
+import studentNoor from "./assets/student-noor.jpg";
+import "./HomePage.css";
+const NAV_LINKS = [
+  ["home", "Home"],
+  ["programs", "Programs"],
+  ["paths", "Learning paths"],
+  ["projects", "Projects"],
+  ["mentors", "Mentors"],
+  ["about", "About"],
+];
 
-const getInitials = (category) => {
-  return category
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-};
+const HERO_BENEFITS = ["Free student access", "Practical learning paths", "Mentor feedback"];
 
-const testimonials = [
+/* ============================================
+   PRINCIPLES STRIP
+   [number, title, subtitle]
+   ============================================ */
+const PRINCIPLES = [
+  ["01", "Learn", "Structured courses"],
+  ["02", "Build", "Portfolio projects"],
+  ["03", "Connect", "Mentor guidance"],
+  ["04", "Compete", "Skill challenges"],
+];
+
+/* ============================================
+   JOURNEY SECTION — 4 learning steps
+   [number, title, description]
+   ============================================ */
+const JOURNEY_STEPS = [
+  ["01", "Choose a path", "Start with a clear goal and structured plan."],
+  ["02", "Learn by doing", "Practice through lessons, tasks and feedback."],
+  ["03", "Build a project", "Create a portfolio-ready practical outcome."],
+  ["04", "Earn recognition", "Showcase progress through certificates and challenges."],
+];
+
+/* ============================================
+   PROJECTS BANNER — mini gallery preview
+   [projectName, techStack, badgeLabel]
+   ============================================ */
+const FEATURED_PROJECTS = [
+  ["Campus Services Portal", "React · Node.js · PostgreSQL", "Featured"],
+  ["Student Wellbeing App", "Research · UI/UX · Prototype", "New"],
+  ["Academic Support Assistant", "Python · NLP · API", "Top rated"],
+];
+
+/* ============================================
+   MENTORS SECTION
+   [image, name, role, specialty, bio]
+   ============================================ */
+const MENTORS = [
+  [
+    mentorAhmad,
+    "Eng. Ahmad Khalil",
+    "Senior Software Architect",
+    "Software Engineering",
+    "8+ years in product architecture and technical mentorship.",
+  ],
+  [
+    mentorSara,
+    "Eng. Sara Youssef",
+    "Mobile Engineering Lead",
+    "Flutter & Product Delivery",
+    "Practical guidance for building reliable, user-focused products.",
+  ],
+];
+
+/* ============================================
+   STUDENT TESTIMONIALS
+   ============================================ */
+const TESTIMONIALS = [
   {
-    name: "أنس أ.",
-    initials: "أ",
     quote:
-      "لقد أعادت Compass بناء ثقتي بنفسي وأظهرت لي أنه يمكنني أن أحلم بما هو أكبر. لم يكن الأمر يتعلق فقط باكتساب المعرفة - بل كان الأمر يتعلق بالإيمان بإمكانياتي، وشغفي في كل مرة أشارك فيها بمسابقة يتجدد ليتنافس أنا وزملائي منافسة شريفة وممتعة مرة أخرى.",
+      "The clear path helped me stop jumping between random tutorials. I finally knew what to learn next and why.",
+    name: "Maha K.",
+    role: "Computer Science student",
+    image: studentMaha,
   },
   {
-    name: "عبدالله م.",
-    initials: "ع",
-    quote:
-      "أشعر الآن بأنني أكثر استعدادًا لتولي أدوار قيادية، وقد بدأت بالفعل في توجيه بعض زملائي بفضل ما تعلمته من المرشد الأكاديمي على المنصة.",
+    quote: "Instructor feedback made the biggest difference. I could see what was weak and how to improve it.",
+    name: "Anas A.",
+    role: "Software Engineering student",
+    image: studentAnas,
   },
   {
-    name: "نور س.",
-    initials: "ن",
     quote:
-      "الفرق الحقيقي كان بالمتابعة الشخصية. كل ما واجهت مشكلة بمشروعي، كان في مرشد يرد عليّ ويوجّهني خطوة بخطوة، مش بس محتوى مسجّل بنشاهده لحالنا.",
-  },
-  {
-    name: "سارة و.",
-    initials: "س",
-    quote:
-      "التقييم الصادق يلي بيعطيكي إياه المرشد بعد كل مشروع غيّر طريقة شغلي بالكامل. صرت بعرف نقاط ضعفي فعليًا وكيف أطورها، مش بس علامة بدون تفسير.",
+      "Competitions made learning practical. Working with a team pushed me to communicate and finish what I started.",
+    name: "Noor S.",
+    role: "Information Technology student",
+    image: studentNoor,
   },
 ];
 
-const Homepage = () => {
+/* ============================================
+   STATS STRIP (bottom of testimonials section)
+   [value, label]
+   ============================================ */
+const PLATFORM_STATS = [
+  ["80+", "Learning opportunities"],
+  ["23+", "Expert instructors"],
+  ["4", "Ways to build experience"],
+  ["1", "Focused student journey"],
+];
+
+function Homepage() {
   const navigate = useNavigate();
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [showAllCourses, setShowAllCourses] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const heroRef = useRef(null);
-  const coursesRef = useRef(null);
-  const resultsRef = useRef(null);
-  const testimonialsRef = useRef(null);
-  const statsRef = useRef(null);
-
-  const displayedCourses = showAllCourses ? coursesData : coursesData.slice(0, 6);
-
-  const scrollToSection = (ref) => {
+  /** Closes the mobile menu (if open) and smooth-scrolls to a section by id. */
+  const goTo = (sectionId) => {
     setMobileMenuOpen(false);
-    if (selectedCourse) {
-      setSelectedCourse(null);
-      setTimeout(() => {
-        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
-    } else {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
-
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleBack = () => setSelectedCourse(null);
 
   return (
-    <div className="page-wrapper">
-      {/* شريط التنقل */}
-      <nav className="navbar">
-        <div className="nav-div">
-          <div className="logo" onClick={() => scrollToSection(heroRef)} style={{ cursor: "pointer" }}>
-            <CompassWordmark size={21} />
-          </div>
+    <div className="home-page">
+      {/* ============================================
+          HEADER
+          ============================================ */}
+      <header className="home-header">
+        <div className="home-container header-inner">
+          <button
+            type="button"
+            className="brand-button"
+            onClick={() => goTo("home")}
+            aria-label="Compass Academy home"
+          >
+            <CompassWordmark size={20} navy="#082d47" academyColor="#24b8ec" />
+          </button>
 
-          <ul className={`nav-links ${mobileMenuOpen ? "mobile-open" : ""}`}>
-            <li onClick={() => scrollToSection(heroRef)}>Home</li>
-            <li onClick={() => scrollToSection(coursesRef)}>Programs</li>
-            <li onClick={() => scrollToSection(resultsRef)}>Learning Paths</li>
-            <li onClick={() => scrollToSection(testimonialsRef)}>Instructors</li>
-            <li onClick={() => navigate("/login")}>Pricing</li>
-          </ul>
+          <nav className={`main-nav ${mobileMenuOpen ? "is-open" : ""}`} aria-label="Main navigation">
+            {NAV_LINKS.map(([key, label]) => (
+              <button type="button" key={key} onClick={() => goTo(key)}>
+                {label}
+              </button>
+            ))}
+          </nav>
 
-          <div className="nav-btns">
-            <span className="login" onClick={() => navigate("/login")} style={{ cursor: "pointer" }}>
-              Login
-            </span>
-            <button className="get-started" onClick={() => navigate("/login")}>
-              Get Started
+          <div className="header-actions">
+            <button className="button button-outline compact" onClick={() => navigate("/trainer-login")}>
+              Trainer portal
+            </button>
+            <button className="button button-primary compact" onClick={() => navigate("/login")}>
+              Student login
             </button>
             <button
-              className={`nav-hamburger ${mobileMenuOpen ? "open" : ""}`}
+              className="menu-button"
               onClick={() => setMobileMenuOpen((open) => !open)}
               aria-label="Toggle menu"
-              aria-expanded={mobileMenuOpen}
             >
-              <span></span>
-              <span></span>
-              <span></span>
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      <div className="landing-page">
-        {/* القسم الرئيسي */}
-        {!selectedCourse && (
-          <section className="hero" ref={heroRef}>
-            <div className="hero-content">
-              <div className="bearing-tag">
-                <span className="bearing-tag-deg">N 45°</span>
-                Future-Ready Engineering Platform
-              </div>
-
+      <main>
+        {/* ============================================
+            HERO SECTION
+            ============================================ */}
+        <section className="hero-section" id="home">
+          <div className="home-container hero-grid">
+            <div className="hero-copy">
+              <span className="eyebrow pill">● Built for Al-Azhar students</span>
               <h1>
-                Navigate Your Future With{" "}
-                <span className="highlight">Skills That Matter</span>
+                Find your direction.
+                <br />
+                Build what comes next.
               </h1>
-
-              <p>
-                Master AI, technology, business, and future skills through
-                structured learning paths, practical projects, certifications, and
-                expert mentorship.
+              <p className="lead">
+                A focused learning platform that connects university study with practical courses,
+                projects, competitions and mentorship.
               </p>
 
-              <div className="buttons">
-                <button className="btn-primary" onClick={() => navigate("/login")}>
-                  Start Learning Free
+              <div className="hero-actions">
+                <button className="button button-primary" onClick={() => navigate("/login")}>
+                  Start learning free
                 </button>
-                <button className="btn-secondary" onClick={() => navigate("/trainer-login")}>
-                  Be a Coach
+                <button className="button button-outline" onClick={() => goTo("programs")}>
+                  Explore programs
                 </button>
               </div>
 
-              <div className="features">
-                <div className="features-column">
-                  <span>Accredited Certificates</span>
-                  <span>Expert instructors</span>
-                </div>
-                <div className="features-column">
-                  <span>AI-powered learning</span>
-                  <span>Career-focused curriculum</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="hero-image-wrap">
-              <div className="hero-image">
-                <img src={heroImg} alt="Compass" />
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* قسم الكورسات */}
-        <section className="courses-section" ref={coursesRef}>
-          {selectedCourse ? (
-            <div className="hp-course-details">
-              <button className="hp-back-button" onClick={handleBack}>
-                ‹ Back to Courses
-              </button>
-
-              <div className="hp-details-card">
-                <div className="hp-details-header">
-                  <div className="hp-avatar large">{getInitials(selectedCourse.category)}</div>
-
-                  <div className="hp-details-info">
-                    <span className="hp-level">{selectedCourse.level}</span>
-                    <p className="hp-category">{selectedCourse.category}</p>
-                    <h2 className="hp-details-title">{selectedCourse.title}</h2>
-
-                    <div className="hp-details-meta">
-                      <span>⏱ {selectedCourse.duration}</span>
-                      <span>📚 {selectedCourse.lessons} Lessons</span>
-                      <span>
-                        <span className="hp-star">★</span> {selectedCourse.rating} (
-                        {selectedCourse.students} students)
-                      </span>
-                    </div>
-
-                    <div className="hp-instructor">
-                      <span className="hp-instructor-avatar">
-                        {selectedCourse.instructor.split(" ").map((w) => w[0]).join("").slice(0, 2)}
-                      </span>
-                      <span>{selectedCourse.instructor}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="hp-details-body">
-                  <section className="hp-details-section">
-                    <h3>About this course</h3>
-                    <p>{selectedCourse.description}</p>
-                  </section>
-
-                  <section className="hp-details-section">
-                    <h3>What you will learn</h3>
-                    <ul className="hp-details-list">
-                      {selectedCourse.whatYouWillLearn.map((item, i) => (
-                        <li key={i}>
-                          <span className="hp-check-icon">✓</span> {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-
-                  <section className="hp-details-section">
-                    <h3>Requirements</h3>
-                    <ul className="hp-details-list plain">
-                      {selectedCourse.requirements.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </section>
-                </div>
-
-                <div className="hp-enroll-box">
-                  <div className="hp-original-price">
-                    <span className="hp-price-label">Course price</span>
-                    <span className="hp-price-strikethrough">${selectedCourse.price}</span>
-                  </div>
-                  <button className="hp-enroll-free-btn" onClick={() => navigate("/login")}>
-                    🎓 Learn for Free
-                  </button>
-                  <p className="hp-enroll-note">Sign in to enroll — it takes less than a minute</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="courses-header">
-                <span className="section-tag">OUR PROGRAMS</span>
-                <h2>Explore Our Courses</h2>
-                <p>اختاري المسار اللي بيناسب هدفك، وابدأي رحلتك التعليمية بخطوات واضحة.</p>
-              </div>
-
-              <div className="hp-courses-grid">
-                {displayedCourses.map((course) => (
-                  <div key={course.id} className="hp-course-card" onClick={() => handleCourseClick(course)}>
-                    <div className="hp-card-top">
-                      <div className="hp-avatar">{getInitials(course.category)}</div>
-                      <span className="hp-level">{course.level}</span>
-                    </div>
-
-                    <p className="hp-category">{course.category}</p>
-                    <h3 className="hp-title">{course.title}</h3>
-
-                    <div className="hp-meta">
-                      <span>⏱ {course.duration}</span>
-                      <span>📚 {course.lessons} Lessons</span>
-                    </div>
-
-                    <div className="hp-instructor">
-                      <span className="hp-instructor-avatar">
-                        {course.instructor.split(" ").map((w) => w[0]).join("").slice(0, 2)}
-                      </span>
-                      <span>{course.instructor}</span>
-                    </div>
-
-                    <div className="hp-card-footer">
-                      <div className="hp-rating">
-                        <span className="hp-star">★</span>
-                        <span>{course.rating}</span>
-                        <span className="hp-students-count">({course.students})</span>
-                      </div>
-                      <div className="hp-price">${course.price}</div>
-                    </div>
-                  </div>
+              <div className="benefits">
+                {HERO_BENEFITS.map((item) => (
+                  <span key={item}>
+                    <i>
+                      <Check size={11} />
+                    </i>
+                    {item}
+                  </span>
                 ))}
               </div>
 
-              {coursesData.length > 6 && (
-                <div className="hp-view-all-wrap">
-                  <button className="btn-secondary" onClick={() => setShowAllCourses((prev) => !prev)}>
-                    {showAllCourses ? "Show Less" : "View All Courses"}
-                  </button>
+              <div className="independent-note">
+                <strong>Independent student platform</strong>
+                <span>Inspired by academic purpose — built around real student needs.</span>
+              </div>
+            </div>
+
+            <div className="hero-card">
+              <img src={heroImg} alt="Students collaborating around laptops" />
+              <div className="hero-card-caption">
+                <div>
+                  <h2>Learn together. Build with purpose.</h2>
+                  <p>Courses, projects and mentorship in one student journey.</p>
                 </div>
-              )}
-            </>
-          )}
+                <button onClick={() => goTo("paths")} aria-label="View learning journey">
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* بانر النتائج */}
-        {!selectedCourse && (
-          <section className="results-section" ref={resultsRef}>
-            <div className="results-banner">
-              <div className="results-donut" style={{ "--percent": 91 }}>
-                <span className="results-donut-value">91%</span>
+        {/* ============================================
+            PRINCIPLES STRIP
+            ============================================ */}
+        <section className="principles-strip" aria-label="Platform principles">
+          <div className="home-container principles-grid">
+            {PRINCIPLES.map(([number, title, text]) => (
+              <div className="principle" key={number}>
+                <strong>
+                  {number} {title}
+                </strong>
+                <span>{text}</span>
               </div>
-              <div className="results-banner-text">
-                <h2>91% من طلاب Compass Academy حقّقوا نتائج أكاديمية ملموسة</h2>
-                <p>
-                  أبلغوا عن تطوّر واضح في مهاراتهم التقنية، وزيادة حقيقية في
-                  معرفتهم العملية، وتحسّن ملحوظ في أدائهم الدراسي ومشاريعهم
-                  التطبيقية بعد انضمامهم إلى المنصة.
-                </p>
-                <span className="results-link" onClick={() => scrollToSection(testimonialsRef)}>
-                  اعرف المزيد
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M19 12H5M11 6l-6 6 6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </div>
-            </div>
-          </section>
-        )}
+            ))}
+          </div>
+        </section>
 
-        {/* لماذا يختار الطلاب كومباس */}
-        {!selectedCourse && (
-          <section className="testimonials-section" ref={testimonialsRef}>
-            <div className="courses-header">
-              <span className="section-tag">STUDENT VOICES</span>
-              <h2>لماذا يختار الطلاب Compass Academy؟</h2>
-              <p>
-                لأنها ليست مجرد منصة كورسات — بل رحلة تعلّم موجّهة بالكامل.
-                مرشد أكاديمي حقيقي يرافقك من الصفر حتى الاحتراف، يجاوب على
-                أسئلتك، يساعدك تتجاوز عقبات مشروعك، ويمنحك تقييمًا صادقًا
-                وواقعيًا لمستواك في كل مرحلة.
-              </p>
+        {/* ============================================
+            PROGRAMS SECTION (course cards)
+            ============================================ */}
+        <section className="section programs-section" id="programs">
+          <div className="home-container">
+            <div className="section-heading split-heading">
+              <div>
+                <span className="eyebrow">Explore programs</span>
+                <h2>Build skills that move with you</h2>
+                <p>Choose a focused path, learn at your pace, and apply every concept through practical work.</p>
+              </div>
+              <button className="text-link" onClick={() => navigate("/login")}>
+                View all programs <ArrowRight size={14} />
+              </button>
             </div>
 
-            <div className="testimonials-grid">
-              {testimonials.map((t) => (
-                <div className="testimonial-card" key={t.name}>
-                  <div className="testimonial-header">
-                    <span className="testimonial-avatar">{t.initials}</span>
-                    <span className="testimonial-name">{t.name}</span>
+            <div className="course-grid">
+              {coursesData.slice(0, 6).map((course) => (
+                <article className="course-card" key={course.id}>
+                  <img src={course.coverImage} alt="" />
+                  <div className="course-body">
+                    <span className="course-category">{course.category}</span>
+                    <h3>{course.title}</h3>
+                    <p className="course-instructor">{course.instructor}</p>
+                    <div className="course-meta">
+                      <span>{course.level}</span>
+                      <span>{course.duration}</span>
+                      <span>{course.lessons} lessons</span>
+                    </div>
+                    <div className="course-footer">
+                      <span className="rating">
+                        <Star size={13} fill="currentColor" /> {course.rating}
+                      </span>
+                      <button onClick={() => navigate("/login")}>
+                        View course <ArrowRight size={13} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="testimonial-quote">"{t.quote}"</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================
+            JOURNEY SECTION (learning path steps)
+            ============================================ */}
+        <section className="section journey-section" id="paths">
+          <div className="home-container">
+            <div className="section-heading centered">
+              <span className="eyebrow">A complete student journey</span>
+              <h2>From learning a skill to proving it</h2>
+              <p>Every path moves students from theory to visible, practical progress.</p>
+            </div>
+
+            <div className="journey-grid">
+              {JOURNEY_STEPS.map(([number, title, text]) => (
+                <article className="journey-step" key={number}>
+                  <div className="journey-number">{number}</div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================
+            PROJECTS BANNER SECTION
+            ============================================ */}
+        <section className="section projects-section" id="projects">
+          <div className="home-container">
+            <div className="projects-banner">
+              <div className="projects-copy">
+                <span className="eyebrow light">Student projects</span>
+                <h2>
+                  Learning becomes valuable
+                  <br />
+                  when it becomes visible.
+                </h2>
+                <p>Publish practical work, receive instructor feedback, and build a portfolio that reflects real abilities.</p>
+                <button className="button white-button" onClick={() => navigate("/login")}>
+                  Explore student projects
+                </button>
+              </div>
+
+              <div className="gallery-window">
+                <div className="window-bar">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <b>Project Gallery</b>
+                </div>
+                {FEATURED_PROJECTS.map(([name, stack, badge], index) => (
+                  <div className="project-row" key={name}>
+                    <i className={`project-dot dot-${index + 1}`}></i>
+                    <div>
+                      <strong>{name}</strong>
+                      <span>{stack}</span>
+                    </div>
+                    <b>{badge}</b>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================
+            MENTORS SECTION
+            ============================================ */}
+        <section className="section mentors-section" id="mentors">
+          <div className="home-container">
+            <div className="section-heading">
+              <span className="eyebrow">Guidance that feels human</span>
+              <h2>Learn with people who understand the work</h2>
+              <p>Mentors help students move through blockers, improve projects, and make better academic decisions.</p>
+            </div>
+
+            <div className="mentor-grid">
+              {MENTORS.map(([image, name, role, specialty, bio]) => (
+                <article className="mentor-card" key={name}>
+                  <img src={image} alt="" />
+                  <div>
+                    <h3>{name}</h3>
+                    <p>{role}</p>
+                    <span>{specialty}</span>
+                    <small>{bio}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================
+            STUDENT VOICES / TESTIMONIALS + STATS
+            ============================================ */}
+        <section className="section voices-section" id="about">
+          <div className="home-container">
+            <div className="section-heading centered">
+              <span className="eyebrow">Student voices</span>
+              <h2>Real support changes how students learn</h2>
+            </div>
+
+            <div className="testimonial-grid">
+              {TESTIMONIALS.map((item) => (
+                <article className="testimonial-card" key={item.name}>
+                  <span className="quote-mark">"</span>
+                  <p>{item.quote}</p>
+                  <div>
+                    <img src={item.image} alt="" />
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.role}</small>
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="stats-grid">
+              {PLATFORM_STATS.map(([value, label]) => (
+                <div key={label}>
+                  <strong>{value}</strong>
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
+      </main>
 
-        {/* قسم الإحصائيات */}
-        {!selectedCourse && (
-          <section className="stats-section" ref={statsRef}>
-            <div className="stat-card">
-              <span className="bearing-letter">N</span>
-              <h3>3350+</h3>
-              <p>STUDENTS</p>
-              <div className="stat-line"></div>
-            </div>
-            <div className="stat-card">
-              <span className="bearing-letter">E</span>
-              <h3>80+</h3>
-              <p>COURSES</p>
-              <div className="stat-line"></div>
-            </div>
-            <div className="stat-card">
-              <span className="bearing-letter">S</span>
-              <h3>23+</h3>
-              <p>INSTRUCTORS</p>
-              <div className="stat-line"></div>
-            </div>
-            <div className="stat-card">
-              <span className="bearing-letter">W</span>
-              <h3>61%</h3>
-              <p>COMPLETION RATE</p>
-              <div className="stat-line"></div>
-            </div>
-          </section>
-        )}
-      </div>
+      {/* ============================================
+          FOOTER
+          ============================================ */}
+      <footer className="home-page-footer">
+        <div className="home-container footer-grid">
+          <div>
+            <CompassWordmark size={19} navy="#ffffff" academyColor="#24b8ec" />
+            <p>Independent learning platform for Al-Azhar University students.</p>
+          </div>
+          <div>
+            <strong>Platform</strong>
+            <p>Programs · Projects · Competitions · Mentors</p>
+          </div>
+          <div>
+            <strong>Access</strong>
+            <p>Student login · Trainer portal</p>
+          </div>
+        </div>
+        <div className="home-container copyright">© 2026 Compass Academy · Independent student platform</div>
+      </footer>
     </div>
   );
-};
+}
 
 export default Homepage;

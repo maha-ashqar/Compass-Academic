@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from './NotificationsContext';
 import './Notifications.css';
 
@@ -11,14 +12,16 @@ const FILTERS = [
 
 const GROUP_ORDER = ['Today', 'Yesterday', 'Last Week'];
 
-const Notifications = ({ onNavigateTab }) => {
-  const { notifications, markAsRead, markAllRead, unreadCount } = useNotifications();
+const Notifications = ({ onNavigateTab, studentData }) => {
+  const navigate = useNavigate();
+  const { notifications, getStudentNotifications, markAsRead, markAllRead, unreadCount } = useNotifications();
+  const visibleNotifications = getStudentNotifications ? getStudentNotifications(studentData) : notifications;
   const [activeFilter, setActiveFilter] = useState('all');
 
   const filtered = useMemo(() => {
-    if (activeFilter === 'all') return notifications;
-    return notifications.filter((n) => n.category === activeFilter);
-  }, [notifications, activeFilter]);
+    if (activeFilter === 'all') return visibleNotifications;
+    return visibleNotifications.filter((n) => n.category === activeFilter);
+  }, [visibleNotifications, activeFilter]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -31,11 +34,13 @@ const Notifications = ({ onNavigateTab }) => {
 
   const handleAction = (n) => {
     markAsRead(n.id);
-    if (n.actionTab && onNavigateTab) onNavigateTab(n.actionTab);
+    if (n.actionPath) navigate(n.actionPath);
+    else if (n.actionTab && onNavigateTab) onNavigateTab(n.actionTab);
   };
 
   const handleCardClick = (n) => {
     if (!n.read) markAsRead(n.id);
+    if (n.actionPath) navigate(n.actionPath);
   };
 
   return (
