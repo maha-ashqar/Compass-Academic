@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FiArrowLeft, FiCheck, FiFile, FiFileText,
-  FiImage, FiMessageSquare, FiMic, FiPaperclip, FiPlay, FiSearch, FiSend,
+  FiArchive, FiArrowLeft, FiBellOff, FiCheck, FiFile, FiFileText, FiFlag,
+  FiImage, FiMessageSquare, FiMic, FiMoreVertical, FiPaperclip, FiPlay, FiSearch, FiSend,
   FiSquare, FiTrash2, FiUserCheck, FiUserX, FiX,
 } from 'react-icons/fi';
 import { useTrainerMessages } from './TrainerMessagesContext';
@@ -27,6 +27,8 @@ const ACCEPTED_TYPES = [
 ];
 const ACCEPTED_ATTR = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.mp4';
 const ACCEPTED_SET_KEY = 'compass_trainer_accepted_conversations_v1';
+const MUTED_SET_KEY = 'compass_trainer_muted_conversations_v1';
+const ARCHIVED_SET_KEY = 'compass_trainer_archived_conversations_v1';
 
 const AUTO_REPLY_HINTS = [
   'Thank you, I will review it and get back to you.',
@@ -39,9 +41,9 @@ const timeLabel = (value) => new Date(value).toLocaleTimeString('en-US', { hour:
 const sizeLabel = (bytes = 0) => bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 const durationLabel = (seconds = 0) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
-const readAcceptedSet = () => {
+const readIdSet = (key) => {
   try {
-    const stored = JSON.parse(localStorage.getItem(ACCEPTED_SET_KEY));
+    const stored = JSON.parse(localStorage.getItem(key));
     return new Set(Array.isArray(stored) ? stored : []);
   } catch {
     return new Set();
@@ -60,6 +62,8 @@ const isPendingRequest = (conversation, acceptedIds) => {
 };
 
 function Avatar({ contact, size = '' }) {
+  // `size` is appended as a modifier class (e.g. "lg" -> "trainer-chat-avatar lg"),
+  // styled in TrainerMessages.css for the larger contact-info panel avatar.
   return (
     <span className={`trainer-chat-avatar ${size}`}>
       {contact.avatar ? <img src={contact.avatar} alt="" /> : initials(contact.name)}
@@ -216,9 +220,14 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
   const [mobileShowThread, setMobileShowThread] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [mutedIds, setMutedIds] = useState(() => readIdSet(MUTED_SET_KEY));
+  const [archivedIds, setArchivedIds] = useState(() => readIdSet(ARCHIVED_SET_KEY));
 
   const fileRef = useRef(null);
   const threadRef = useRef(null);
+  const searchInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordTimerRef = useRef(null);
@@ -226,6 +235,13 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
   // when recording starts) can always read the latest elapsed time.
   const recordSecondsRef = useRef(0);
   useEffect(() => { recordSecondsRef.current = recordSeconds; }, [recordSeconds]);
+
+  useEffect(() => {
+    try { localStorage.setItem(MUTED_SET_KEY, JSON.stringify([...mutedIds])); } catch { /* ignore */ }
+  }, [mutedIds]);
+  useEffect(() => {
+    try { localStorage.setItem(ARCHIVED_SET_KEY, JSON.stringify([...archivedIds])); } catch { /* ignore */ }
+  }, [archivedIds]);
 
   const selected = conversations.find((c) => c.id === selectedId) || conversations[0];
   const draft = selected ? drafts[selected.id] || '' : '';
@@ -242,7 +258,23 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
 
   if (!selected) return null;
 
-  const selectContact = (id) => { onSelect(id); setAttachments([]); setMobileShowThread(true); };
+  const selectContact = (id) => { onSelect(id); setAttachments([]); setMobileShowThread(true); setShowMenu(false); setShowInfo(false); };
+
+  /** Images/videos sent in this conversation, shown as a grid in the contact-info panel. */
+  const mediaAttachments = useMemo(
+    () => (selected.messages || [])
+      .flatMap((m) => m.attachments || [])
+      .filter((a) => a.type?.startsWith('image/') || a.type?.startsWith('video/')),
+    [selected],
+  );
+
+  /** Non-media attachments (documents, voice notes excluded), shown as a list. */
+  const fileAttachments = useMemo(
+    () => (selected.messages || [])
+      .flatMap((m) => m.attachments || [])
+      .filter((a) => a.kind !== 'voice' && !a.type?.startsWith('image/') && !a.type?.startsWith('video/')),
+    [selected],
+  );
 
   const addFiles = (files) => {
     setError('');
@@ -299,6 +331,48 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
     setRecordSeconds(0);
   };
 
+  // ---------- Thread menu actions ----------
+  const closeMenu = () => setShowMenu(false);
+
+  const handleSearchInThread = () => {
+    closeMenu();
+    setShowInfo(false);
+    searchInputRef.current?.focus();
+  };
+
+  const toggleArchived = () => {
+    closeMenu();
+    setArchivedIds((current) => {
+      const next = new Set(current);
+      next.has(selected.id) ? next.delete(selected.id) : next.add(selected.id);
+      return next;
+    });
+  };
+
+  const toggleMuted = () => {
+    closeMenu();
+    setMutedIds((current) => {
+      const next = new Set(current);
+      next.has(selected.id) ? next.delete(selected.id) : next.add(selected.id);
+      return next;
+    });
+  };
+
+  const handleReportAndBlock = () => {
+    closeMenu();
+    const message = selected.blocked
+      ? `Unblock ${selected.name}?`
+      : `Report and block ${selected.name}? They will no longer be able to message you.`;
+    if (window.confirm(message)) toggleBlock(selected.id);
+  };
+
+  const handleDeleteConversation = () => {
+    closeMenu();
+    if (window.confirm('Delete this conversation? All messages will be removed.')) {
+      clearConversation(selected.id);
+    }
+  };
+
   const submit = (event) => {
     event.preventDefault();
     if (!selected || selected.blocked || pending) return;
@@ -315,15 +389,15 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
 
   return (
     <main className="trainer-chat-page trainer-chat-focus" dir="ltr">
-      <header className="trainer-chat-page-head trainer-chat-inbox-head">
-        <button type="button" className="trainer-chat-back-link" onClick={onBack}><FiArrowLeft /> Student directory</button>
-        <h1>Messages</h1>
-      </header>
+      {/* Top header bar (back link + "Messages" title) intentionally
+          removed so the workspace uses the full available height.
+          `onBack` is still accepted as a prop in case a way back to the
+          directory is reintroduced later (e.g. from the sidebar). */}
 
       <section className="trainer-chat-workspace">
         <aside className={`trainer-chat-inbox ${mobileShowThread ? 'mobile-hidden' : ''}`}>
-          <div className="trainer-chat-inbox-title"><h2>Conversations</h2></div>
-          <label className="trainer-chat-search"><FiSearch /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search conversations" /></label>
+          <div className="trainer-chat-inbox-title"><h2>Messages</h2></div>
+          <label className="trainer-chat-search"><FiSearch /><input ref={searchInputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search conversations" /></label>
           <div className="trainer-chat-filter-tabs">
             <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
             <button className={filter === 'unread' ? 'active' : ''} onClick={() => setFilter('unread')}>Unread</button>
@@ -346,7 +420,7 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
                     <small>{item.course}</small>
                   </span>
                   {itemPending && <b className="trainer-chat-unread pending">New</b>}
-                  {!itemPending && item.unreadCount > 0 && <b className="trainer-chat-unread">{item.unreadCount}</b>}
+                  {!itemPending && item.unreadCount > 0 && !mutedIds.has(item.id) && <b className="trainer-chat-unread">{item.unreadCount}</b>}
                 </button>
               );
             })}
@@ -356,13 +430,39 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
         <section className={`trainer-chat-thread ${mobileShowThread ? '' : 'mobile-hidden'}`}>
           <header className="trainer-chat-thread-header">
             <button type="button" className="trainer-chat-thread-back-mobile" onClick={() => setMobileShowThread(false)}><FiArrowLeft /></button>
-            <Avatar contact={selected} />
-            <div>
-              <h2>{selected.name}</h2>
-              <p>{selected.course} · <span className={selected.status}>{selected.status}</span></p>
-            </div>
+
+            <button type="button" className="trainer-chat-thread-identity" onClick={() => { setShowInfo(true); setShowMenu(false); }}>
+              <Avatar contact={selected} />
+              <div>
+                <h2>{selected.name}</h2>
+                <p>{selected.course} · <span className={selected.status}>{selected.status}</span></p>
+              </div>
+            </button>
+
             <div className="trainer-chat-thread-actions">
-              <button type="button" title="Clear conversation" onClick={() => { if (window.confirm('Clear this conversation?')) clearConversation(selected.id); }}><FiTrash2 /></button>
+              <div className="trainer-chat-thread-menu">
+                <button type="button" title="More options" onClick={() => setShowMenu((v) => !v)}>
+                  <FiMoreVertical />
+                </button>
+                {showMenu && (
+                  <div className="trainer-chat-thread-menu-list">
+                    <button type="button" onClick={handleSearchInThread}><FiSearch /> Search</button>
+                    <button type="button" onClick={toggleArchived}>
+                      <FiArchive /> {archivedIds.has(selected.id) ? 'Unarchive' : 'Archive chat'}
+                    </button>
+                    <button type="button" onClick={toggleMuted}>
+                      <FiBellOff /> {mutedIds.has(selected.id) ? 'Unmute' : 'Mute notifications'}
+                    </button>
+                    <span className="trainer-chat-thread-menu-divider" />
+                    <button type="button" className="danger" onClick={handleReportAndBlock}>
+                      <FiFlag /> {selected.blocked ? 'Unblock' : 'Report & block'}
+                    </button>
+                    <button type="button" className="danger" onClick={handleDeleteConversation}>
+                      <FiTrash2 /> Delete chat
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
@@ -454,6 +554,56 @@ function ConversationWorkspace({ conversations, selectedId, acceptedIds, onSelec
         </section>
       </section>
 
+      {showInfo && (
+        <div className="trainer-chat-info-overlay" onClick={() => setShowInfo(false)}>
+          <aside className="trainer-chat-info-panel" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h3>Contact info</h3>
+              <button type="button" onClick={() => setShowInfo(false)}><FiX /></button>
+            </header>
+
+            <div className="trainer-chat-info-profile">
+              <Avatar contact={selected} size="lg" />
+              <h2>{selected.name}</h2>
+              <p>{selected.course}</p>
+              <button type="button" className="trainer-chat-info-search" onClick={handleSearchInThread}>
+                <FiSearch /> Search
+              </button>
+            </div>
+
+            <div className="trainer-chat-info-section">
+              <h4>Media, links and docs <span>{mediaAttachments.length + fileAttachments.length}</span></h4>
+              {mediaAttachments.length > 0 ? (
+                <div className="trainer-chat-info-media-grid">
+                  {mediaAttachments.map((attachment) => (
+                    <button type="button" key={attachment.id} onClick={() => setPreview(attachment)}>
+                      {attachment.type?.startsWith('video/') ? <FiPlay /> : <FiImage />}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="trainer-chat-info-empty">No shared media yet.</p>
+              )}
+            </div>
+
+            <div className="trainer-chat-info-section">
+              <h4>Shared files</h4>
+              {fileAttachments.length > 0 ? (
+                <div className="trainer-chat-info-files">
+                  {fileAttachments.map((attachment) => (
+                    <button type="button" key={attachment.id} onClick={() => setPreview(attachment)}>
+                      <FiFileText /> <span>{attachment.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="trainer-chat-info-empty">No shared files yet.</p>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
       {preview && (
         <div className="trainer-chat-preview-modal" onClick={() => setPreview(null)}>
           <div onClick={(e) => e.stopPropagation()}>
@@ -471,7 +621,7 @@ export default function TrainerMessages() {
   const { conversations, toggleBlock } = useTrainerMessages();
   const [view, setView] = useState('directory');
   const [selectedId, setSelectedId] = useState(null);
-  const [acceptedIds, setAcceptedIds] = useState(readAcceptedSet);
+  const [acceptedIds, setAcceptedIds] = useState(() => readIdSet(ACCEPTED_SET_KEY));
 
   useEffect(() => {
     try { localStorage.setItem(ACCEPTED_SET_KEY, JSON.stringify([...acceptedIds])); } catch { /* ignore */ }

@@ -7,6 +7,11 @@ import {
   FiVolume2,
 } from 'react-icons/fi';
 import { useSettings } from './SettingsContext';
+import { useCoursesCatalog } from './CoursesCatalogContext';
+import { useTrainerAssignments } from './TrainerAssignmentsContext';
+import { useProjects } from './ProjectsContext';
+import { useCompetitions } from './CompetitionsContext';
+import { useAnnouncements } from './AnnouncementsContext';
 import './TrainerSettings.css';
 
 const PREFS_KEY = 'compass_trainer_notification_preferences';
@@ -87,6 +92,11 @@ export default function TrainerSettings({ trainerData, onLogout, onSelectTab }) 
     darkMode, toggleDarkMode, language, setLanguage, fontSize, setFontSize,
     twoFactorEnabled, toggleTwoFactor, devices = [], removeDevice,
   } = useSettings();
+  const { courses = [] } = useCoursesCatalog();
+  const { assignments = [] } = useTrainerAssignments();
+  const { projects = [] } = useProjects();
+  const competitionApi = useCompetitions();
+  const { announcements = [] } = useAnnouncements();
   const [notifications, setNotifications] = useState(() => readStored(PREFS_KEY, notificationDefaults));
   const [privacy, setPrivacy] = useState(() => readStored(PRIVACY_KEY, privacyDefaults));
   const [password, setPassword] = useState({ current: '', next: '', confirm: '', logoutOthers: true });
@@ -96,6 +106,14 @@ export default function TrainerSettings({ trainerData, onLogout, onSelectTab }) 
 
   const firstName = trainerData?.displayName || trainerData?.fullName || 'Trainer';
   const avatar = trainerData?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(firstName)}`;
+  const competitions = competitionApi?.competitions || competitionApi?.getTrainerCompetitions?.() || [];
+  const trainerCourses = courses.filter((course) =>
+    course.createdByTrainer || course.instructor === trainerData?.displayName
+  );
+  const openAssignments = assignments.filter((assignment) => assignment.status !== 'graded').length;
+  const pendingProjects = projects.filter((project) =>
+    ['submitted', 'pending', 'pending-review', 'resubmitted'].includes(project.status)
+  ).length;
   const sectionTitle = useMemo(() => ({
     password: 'Change password', devices: 'Devices & login sessions',
     notifications: 'Notification preferences', privacy: 'Privacy & security',
@@ -210,6 +228,13 @@ export default function TrainerSettings({ trainerData, onLogout, onSelectTab }) 
         <Row icon={<FiVolume2 />} label="Manage announcements" value="Published, scheduled, archived" onClick={() => openDashboardTab('Announcements', '/trainer-dashboard/announcements')} />
         <Row icon={<FiBell />} label="Notification preferences" onClick={() => go('/trainer-dashboard/settings/notifications')} />
         <Row icon={<FiMail />} label="Email notifications" toggle checked={notifications.email} onToggle={(value) => saveObject(PREFS_KEY, { ...notifications, email: value }, setNotifications)} />
+      </Group>
+      <Group title="Teaching management">
+        <Row icon={<FiVolume2 />} label="Courses: add, edit, archive or delete" value={`${trainerCourses.length} courses`} onClick={() => openDashboardTab('Courses', '/trainer-dashboard')} />
+        <Row icon={<FiLock />} label="Assignments and student submissions" value={`${openAssignments} awaiting review`} onClick={() => openDashboardTab('Assignments', '/trainer-dashboard')} />
+        <Row icon={<FiEye />} label="Project review queue" value={`${pendingProjects} pending`} onClick={() => openDashboardTab('Projects', '/trainer-dashboard')} />
+        <Row icon={<FiStar />} label="Competitions management" value={`${competitions.length} competitions`} onClick={() => openDashboardTab('Competitions', '/trainer-dashboard/competitions')} />
+        <Row icon={<FiBell />} label="Guidance and announcement tracking" value={`${announcements.length} announcements`} onClick={() => openDashboardTab('Announcements', '/trainer-dashboard/announcements')} />
       </Group>
       <Group title="Appearance">
         <Row icon={<FiMoon />} label="Dark mode" toggle checked={darkMode} onToggle={toggleDarkMode} />

@@ -1,251 +1,383 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import './ForgotPasswordPage.css';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CompassWordmark from './CompassWordmark';
+import heroImg from './assets/hero.jpg';
+import { MailIcon, LockIcon, CheckIcon } from './AuthIcons';
+import './ForgotPasswordPage.css';
+
+/* ============================================
+   STEP CONTENT FOR THE LEFT VISUAL PANEL
+   Each step of the flow (1–4) shows different
+   copy on the hero image side.
+   ============================================ */
+const VISUAL_CONTENT_BY_STEP = {
+  1: {
+    title: 'Your learning progress\nis always protected.',
+    text: 'Recover your account securely and return to your courses, projects, and academic goals.',
+    points: ['Secure recovery', 'Protected account', 'Student support'],
+  },
+  2: {
+    title: 'Your learning progress\nis always protected.',
+    text: 'Recover your account securely and return to your courses, projects, and academic goals.',
+    points: ['Secure recovery', 'Protected account'],
+  },
+  3: {
+    title: 'Choose a strong password.\nKeep your journey secure.',
+    text: 'A secure password helps protect your courses, projects, certificates, and personal academic information.',
+    points: ['8+ characters', 'Upper & lowercase', 'Number or symbol'],
+  },
+  4: {
+    title: 'You\u2019re ready to continue.\nYour progress is waiting.',
+    text: 'Return securely to your dashboard and continue from exactly where you stopped.',
+    points: [],
+  },
+};
+
+const RESEND_COOLDOWN_SECONDS = 45;
+const DUMMY_CODE = '123456'; // placeholder until a real email/OTP backend is connected
 
 function ForgotPasswordPage() {
-  const [step, setStep] = useState(1); 
+  // step: 1 = enter email, 2 = enter code, 3 = new password, 4 = success
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [countdown, setCountdown] = useState(RESEND_COOLDOWN_SECONDS);
 
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Remembers whether the person arrived from the trainer or student login,
+  // so every "back to sign in" / successful reset sends them to the right place.
   const origin = location.state?.from === 'trainer' ? 'trainer' : 'student';
   const loginPath = origin === 'trainer' ? '/trainer-login' : '/login';
 
-  const DUMMY_CODE = '123456';
+  useEffect(() => {
+    if (step !== 2 || countdown <= 0) return undefined;
 
-  const handleSendCode = (e) => {
-    e.preventDefault();
+    const timer = window.setInterval(() => {
+      setCountdown((seconds) => seconds - 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [step, countdown]);
+
+  const handleSendCode = (event) => {
+    event.preventDefault();
     setError('');
 
-    if (!email) {
-      setError('من فضلك أدخل بريدك الإلكتروني');
+    if (!email.trim()) {
+      setError('Please enter your email address.');
       return;
     }
 
-    setSuccess('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+    setCountdown(RESEND_COOLDOWN_SECONDS);
     setStep(2);
   };
 
-  const handleVerifyCode = (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  const handleResend = () => {
+    if (countdown > 0) return;
+    setCountdown(RESEND_COOLDOWN_SECONDS);
+  };
 
-    if (!code) {
-      setError('من فضلك أدخل رمز التحقق');
+  const handleVerifyCode = (event) => {
+    event.preventDefault();
+    setError('');
+
+    if (!code.trim()) {
+      setError('Please enter the verification code.');
       return;
     }
-
     if (code !== DUMMY_CODE) {
-      setError('رمز التحقق غير صحيح');
+      setError('Incorrect verification code.');
       return;
     }
 
     setStep(3);
   };
 
-  const handleResendCode = () => {
-    setError('');
-    setSuccess('تم إعادة إرسال رمز التحقق');
-  };
-
-  const handleResetPassword = (e) => {
-    e.preventDefault();
+  const handleResetPassword = (event) => {
+    event.preventDefault();
     setError('');
 
+    if (newPassword.length < 8) {
+      setError('Password must contain at least 8 characters.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      setError('كلمتا المرور غير متطابقتين');
+      setError('Passwords do not match.');
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('كلمة المرور يجب ألا تقل عن 6 أحرف');
-      return;
-    }
-
-    navigate(loginPath);
+    setStep(4);
   };
+
+  const passwordScore = [
+    newPassword.length >= 8,
+    /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword),
+    /\d/.test(newPassword),
+    /[^A-Za-z0-9]/.test(newPassword),
+  ].filter(Boolean).length;
+
+  const visualContent = VISUAL_CONTENT_BY_STEP[step];
 
   return (
-    <div className="forgot-password-page">
-      {/* خلفية زخرفية موحّدة مع صفحة تسجيل الدخول */}
-      <div className="fp-bg" aria-hidden="true">
-        <div className="fp-bg-radar"></div>
+    <main className="fp-page">
+      {/* ============================================
+          LEFT — VISUAL / BRAND PANEL
+          ============================================ */}
+      <section className="fp-visual">
+        <img src={heroImg} alt="Students working together" />
+        <div className="fp-visual-overlay" />
 
-        <svg className="fp-bg-ring fp-bg-ring-1" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" />
-          <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.5" />
-          {[...Array(12)].map((_, i) => (
-            <line
-              key={i}
-              x1="100"
-              y1="10"
-              x2="100"
-              y2="22"
-              stroke="currentColor"
-              strokeWidth="2"
-              transform={`rotate(${i * 30} 100 100)`}
-            />
-          ))}
-        </svg>
+        <button className="fp-brand" type="button" onClick={() => navigate('/')}>
+          <CompassWordmark size={30} navy="#ffffff" academyColor="#12a7df" />
+        </button>
 
-        <svg className="fp-bg-ring fp-bg-ring-2" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" fill="none" strokeDasharray="4 8" />
-        </svg>
+        {step === 1 && (
+          <span className="fp-platform-badge">
+            <i />
+            {origin === 'trainer' ? 'Trainer platform' : 'Student platform'}
+          </span>
+        )}
 
-        <span className="fp-bg-dot dot-1"></span>
-        <span className="fp-bg-dot dot-2"></span>
-        <span className="fp-bg-dot dot-3"></span>
-        <span className="fp-bg-dot dot-4"></span>
-        <span className="fp-bg-dot dot-5"></span>
-      </div>
+        <div className="fp-visual-copy">
+          <h1>
+            {visualContent.title.split('\n').map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </h1>
+          <p>{visualContent.text}</p>
+          {visualContent.points.length > 0 && (
+            <div className="fp-visual-points">
+              {visualContent.points.map((point) => (
+                <span key={point}>
+                  <i />
+                  {point}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <small>© 2026 Compass Academy · Independent learning platform</small>
+      </section>
 
-      <div className="forgot-password-card">
-        <div className="fp-card-accent"></div>
-
-        <div
-          className="fp-logo"
-          onClick={() => navigate('/')}
-          style={{ cursor: 'pointer' }}
-        >
-          <CompassWordmark size={24} navy="#000a33" gold="#cca43b" />
+      {/* ============================================
+          RIGHT — MULTI-STEP FORM PANEL
+          ============================================ */}
+      <section className="fp-panel">
+        <div className="fp-top-action">
+          <span>{step === 1 ? 'Remembered your password?' : 'Need help?'}</span>
+          <button type="button" onClick={() => navigate(loginPath)}>
+            {step === 1 ? 'Sign in' : 'Support'}
+          </button>
         </div>
 
-        {/* الخطوة 1: إدخال الإيميل */}
-        {step === 1 && (
-          <>
-            <h1 className="fp-title">Forgot Password?</h1>
-            <p className="fp-subtitle">
-              أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق لاسترجاع حسابك
-            </p>
-
-            <form onSubmit={handleSendCode} className="fp-form">
-              <div className="input-group">
-                <label htmlFor="email">Email Address</label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              {error && <div className="form-error">{error}</div>}
-
-              <button type="submit" className="btn-fp">
-                Send Reset Code
+        <div className={`fp-content fp-step-${step}`}>
+          {/* ---------- STEP 1: Enter email ---------- */}
+          {step === 1 && (
+            <>
+              <button className="fp-back-link" type="button" onClick={() => navigate(loginPath)}>
+                <b>‹</b> Back to sign in
               </button>
-            </form>
-          </>
-        )}
-
-        {/* الخطوة 2: إدخال رمز التحقق */}
-        {step === 2 && (
-          <>
-            <h1 className="fp-title">Enter Verification Code</h1>
-            <p className="fp-subtitle">
-              {success && <span className="fp-success">{success}</span>}
-              <br />
-              أدخل رمز التحقق المرسل إلى <strong>{email}</strong>
-            </p>
-
-            <form onSubmit={handleVerifyCode} className="fp-form">
-              <div className="input-group">
-                <label htmlFor="code">Verification Code</label>
-                <input
-                  id="code"
-                  type="text"
-                  placeholder="------"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  maxLength={6}
-                  className="code-input"
-                  required
-                />
+              <div className="fp-icon">
+                <LockIcon />
               </div>
+              <h2>Forgot your password?</h2>
+              <p className="fp-intro">
+                No problem. Enter the email connected to your account and we'll send you a
+                verification code.
+              </p>
 
-              {error && <div className="form-error">{error}</div>}
+              <form className="fp-form" onSubmit={handleSendCode}>
+                <label htmlFor="fp-email">Email address</label>
+                <div className="fp-input">
+                  <MailIcon />
+                  <input
+                    id="fp-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                </div>
+                {error && <div className="fp-error">{error}</div>}
+                <button className="fp-primary" type="submit">
+                  Send reset code <b>›</b>
+                </button>
+              </form>
 
-              <button type="submit" className="btn-fp">
-                Verify Code
+              <div className="fp-info">
+                <i>i</i>
+                <div>
+                  <strong>What happens next?</strong>
+                  <span>We'll email a 6-digit verification code.</span>
+                  <span>For security, the code expires after 15 minutes.</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ---------- STEP 2: Enter verification code ---------- */}
+          {step === 2 && (
+            <>
+              <div className="fp-icon fp-mail-success">
+                <MailIcon />
+                <i>
+                  <CheckIcon />
+                </i>
+              </div>
+              <h2>Enter verification code</h2>
+              <p className="fp-intro fp-email-sent">
+                We sent a 6-digit code to
+                <br />
+                <strong>{email}</strong>
+              </p>
+
+              <form className="fp-form" onSubmit={handleVerifyCode}>
+                <label htmlFor="fp-code">Verification code</label>
+                <div className="fp-input">
+                  <LockIcon />
+                  <input
+                    id="fp-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="------"
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    required
+                  />
+                </div>
+                {error && <div className="fp-error">{error}</div>}
+                <button className="fp-primary" type="submit">
+                  Verify code <b>›</b>
+                </button>
+              </form>
+
+              <div className="fp-resend">
+                <span>Didn't receive the code?</span>
+                <button type="button" disabled={countdown > 0} onClick={handleResend}>
+                  {countdown > 0 ? `Resend code in 00:${String(countdown).padStart(2, '0')}` : 'Resend code'}
+                </button>
+              </div>
+              <button className="fp-bottom-link" type="button" onClick={() => navigate(loginPath)}>
+                ← Back to sign in
               </button>
+            </>
+          )}
 
-              <span className="resend-code" onClick={handleResendCode}>
-                لم يصلك الرمز؟ إعادة الإرسال
-              </span>
-            </form>
-          </>
-        )}
-
-        {/* الخطوة 3: تعيين كلمة مرور جديدة */}
-        {step === 3 && (
-          <>
-            <h1 className="fp-title">Reset Password</h1>
-            <p className="fp-subtitle">
-              أدخل كلمة المرور الجديدة الخاصة بحسابك
-            </p>
-
-            <form onSubmit={handleResetPassword} className="fp-form">
-              <div className="input-group">
-                <label htmlFor="newPassword">New Password</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
+          {/* ---------- STEP 3: Set new password ---------- */}
+          {step === 3 && (
+            <>
+              <div className="fp-icon">
+                <LockIcon />
               </div>
+              <h2>Create a new password</h2>
+              <p className="fp-intro">Choose a password you haven't used before.</p>
 
-              <div className="input-group">
-                <label htmlFor="confirmPassword">Confirm New Password</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-                {confirmPassword.length > 0 && (
-                  <span
-                    className={`match-hint ${
-                      newPassword === confirmPassword ? 'match-ok' : 'match-bad'
-                    }`}
-                  >
-                    {newPassword === confirmPassword
-                      ? '✓ Passwords match'
-                      : '✕ Passwords do not match'}
-                  </span>
-                )}
+              <form className="fp-form fp-password-form" onSubmit={handleResetPassword}>
+                <label htmlFor="new-password">New password</label>
+                <div className="fp-input">
+                  <LockIcon />
+                  <input
+                    id="new-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    required
+                  />
+                  <button type="button" className="fp-eye" onClick={() => setShowPassword((visible) => !visible)}>
+                    ◉
+                  </button>
+                </div>
+                <div className="fp-strength">
+                  <i style={{ width: `${passwordScore * 25}%` }} />
+                </div>
+                <small>{passwordScore >= 3 ? 'Strong password' : 'Use a stronger password'}</small>
+
+                <label htmlFor="confirm-password">Confirm new password</label>
+                <div className="fp-input">
+                  <LockIcon />
+                  <input
+                    id="confirm-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    required
+                  />
+                  {confirmPassword && newPassword === confirmPassword && (
+                    <i className="fp-match">
+                      <CheckIcon />
+                    </i>
+                  )}
+                </div>
+
+                <div className="fp-requirements">
+                  <strong>Password requirements</strong>
+                  <div>
+                    <span className={newPassword.length >= 8 ? 'valid' : ''}>At least 8 characters</span>
+                    <span className={/[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) ? 'valid' : ''}>
+                      Upper and lowercase letters
+                    </span>
+                    <span className={/\d/.test(newPassword) ? 'valid' : ''}>At least one number</span>
+                    <span className={/[^A-Za-z0-9]/.test(newPassword) ? 'valid' : ''}>One symbol recommended</span>
+                  </div>
+                </div>
+                {error && <div className="fp-error">{error}</div>}
+                <button className="fp-primary" type="submit">
+                  Update password <b>›</b>
+                </button>
+                <button className="fp-cancel" type="button" onClick={() => navigate(loginPath)}>
+                  Cancel and return to sign in
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* ---------- STEP 4: Success ---------- */}
+          {step === 4 && (
+            <>
+              <div className="fp-success-icon">
+                <CheckIcon />
               </div>
-
-              {error && <div className="form-error">{error}</div>}
-
-              <button type="submit" className="btn-fp">
-                Reset Password
+              <h2>Password updated</h2>
+              <p className="fp-intro fp-centered">
+                Your new password has been saved successfully.
+                <br />
+                You can now sign in securely to Compass Academy.
+              </p>
+              {/* Returns to whichever login page (trainer or student) this
+                  flow started from — this is the key redirect logic. */}
+              <button className="fp-primary" type="button" onClick={() => navigate(loginPath)}>
+                Return to sign in <b>›</b>
               </button>
-            </form>
-          </>
-        )}
+              <div className="fp-info">
+                <i>
+                  <CheckIcon />
+                </i>
+                <div>
+                  <strong>Account security updated</strong>
+                  <span>All previous codes are now invalid.</span>
+                  <span>You'll receive a confirmation email for your records.</span>
+                </div>
+              </div>
+            </>
+          )}
 
-        <p className="back-to-login">
-          <a onClick={() => navigate(loginPath)} style={{ cursor: 'pointer' }}>
-            ← Back to Login
-          </a>
-        </p>
-      </div>
-    </div>
+          <div className="fp-secure">
+            <i />
+            {step === 4 ? 'Password changed securely' : 'Secure recovery · Your account data remains protected'}
+          </div>
+          <div className="fp-legal">Privacy Policy · Terms of Use · Help Center</div>
+        </div>
+      </section>
+    </main>
   );
 }
 
