@@ -1,15 +1,3 @@
-/* ============================================================
-   COMPASS ACADEMY — TRAINER MESSAGES
-   Full visual redesign. Class names are unchanged from the
-   previous stylesheet (so TrainerMessages.jsx needs no edits),
-   but every value has been reworked for a more polished,
-   professional look: consistent elevation/shadow scale, a
-   pill-based control language, refined chat bubbles, and a
-   calmer directory list. Brand tokens (--dashboard-*) are still
-   inherited with the same fallbacks, so this automatically
-   matches whatever navy/blue/cyan is set on TrainerDashboard.css.
-   ============================================================ */
-
 .trainer-chat-page {
   --navy: var(--dashboard-navy, #082d47);
   --blue: var(--dashboard-blue, #0f8fd1);

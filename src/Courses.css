@@ -1,9 +1,16 @@
-.c-teal:#07516e; --cc-blue:#0798df;
-  --cc-muted:#70869b; --cc-linecourses-catalog-page {
-  --cc-navy:#0b2947; --c:#d8e5ec; --cc-bg:#f5faff;
-  min-height:calc(100vh - 88px); padding:32px 45px 54px;
-  color:var(--cc-navy); background:var(--cc-bg);
-  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+.courses-catalog-page {
+  --cc-navy: #0b2947;
+  --cc-blue: #0798df;
+  --cc-teal: #07516e;
+  --cc-muted: #70869b;
+  --cc-line: #d8e5ec;
+  --cc-bg: #f5faff;
+
+  min-height: calc(100vh - 88px);
+  padding: 32px 45px 54px;
+  color: var(--cc-navy);
+  background: var(--cc-bg);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
 }
 .courses-catalog-page *{box-sizing:border-box}
 .courses-catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:25px}
