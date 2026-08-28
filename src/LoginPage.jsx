@@ -5,17 +5,51 @@ import heroImg from './assets/hero.jpg';
 import { MailIcon, LockIcon, EyeIcon, EyeOffIcon, GoogleIcon } from './AuthIcons';
 import './LoginPage.css';
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Simulated network delay so sign-in feels like a real request instead of an
+// instant, jarring redirect. There is no real backend behind this yet.
+const SIMULATED_AUTH_DELAY_MS = 550;
+
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  const completeLogin = (loginEmail) => {
+    setIsSubmitting(true);
+    window.setTimeout(() => {
+      if (onLogin) onLogin(loginEmail);
+      navigate('/student-dashboard');
+    }, SIMULATED_AUTH_DELAY_MS);
+  };
 
   const handleLogin = (event) => {
     event.preventDefault();
-    if (onLogin) onLogin(email);
-    navigate('/student-dashboard');
+    if (isSubmitting) return;
+    setError('');
+
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+    if (!EMAIL_PATTERN.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    completeLogin(email.trim());
+  };
+
+  // FIXED: this button previously had no onClick at all and did nothing.
+  // Mirrors the same (currently backend-less) sign-in flow as the email form.
+  const handleGoogleLogin = () => {
+    if (isSubmitting) return;
+    setError('');
+    completeLogin('google.student@compass.edu.sa');
   };
 
   return (
@@ -33,7 +67,6 @@ function LoginPage({ onLogin }) {
           onClick={() => navigate('/')}
           aria-label="Back to Compass Academy home"
         >
-          {/* was: gold="#12a7df" (invalid prop, had no effect) */}
           <CompassWordmark size={30} navy="#ffffff" academyColor="#12a7df" />
         </button>
 
@@ -61,7 +94,7 @@ function LoginPage({ onLogin }) {
         </div>
 
         <small className="student-login-copyright">
-          © 2026 Compass Academy · Independent student platform
+          © {new Date().getFullYear()} Compass Academy · Independent student platform
         </small>
       </section>
 
@@ -84,7 +117,7 @@ function LoginPage({ onLogin }) {
           <h2>Welcome back</h2>
           <p className="student-login-intro">Enter your details to continue to your dashboard.</p>
 
-          <form className="student-login-form" onSubmit={handleLogin}>
+          <form className="student-login-form" onSubmit={handleLogin} noValidate>
             {/* --- Email field --- */}
             <div className="student-field">
               <label htmlFor="student-email">University email</label>
@@ -94,9 +127,11 @@ function LoginPage({ onLogin }) {
                   id="student-email"
                   type="email"
                   autoComplete="email"
+                  autoFocus
                   placeholder="name@university.edu"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  aria-invalid={Boolean(error)}
                   required
                 />
               </div>
@@ -119,6 +154,7 @@ function LoginPage({ onLogin }) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  aria-invalid={Boolean(error)}
                   required
                 />
                 <button
@@ -143,11 +179,21 @@ function LoginPage({ onLogin }) {
               Remember me on this device
             </label>
 
-            <button type="submit" className="student-submit">
-              Continue to dashboard
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m9 5 7 7-7 7" />
-              </svg>
+            {error && (
+              <div className="student-login-error" role="alert">
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="student-submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Signing in…' : 'Continue to dashboard'}
+              {isSubmitting ? (
+                <span className="student-spinner" aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m9 5 7 7-7 7" />
+                </svg>
+              )}
             </button>
           </form>
 
@@ -155,9 +201,14 @@ function LoginPage({ onLogin }) {
             <span>Or sign in with</span>
           </div>
 
-          <button type="button" className="student-google">
+          <button
+            type="button"
+            className="student-google"
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting}
+          >
             <GoogleIcon />
-            Continue with Google
+            {isSubmitting ? 'Connecting…' : 'Continue with Google'}
           </button>
 
           <div className="student-create-account">

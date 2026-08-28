@@ -124,6 +124,22 @@ function Homepage() {
     });
   };
 
+  /* ============================================
+     FOOTER LINKS — now wired to real actions
+     [label, onClick handler]
+     ============================================ */
+  const FOOTER_PLATFORM_LINKS = [
+    ["Programs", () => goTo("programs")],
+    ["Projects", () => goTo("projects")],
+    ["Competitions", () => navigate("/login")],
+    ["Mentors", () => goTo("mentors")],
+  ];
+
+  const FOOTER_ACCESS_LINKS = [
+    ["Student login", () => navigate("/login")],
+    ["Trainer portal", () => navigate("/trainer-login")],
+  ];
+
   return (
     <div className="home-page">
       {/* ============================================
@@ -416,23 +432,57 @@ function Homepage() {
 
       {/* ============================================
           FOOTER
+          FIXED: "Platform" and "Access" columns were plain
+          <p> text (Programs · Projects · Competitions ·
+          Mentors / Student login · Trainer portal) with no
+          click behavior at all. Now real buttons wired to
+          goTo()/navigate(), matching what the header and
+          nav already do. Copyright year is also computed
+          instead of hardcoded.
           ============================================ */}
       <footer className="home-page-footer">
         <div className="home-container footer-grid">
           <div>
-            <CompassWordmark size={19} navy="#ffffff" academyColor="#24b8ec" />
+            <button
+              type="button"
+              className="footer-brand"
+              onClick={() => goTo("home")}
+              aria-label="Back to top"
+            >
+              <CompassWordmark size={19} navy="#ffffff" academyColor="#24b8ec" />
+            </button>
             <p>Independent learning platform for Al-Azhar University students.</p>
           </div>
           <div>
             <strong>Platform</strong>
-            <p>Programs · Projects · Competitions · Mentors</p>
+            <nav className="footer-links" aria-label="Platform sections">
+              {FOOTER_PLATFORM_LINKS.map(([label, onClick], index) => (
+                <span key={label}>
+                  {index > 0 && <span className="footer-dot" aria-hidden="true">·</span>}
+                  <button type="button" onClick={onClick}>
+                    {label}
+                  </button>
+                </span>
+              ))}
+            </nav>
           </div>
           <div>
             <strong>Access</strong>
-            <p>Student login · Trainer portal</p>
+            <nav className="footer-links" aria-label="Account access">
+              {FOOTER_ACCESS_LINKS.map(([label, onClick], index) => (
+                <span key={label}>
+                  {index > 0 && <span className="footer-dot" aria-hidden="true">·</span>}
+                  <button type="button" onClick={onClick}>
+                    {label}
+                  </button>
+                </span>
+              ))}
+            </nav>
           </div>
         </div>
-        <div className="home-container copyright">© 2026 Compass Academy · Independent student platform</div>
+        <div className="home-container copyright">
+          © {new Date().getFullYear()} Compass Academy · Independent student platform
+        </div>
       </footer>
     </div>
   );

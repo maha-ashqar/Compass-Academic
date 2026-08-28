@@ -1,4 +1,17 @@
 import { useState, useMemo } from 'react';
+import {
+  FiBookmark,
+  FiCheck,
+  FiChevronLeft,
+  FiChevronRight,
+  FiClipboard,
+  FiClock,
+  FiFileText,
+  FiLink,
+  FiLock,
+  FiPlay,
+  FiShare2,
+} from 'react-icons/fi';
 import { useCourses } from './CoursesContext';
 import './CourseLearningPage.css';
 
@@ -93,7 +106,11 @@ const CourseLearningPage = ({ course, onBack }) => {
     <div className="clp-container">
       {/* ===== Breadcrumb + عنوان + تقدم ===== */}
       <div className="clp-breadcrumb">
-        <span className="clp-breadcrumb-link" onClick={onBack}>Courses</span>
+        {/* FIXED: was a <span onClick=...>, not reachable by keyboard or
+            announced as interactive to screen readers. */}
+        <button type="button" className="clp-breadcrumb-link" onClick={onBack}>
+          Courses
+        </button>
         <span className="clp-breadcrumb-sep">›</span>
         <span>{course.title.length > 40 ? course.category : course.title}</span>
       </div>
@@ -118,13 +135,16 @@ const CourseLearningPage = ({ course, onBack }) => {
       {/* ===== التبويبات ===== */}
       <div className="clp-tabs">
         {tabs.map((tab) => (
-          <span
+          // FIXED: was a <span onClick=...> per tab — same accessibility gap
+          // as the breadcrumb above.
+          <button
+            type="button"
             key={tab}
             className={`clp-tab ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
           >
             {tab}
-          </span>
+          </button>
         ))}
       </div>
 
@@ -142,7 +162,7 @@ const CourseLearningPage = ({ course, onBack }) => {
                 <h3>What you will learn</h3>
                 <ul className="clp-check-list">
                   {learningOutcomes.map((item, i) => (
-                    <li key={i}><span className="clp-check">✓</span> {item}</li>
+                    <li key={i}><span className="clp-check"><FiCheck /></span> {item}</li>
                   ))}
                 </ul>
               </section>
@@ -184,16 +204,17 @@ const CourseLearningPage = ({ course, onBack }) => {
                     className={`clp-icon-btn ${isBookmarked(course.id, activeLesson.id) ? 'active' : ''}`}
                     onClick={() => toggleBookmark(course.id, activeLesson.id)}
                     title="Bookmark"
+                    aria-label="Bookmark this lesson"
                   >
-                    🔖
+                    <FiBookmark />
                   </button>
-                  <button className="clp-icon-btn" onClick={handleShare} title="Share">
-                    {copied ? '✓' : '↗'}
+                  <button className="clp-icon-btn" onClick={handleShare} title="Share" aria-label="Share this lesson">
+                    {copied ? <FiCheck /> : <FiShare2 />}
                   </button>
                 </div>
               </div>
 
-              <span className="clp-lesson-duration">⏱ {activeLesson.duration}</span>
+              <span className="clp-lesson-duration"><FiClock /> {activeLesson.duration}</span>
 
               <p className="clp-lesson-content">{activeLesson.content}</p>
 
@@ -223,14 +244,20 @@ const CourseLearningPage = ({ course, onBack }) => {
                   onClick={() => goToLesson(-1)}
                   disabled={activeIndex === 0}
                 >
-                  ‹ Previous
+                  <FiChevronLeft /> Previous
                 </button>
 
                 <button
                   className={`clp-complete-btn ${isLessonComplete(course.id, activeLesson.id) ? 'done' : ''}`}
                   onClick={handleMarkComplete}
                 >
-                  {isLessonComplete(course.id, activeLesson.id) ? '✓ Completed' : 'Mark as Complete'}
+                  {isLessonComplete(course.id, activeLesson.id) ? (
+                    <>
+                      <FiCheck /> Completed
+                    </>
+                  ) : (
+                    'Mark as Complete'
+                  )}
                 </button>
 
                 <button
@@ -238,7 +265,7 @@ const CourseLearningPage = ({ course, onBack }) => {
                   onClick={() => goToLesson(1)}
                   disabled={activeIndex === flatLessons.length - 1 || !isUnlocked(activeIndex + 1)}
                 >
-                  Next ›
+                  Next <FiChevronRight />
                 </button>
               </div>
             </div>
@@ -246,7 +273,7 @@ const CourseLearningPage = ({ course, onBack }) => {
 
           {activeTab === 'Lessons' && !activeLesson && (
             <div className="clp-content-empty">
-              <span className="clp-content-empty-icon">📘</span>
+              <span className="clp-content-empty-icon"><FiFileText /></span>
               <h2>Course content is being prepared</h2>
               <p>This course is enrolled successfully, but no lessons have been published yet.</p>
               <button type="button" onClick={() => setActiveTab('Overview')}>
@@ -286,7 +313,7 @@ const CourseLearningPage = ({ course, onBack }) => {
             <div className="clp-resources">
               {resources.map((r) => (
                 <div key={r.id} className="clp-resource-card">
-                  <span className="clp-resource-icon">{r.type === 'pdf' ? '📄' : '🔗'}</span>
+                  <span className="clp-resource-icon">{r.type === 'pdf' ? <FiFileText /> : <FiLink />}</span>
                   <span className="clp-resource-title">{r.title}</span>
                   <button className="clp-resource-open" onClick={() => window.open(r.url, '_blank')}>
                     Open
@@ -318,7 +345,7 @@ const CourseLearningPage = ({ course, onBack }) => {
                   <div key={mod.id} className="clp-module-block">
                     <div className={`clp-module-title-row ${modComplete ? 'complete' : ''}`}>
                       <span className="clp-module-number">
-                        {modComplete ? '✓' : modIndex + 1}
+                        {modComplete ? <FiCheck /> : modIndex + 1}
                       </span>
                       <span>{mod.title}</span>
                     </div>
@@ -331,16 +358,21 @@ const CourseLearningPage = ({ course, onBack }) => {
                         const current = lesson.id === activeLessonId;
 
                         return (
-                          <div
+                          // FIXED: was a <div onClick=...> — not focusable or
+                          // keyboard-operable. Locked lessons now also expose
+                          // that state via `disabled` instead of only color.
+                          <button
+                            type="button"
                             key={lesson.id}
                             className={`clp-module-lesson ${done ? 'done' : ''} ${current ? 'current' : ''} ${!unlocked ? 'locked' : ''}`}
                             onClick={() => handleSelectLesson(lesson.id, flatIndex)}
+                            disabled={!unlocked}
                           >
                             <span>{lesson.title}</span>
                             <span className="clp-lesson-status-icon">
-                              {done ? '✓' : current ? '▶' : unlocked ? '' : '🔒'}
+                              {done ? <FiCheck /> : current ? <FiPlay /> : unlocked ? '' : <FiLock />}
                             </span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -355,7 +387,7 @@ const CourseLearningPage = ({ course, onBack }) => {
 
           {nextDeadline && (
             <div className="clp-deadline-card">
-              <span className="clp-deadline-label">📋 NEXT DEADLINE</span>
+              <span className="clp-deadline-label"><FiClipboard /> NEXT DEADLINE</span>
               <h4>{nextDeadline.title}</h4>
               <div className="clp-deadline-footer">
                 <span>

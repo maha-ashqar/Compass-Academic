@@ -165,11 +165,24 @@ button, input { font: inherit; }
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+
+.trainer-access button:hover {
+  border-color: var(--login-blue);
+  color: var(--login-blue);
 }
 
 .student-login-content {
   width: min(500px, 100%);
   margin-top: 35px;
+  /* Subtle entrance so the panel doesn't just snap into view. */
+  animation: student-fade-up .45s ease both;
+}
+
+@keyframes student-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .student-signin-label {
@@ -270,6 +283,10 @@ button, input { font: inherit; }
   box-shadow: 0 0 0 3px rgba(7,156,215,.12);
 }
 
+.student-input input[aria-invalid="true"] {
+  border-color: #f0a8a8;
+}
+
 .student-password-toggle {
   position: absolute;
   z-index: 2;
@@ -296,7 +313,7 @@ button, input { font: inherit; }
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 34px;
+  margin: 0 0 26px;
   color: var(--login-muted);
   font-size: 10px;
   cursor: pointer;
@@ -314,12 +331,24 @@ button, input { font: inherit; }
   border: 1px solid #c7d7e0;
   border-radius: 5px;
   background: #fff;
+  transition: border-color .2s, background .2s;
 }
 
 .student-remember input:checked + span {
   border-color: var(--login-blue);
   background: var(--login-blue);
   box-shadow: inset 0 0 0 4px #fff;
+}
+
+/* ---------- Inline error banner (matches signup/forgot-password style) ---------- */
+.student-login-error {
+  margin: 0 0 22px;
+  padding: 11px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  background: #fef2f2;
+  font-size: 11px;
 }
 
 .student-submit {
@@ -333,13 +362,20 @@ button, input { font: inherit; }
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform .2s, background .2s, box-shadow .2s;
+  transition: transform .2s, background .2s, box-shadow .2s, opacity .2s;
 }
 
-.student-submit:hover {
+.student-submit:hover:not(:disabled) {
   transform: translateY(-2px);
   background: #063e56;
   box-shadow: 0 12px 25px rgba(7,74,102,.18);
+}
+
+.student-submit:disabled {
+  opacity: .75;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 
 .student-submit svg {
@@ -351,6 +387,24 @@ button, input { font: inherit; }
   fill: none;
   stroke: #21b9ef;
   stroke-width: 2;
+}
+
+/* ---------- Loading spinner shown on the submit button while "signing in" ---------- */
+.student-spinner {
+  position: absolute;
+  top: 50%;
+  right: 38px;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: student-spin .7s linear infinite;
+}
+
+@keyframes student-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 .student-divider {
@@ -385,6 +439,20 @@ button, input { font: inherit; }
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+  transition: transform .2s, box-shadow .2s, border-color .2s, opacity .2s;
+}
+
+.student-google:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--login-blue);
+  box-shadow: 0 10px 22px rgba(7,156,215,.12);
+}
+
+.student-google:disabled {
+  opacity: .7;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 
 .student-google svg { width: 25px; height: 25px; }
@@ -434,6 +502,14 @@ button, input { font: inherit; }
   color: #94a6b5;
   font-size: 9px;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-login-content { animation: none; }
+  .student-spinner { animation-duration: 1.2s; }
+  .student-submit:hover:not(:disabled),
+  .student-google:hover:not(:disabled),
+  .trainer-access button { transform: none; }
 }
 
 @media (max-width: 1024px) {

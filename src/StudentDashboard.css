@@ -1327,6 +1327,19 @@ a:focus-visible {
 /* =========================================================
    JSX COMPATIBILITY — styles the class names used by the
    current StudentDashboard.jsx without affecting sub-pages.
+
+   NOTE: none of the classnames in this block (.main-header,
+   .stat-box, .progress-card, .deadlines-card,
+   .recommended-section, .welcome-text, etc.) appear anywhere
+   in the current StudentDashboard.jsx — that file uses
+   .student-dashboard-header, .overview-stat, .learning-start-card,
+   .opportunities-card, etc. instead. This block looks like it
+   was left over from an earlier version of the component and
+   may only still matter if one of the imported sub-pages
+   (Assignments.jsx, Achievements.jsx, Settings.jsx, etc.)
+   reuses these class names. Left in place rather than deleted
+   blind — share those files and this can be safely trimmed if
+   nothing references it.
    ========================================================= */
 .main-viewport > .main-header {
   position: sticky; z-index: 35; top: 0; display: flex; min-height: 88px;
@@ -1543,3 +1556,100 @@ a:focus-visible {
   .dashboard-body .learning-path, .dashboard-body .progress-details { grid-template-columns: 1fr; }
   .dashboard-body .progress-actions { flex-direction: column; }
 }
+/* ==================== إضافات: dropdowns الهيدر الجديدة ==================== */
+.dashboard-dropdown-wrapper { position: relative; }
+
+.dashboard-search-results.dashboard-dropdown-right {
+  left: auto;
+  right: 0;
+  width: 340px;
+  min-width: 0;
+}
+
+.dashboard-dropdown-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 10px 14px;
+  border-bottom: 1px solid var(--dashboard-soft-border);
+  margin-bottom: 8px;
+}
+
+.dashboard-dropdown-head h4 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dashboard-navy);
+}
+
+.dashboard-mark-all {
+  color: var(--dashboard-blue);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* FIXED: "View all notifications" changed from a <div onClick> to a real
+   <button> for keyboard accessibility. Buttons default to inline-block, so
+   display/width are set explicitly to keep the same full-width clickable
+   bar the div gave for free. */
+.dashboard-dropdown-foot {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px;
+  margin-top: 6px;
+  border-top: 1px solid var(--dashboard-soft-border);
+  color: var(--dashboard-blue);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dashboard-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dashboard-cyan);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.dashboard-avatar-chip {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  overflow: hidden;
+  background: var(--dashboard-blue-soft);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--dashboard-blue-dark);
+}
+
+.dashboard-avatar-chip img { width: 100%; height: 100%; object-fit: cover; }
+
+.dashboard-danger-item { color: var(--dashboard-red); }
+.dashboard-danger-item svg { color: var(--dashboard-red); }
+.dashboard-danger-item:hover { background: var(--dashboard-red-soft); }
+
+/* شريط تقدّم صغير داخل كارت "Project completion" */
+.overview-stat-bar {
+  display: block;
+  width: 100%;
+  height: 5px;
+  margin-top: 2px;
+  overflow: hidden;
+  background: #e1ebf1;
+  border-radius: 10px;
+}
+
+.overview-stat-bar i {
+  display: block;
+  height: 100%;
+  background: var(--dashboard-blue);
+  border-radius: inherit;
+}
+
+.opportunities-footer { cursor: pointer; }

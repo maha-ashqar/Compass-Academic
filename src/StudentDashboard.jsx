@@ -5,8 +5,8 @@ import {
   FiBookOpen, FiAward, FiFileText,
   FiSearch, FiBell, FiMessageSquare, FiBriefcase, FiTarget,
   FiBarChart2, FiCalendar, FiCode, FiFlag, FiPlay,
-  FiLayers, FiClock, FiStar, FiChevronRight, FiChevronDown, FiPenTool,
-  FiPlus, FiX, FiUser, FiSettings, FiLogOut,
+  FiClock, FiStar, FiChevronRight, FiChevronDown, FiPenTool,
+  FiUser, FiSettings, FiLogOut, FiCheckCircle,
 } from 'react-icons/fi';
 import Sidebar from './Sidebar';
 import { menuItems } from './menuItems';
@@ -15,11 +15,11 @@ import Courses from './Courses';
 import MyCourses from './MyCourses';
 import Assignments from './Assignments';
 import { useCourses } from './CoursesContext';
+import { useCoursesCatalog } from './CoursesCatalogContext';
 import { useDeadlines } from './DeadlinesContext';
-import { coursesData } from './coursesData';
 import Settings from './Settings';
 import Messages from './Messages';
-import { useMessages } from './MessagesContext';
+import { useStudentConversations } from './SharedConversationsContext';
 import Notifications from './Notifications';
 import Competitions from './Competitions';
 import StudentProjects from './StudentProjects';
@@ -28,10 +28,10 @@ import Achievements from './Achievements';
 import { useNotifications } from './NotificationsContext';
 
 const deadlineIconMap = {
-  priority: { icon: <FiFileText />, cls: 'red-icon', tagCls: 'priority-tag', label: 'Priority' },
-  event: { icon: <FiTarget />, cls: 'blue-icon', tagCls: 'event-tag', label: 'Event' },
-  research: { icon: <FiBookOpen />, cls: 'orange-icon', tagCls: 'research-tag', label: 'Research' },
-  practical: { icon: <FiBriefcase />, cls: 'purple-icon', tagCls: 'practical-tag', label: 'Practical' },
+  priority: { icon: <FiFileText />, cls: 'red-icon', label: 'Priority' },
+  event: { icon: <FiTarget />, cls: 'blue-icon', label: 'Event' },
+  research: { icon: <FiBookOpen />, cls: 'orange-icon', label: 'Research' },
+  practical: { icon: <FiBriefcase />, cls: 'purple-icon', label: 'Practical' },
 };
 
 const formatDate = (isoDate) => {
@@ -39,9 +39,6 @@ const formatDate = (isoDate) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Turns an ISO date into a short, human "time left" label so the
-// deadline badge tells you something useful at a glance instead of
-// just repeating the category tag.
 const daysUntil = (isoDate) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -50,11 +47,20 @@ const daysUntil = (isoDate) => {
   return Math.round((target - today) / 86400000);
 };
 
-const urgencyLabel = (days) => {
-  if (days < 0) return { text: 'Overdue', cls: 'urgency-overdue' };
-  if (days === 0) return { text: 'Due today', cls: 'urgency-today' };
-  if (days <= 3) return { text: `In ${days}d`, cls: 'urgency-soon' };
-  return { text: `In ${days}d`, cls: 'urgency-normal' };
+// urgency -> which "opportunity" color variant to use (matches the 3 tones
+// already defined in CSS: default = red/urgent, opportunity-2 = orange/soon,
+// opportunity-3 = blue/relaxed)
+const urgencyVariant = (days) => {
+  if (days <= 2) return { cardCls: '', statusText: days < 0 ? 'Overdue' : days === 0 ? 'Due today' : `${days} day${days > 1 ? 's' : ''}` };
+  if (days <= 6) return { cardCls: 'opportunity-2', statusText: `${days} days` };
+  return { cardCls: 'opportunity-3', statusText: `${days} days` };
+};
+
+const levelBadgeClass = (level) => `level-badge level-${(level || 'beginner').toLowerCase()}`;
+
+const studentCountLabel = (value = 0) => {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+  return new Intl.NumberFormat('en-US').format(value);
 };
 
 const StudentDashboard = ({ studentData, onLogout }) => {
@@ -75,9 +81,25 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     else if (isProjectsRoute) navigate('/student-dashboard');
   };
 
-  const { myCourses } = useCourses();
-  const { deadlines, addDeadline, removeDeadline } = useDeadlines();
-  const { conversations } = useMessages();
+  const {
+    myCourses, getCourseProgress, getCompletedLessonCount, getNextLesson,
+  } = useCourses();
+  const { publishedCourses } = useCoursesCatalog();
+  const { deadlines, removeDeadline } = useDeadlines();
+  // FIXED: this used to read from a MessagesContext seeded with its own
+  // fake instructor list, disconnected from whatever the trainer side saw.
+  // Now it reads this student's slice of the single shared conversation
+  // store, so the preview here always matches what's really in their inbox.
+  const { conversations: studentConversations } = useStudentConversations(studentData);
+  const conversations = useMemo(
+    () => studentConversations.map((c) => ({
+      id: c.id,
+      name: c.contact?.name || 'Instructor',
+      avatar: c.contact?.avatar || '',
+      messages: c.messages,
+    })),
+    [studentConversations]
+  );
 
   // ============ البحث ============
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +111,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     if (!searchQuery.trim()) return { courses: [], pages: [] };
     const q = searchQuery.toLowerCase();
 
-    const courses = coursesData
+    const courses = publishedCourses
       .filter((c) => c.title.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))
       .slice(0, 4);
 
@@ -98,13 +120,13 @@ const StudentDashboard = ({ studentData, onLogout }) => {
       .slice(0, 3);
 
     return { courses, pages };
-  }, [searchQuery]);
+  }, [searchQuery, publishedCourses]);
 
-  // ============ الكورسات المقترحة ============
+  // ============ الكورسات المقترحة — من نفس كتالوج صفحة Courses ============
   const recommendedCourses = useMemo(() => {
-    const enrolledIds = myCourses.map((c) => c.id);
-    return coursesData.filter((c) => !enrolledIds.includes(c.id)).slice(0, 3);
-  }, [myCourses]);
+    const enrolledIds = myCourses.map((c) => String(c.id));
+    return publishedCourses.filter((c) => !enrolledIds.includes(String(c.id))).slice(0, 3);
+  }, [myCourses, publishedCourses]);
 
   const handleSelectCourseResult = (course) => {
     setOpenCourseId(course.id);
@@ -119,7 +141,6 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     setShowSearchResults(false);
   };
 
-  // إغلاق نتائج البحث عند الضغط خارجها
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -130,7 +151,47 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ============ الإشعارات (من الـ Context الحقيقي) ============
+  // ============ Current learning path — كورس حقيقي من اللي مسجّلة فيه ============
+  const currentLearningCourse = useMemo(() => {
+    if (myCourses.length === 0) return null;
+    const withProgress = myCourses.map((c) => {
+      const totalLessons = (c.modules || []).reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
+      return { ...c, totalLessons, progress: getCourseProgress(c.id, totalLessons) };
+    });
+    const inProgress = withProgress.filter((c) => c.progress < 100).sort((a, b) => b.progress - a.progress);
+    return inProgress[0] || withProgress[0];
+  }, [myCourses, getCourseProgress]);
+
+  const completedLessonCount = currentLearningCourse
+    ? getCompletedLessonCount(currentLearningCourse.id)
+    : 0;
+
+  // FIXED: this used to be a useMemo that always returned 0 (it ended in
+  // `&& false`), and the render below had a *second*, equally broken copy of
+  // the same calculation — which, because `[].every(...)` is vacuously true,
+  // actually counted modules with zero lessons as "completed". Neither
+  // number was real. Module-level completion isn't tracked anywhere in this
+  // app yet, so rather than fake it we just show the honest lesson count
+  // (completedLessonCount / totalLessons) computed from real data below.
+
+  const nextLesson = currentLearningCourse ? getNextLesson(currentLearningCourse) : null;
+
+  const nextMilestone = useMemo(() => {
+    if (!currentLearningCourse) return null;
+    const daysSinceEnrollment = currentLearningCourse.enrolledAt
+      ? Math.floor((Date.now() - new Date(currentLearningCourse.enrolledAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+    const withStatus = (currentLearningCourse.assignments || [])
+      .map((a) => ({ ...a, daysLeft: a.dueInDays - daysSinceEnrollment }))
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+    return withStatus.find((a) => a.daysLeft >= 0) || withStatus[0] || null;
+  }, [currentLearningCourse]);
+
+  const handleResumeCourse = () => {
+    if (currentLearningCourse) handleSelectCourseResult(currentLearningCourse);
+  };
+
+  // ============ الإشعارات ============
   const { notifications, markAsRead, markAllRead, unreadCount } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -157,7 +218,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ============ معاينة الرسائل بالهيدر ============
+  // ============ معاينة الرسائل ============
   const [showMessagesPreview, setShowMessagesPreview] = useState(false);
   const mailRef = useRef(null);
 
@@ -179,7 +240,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     setShowMessagesPreview(false);
   };
 
-  // ============ قائمة المستخدم في الهيدر ============
+  // ============ قائمة المستخدم ============
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -193,26 +254,37 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ============ المواعيد النهائية (Deadlines) ============
-  const [showAddDeadline, setShowAddDeadline] = useState(false);
-  const [newDeadline, setNewDeadline] = useState({ title: '', date: '', type: 'priority' });
-
-  const handleAddDeadline = (e) => {
-    e.preventDefault();
-    if (!newDeadline.title.trim() || !newDeadline.date) return;
-    addDeadline(newDeadline);
-    setNewDeadline({ title: '', date: '', type: 'priority' });
-    setShowAddDeadline(false);
-  };
+  // FIXED (polish): none of the four header dropdowns (search results,
+  // notifications, messages preview, user menu) could be dismissed with the
+  // keyboard — only a mouse click outside closed them. Escape now closes
+  // whichever one is open.
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key !== 'Escape') return;
+      setShowSearchResults(false);
+      setShowNotifications(false);
+      setShowMessagesPreview(false);
+      setShowUserMenu(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   const handleLogoutClick = () => {
     if (onLogout) onLogout();
     navigate('/login');
   };
 
+  // ============ المواعيد النهائية مرتبة حسب الإلحاح ============
+  const sortedDeadlines = useMemo(
+    () => [...deadlines].sort((a, b) => daysUntil(a.date) - daysUntil(b.date)).slice(0, 3),
+    [deadlines]
+  );
+
+  const nearestDeadlineDays = sortedDeadlines[0] ? daysUntil(sortedDeadlines[0].date) : null;
+
   return (
     <div className="dashboard-container">
-      {/* Sidebar Section — مكوّن مستقل، محكوم بنفس activeTab */}
       <Sidebar
         activeTab={activeTab}
         onSelect={handleSidebarSelect}
@@ -220,15 +292,15 @@ const StudentDashboard = ({ studentData, onLogout }) => {
         studentData={studentData}
       />
 
-      {/* Main Viewport Content */}
       <main className="main-viewport">
-        <header className="main-header">
+        <header className="student-dashboard-header">
           {/* ============ البحث ============ */}
-          <div className="search-box" ref={searchRef}>
-            <FiSearch className="search-icon" />
+          <div className="dashboard-search" ref={searchRef}>
+            <FiSearch className="dashboard-search-icon" />
             <input
               type="text"
-              placeholder="Search research, courses, or events..."
+              placeholder="Search your courses, tasks, or projects"
+              aria-label="Search your courses, tasks, or projects"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -238,42 +310,44 @@ const StudentDashboard = ({ studentData, onLogout }) => {
             />
 
             {showSearchResults && searchQuery.trim() && (
-              <div className="search-results-dropdown">
+              <div className="dashboard-search-results">
                 {searchResults.courses.length === 0 && searchResults.pages.length === 0 ? (
-                  <p className="search-empty">No results found</p>
+                  <p className="dashboard-search-empty">No results found</p>
                 ) : (
                   <>
                     {searchResults.courses.length > 0 && (
-                      <div className="search-results-group">
-                        <span className="search-group-label">Courses</span>
+                      <div className="dashboard-search-group">
+                        <span className="dashboard-search-label">Courses</span>
                         {searchResults.courses.map((course) => (
-                          <div
+                          <button
+                            type="button"
                             key={course.id}
-                            className="search-result-item"
+                            className="dashboard-search-item"
                             onClick={() => handleSelectCourseResult(course)}
                           >
-                            <FiBookOpen className="search-result-icon" />
-                            <div>
-                              <p className="search-result-title">{course.title}</p>
-                              <span className="search-result-sub">{course.category}</span>
-                            </div>
-                          </div>
+                            <FiBookOpen />
+                            <span>
+                              <strong>{course.title}</strong>
+                              <small>{course.category}</small>
+                            </span>
+                          </button>
                         ))}
                       </div>
                     )}
 
                     {searchResults.pages.length > 0 && (
-                      <div className="search-results-group">
-                        <span className="search-group-label">Pages</span>
+                      <div className="dashboard-search-group">
+                        <span className="dashboard-search-label">Pages</span>
                         {searchResults.pages.map((page) => (
-                          <div
+                          <button
+                            type="button"
                             key={page.id}
-                            className="search-result-item"
+                            className="dashboard-search-item"
                             onClick={() => handleSelectPageResult(page.id)}
                           >
-                            <span className="search-result-icon">{page.icon}</span>
-                            <p className="search-result-title">{page.label}</p>
-                          </div>
+                            <page.icon />
+                            <span><strong>{page.label}</strong></span>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -283,157 +357,154 @@ const StudentDashboard = ({ studentData, onLogout }) => {
             )}
           </div>
 
-          <div className="header-controls">
+          <div className="dashboard-header-actions">
             {/* ============ الإشعارات ============ */}
-            <div className="header-dropdown-wrapper" ref={notifRef}>
+            <div className="dashboard-dropdown-wrapper" ref={notifRef}>
               <button
                 type="button"
-                className="icon-btn"
+                className="dashboard-header-icon"
                 onClick={() => setShowNotifications((p) => !p)}
                 aria-label="Notifications"
-                aria-expanded={showNotifications}
               >
-                <FiBell className="header-icon" />
-                {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+                <FiBell />
+                {unreadCount > 0 && <span className="dashboard-notification-badge">{unreadCount}</span>}
               </button>
 
               {showNotifications && (
-                <div className="dropdown-panel">
-                  <div className="dropdown-header">
+                <div className="dashboard-search-results dashboard-dropdown-right">
+                  <div className="dashboard-dropdown-head">
                     <h4>Notifications</h4>
                     {unreadCount > 0 && (
-                      <span className="mark-all-read" onClick={markAllRead}>Mark all as read</span>
+                      // FIXED: was a <span onClick=...> — not keyboard
+                      // reachable or announced as interactive. Now a real
+                      // button; the shared button CSS reset keeps it looking
+                      // identical.
+                      <button type="button" className="dashboard-mark-all" onClick={markAllRead}>
+                        Mark all as read
+                      </button>
                     )}
                   </div>
-                  <div className="dropdown-list">
-                    {notifications.length === 0 ? (
-                      <p className="dropdown-empty">No notifications</p>
-                    ) : (
-                      notifications.slice(0, 6).map((n) => (
-                        <div
-                          key={n.id}
-                          className={`notif-item ${!n.read ? 'unread' : ''}`}
-                          onClick={() => handleNotificationClick(n)}
-                        >
-                          {!n.read && <span className="unread-dot" />}
-                          <span className="preview-avatar">{n.icon}</span>
-                          <div>
-                            <p className="message-from">{n.title}</p>
-                            <span className="message-text">{n.text}</span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div
-                    className="dropdown-footer"
-                    onClick={() => {
-                      setActiveTab('Notifications');
-                      setShowNotifications(false);
-                    }}
+                  {notifications.length === 0 ? (
+                    <p className="dashboard-search-empty">No notifications</p>
+                  ) : (
+                    notifications.slice(0, 6).map((n) => (
+                      <button
+                        type="button"
+                        key={n.id}
+                        className="dashboard-search-item"
+                        onClick={() => handleNotificationClick(n)}
+                      >
+                        <span>{n.icon}</span>
+                        <span>
+                          <strong>{n.title}</strong>
+                          <small>{n.text}</small>
+                        </span>
+                        {!n.read && <span className="dashboard-unread-dot" />}
+                      </button>
+                    ))
+                  )}
+                  {/* FIXED: was a <div onClick=...> — same accessibility gap
+                      as "Mark all as read" above. */}
+                  <button
+                    type="button"
+                    className="dashboard-dropdown-foot"
+                    onClick={() => { setActiveTab('Notifications'); setShowNotifications(false); }}
                   >
                     View all notifications
-                  </div>
+                  </button>
                 </div>
               )}
             </div>
 
             {/* ============ معاينة الرسائل ============ */}
-            <div className="header-dropdown-wrapper" ref={mailRef}>
+            <div className="dashboard-dropdown-wrapper" ref={mailRef}>
               <button
                 type="button"
-                className="icon-btn"
+                className="dashboard-header-icon"
                 onClick={() => setShowMessagesPreview((p) => !p)}
                 aria-label="Messages"
-                aria-expanded={showMessagesPreview}
               >
-                <FiMessageSquare className="header-icon" />
+                <FiMessageSquare />
               </button>
 
               {showMessagesPreview && (
-                <div className="dropdown-panel">
-                  <div className="dropdown-header">
+                <div className="dashboard-search-results dashboard-dropdown-right">
+                  <div className="dashboard-dropdown-head">
                     <h4>Messages</h4>
-                    <span className="mark-all-read" onClick={openConversationFromPreview}>
+                    <button type="button" className="dashboard-mark-all" onClick={openConversationFromPreview}>
                       View all
-                    </span>
+                    </button>
                   </div>
-                  <div className="dropdown-list">
-                    {conversations.length === 0 ? (
-                      <p className="dropdown-empty">No conversations</p>
-                    ) : (
-                      conversations.map((c) => {
-                        const lastMsg = c.messages[c.messages.length - 1];
-                        return (
-                          <div
-                            key={c.id}
-                            className="notif-item"
-                            onClick={openConversationFromPreview}
-                          >
-                            <div className="preview-avatar">
-                              {c.avatar ? <img src={c.avatar} alt={c.name} /> : getPersonInitials(c.name)}
-                            </div>
-                            <div>
-                              <p className="message-from">{c.name}</p>
-                              <span className="message-text">
-                                {lastMsg ? lastMsg.text : 'No messages yet'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                  {conversations.length === 0 ? (
+                    <p className="dashboard-search-empty">No conversations</p>
+                  ) : (
+                    conversations.map((c) => {
+                      const lastMsg = c.messages[c.messages.length - 1];
+                      return (
+                        <button
+                          type="button"
+                          key={c.id}
+                          className="dashboard-search-item"
+                          onClick={openConversationFromPreview}
+                        >
+                          <span className="dashboard-avatar-chip">
+                            {c.avatar ? <img src={c.avatar} alt={c.name} /> : getPersonInitials(c.name)}
+                          </span>
+                          <span>
+                            <strong>{c.name}</strong>
+                            <small>{lastMsg ? lastMsg.text : 'No messages yet'}</small>
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
 
             {/* ============ قائمة المستخدم ============ */}
-            <div className="header-dropdown-wrapper" ref={userMenuRef}>
+            <div className="dashboard-dropdown-wrapper" ref={userMenuRef}>
               <button
                 type="button"
-                className="header-user"
+                className="dashboard-header-user"
                 onClick={() => setShowUserMenu((p) => !p)}
                 aria-label="Account menu"
-                aria-expanded={showUserMenu}
               >
-                <img src={studentData.avatar} alt="User Avatar" className="header-avatar" />
-                <span className="user-name">{studentData.displayName.split(' ')[0]}</span>
-                <FiChevronDown className="header-user-chevron" />
+                <img src={studentData.avatar} alt="User Avatar" />
+                <strong>{studentData.displayName.split(' ')[0]}</strong>
+                <FiChevronDown />
               </button>
 
               {showUserMenu && (
-                <div className="dropdown-panel user-menu-panel">
-                  <div className="user-menu-identity">
-                    <img src={studentData.avatar} alt="" className="user-menu-avatar" />
+                <div className="dashboard-search-results dashboard-dropdown-right" style={{ width: 260 }}>
+                  <div className="dashboard-dropdown-head">
                     <div>
-                      <p className="message-from">{studentData.displayName}</p>
-                      <span className="message-text">{studentData.email}</span>
+                      <strong>{studentData.displayName}</strong>
+                      <br />
+                      <small>{studentData.email}</small>
                     </div>
                   </div>
-                  <div className="dropdown-list">
-                    <button
-                      type="button"
-                      className="user-menu-item"
-                      onClick={() => { setActiveTab('Profile'); setShowUserMenu(false); }}
-                    >
-                      <FiUser /> View profile
-                    </button>
-                    <button
-                      type="button"
-                      className="user-menu-item"
-                      onClick={() => { setActiveTab('Settings'); setShowUserMenu(false); }}
-                    >
-                      <FiSettings /> Settings
-                    </button>
-                    <button
-                      type="button"
-                      className="user-menu-item danger"
-                      onClick={handleLogoutClick}
-                    >
-                      <FiLogOut /> Log out
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="dashboard-search-item"
+                    onClick={() => { setActiveTab('Profile'); setShowUserMenu(false); }}
+                  >
+                    <FiUser /> <span><strong>View profile</strong></span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-search-item"
+                    onClick={() => { setActiveTab('Settings'); setShowUserMenu(false); }}
+                  >
+                    <FiSettings /> <span><strong>Settings</strong></span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-search-item dashboard-danger-item"
+                    onClick={handleLogoutClick}
+                  >
+                    <FiLogOut /> <span><strong>Log out</strong></span>
+                  </button>
                 </div>
               )}
             </div>
@@ -442,234 +513,280 @@ const StudentDashboard = ({ studentData, onLogout }) => {
 
         <section className="dashboard-body">
           {activeTab === 'Announcement detail' && <StudentAnnouncement studentData={studentData} />}
+
           {activeTab === 'Home' && (
-            <div className="tab-content">
-              <div className="welcome-section">
-                <div className="welcome-text">
+            <div className="student-overview-page">
+              <div className="dashboard-welcome">
+                <div>
                   <h1>Welcome back, {studentData.displayName.split(' ')[0]}</h1>
-                  <p>Continue your academic journey and stay on track.</p>
-                  <button
-                    className="view-report-btn"
-                    onClick={() => setActiveTab('Achievements')}
-                  >
-                    <FiBarChart2 /> View progress report
+                  <p>You're making steady progress. Here is the clearest next step for today.</p>
+                </div>
+                <button className="progress-report-button" onClick={() => setActiveTab('Achievements')}>
+                  <FiCheckCircle /> Full progress report
+                </button>
+              </div>
+
+              {/* ===== شبكة الإحصائيات ===== */}
+              <div className="learning-overview">
+                <p className="dashboard-eyebrow">Learning overview</p>
+                <div className="overview-stats">
+                  <button type="button" className="overview-stat" onClick={() => setActiveTab('MyCourses')}>
+                    <span className="overview-stat-icon"><FiBookOpen /></span>
+                    <span className="overview-stat-content">
+                      <small>Courses in progress</small>
+                      <strong>{myCourses.length}</strong>
+                    </span>
+                    <span className="overview-stat-helper">{myCourses.length > 0 ? 'On track' : 'Get started'}</span>
+                  </button>
+
+                  <button type="button" className="overview-stat" onClick={handleResumeCourse}>
+                    <span className="overview-stat-icon"><FiBarChart2 /></span>
+                    <span className="overview-stat-content">
+                      <small>Project completion</small>
+                      <strong>{studentData.stats.projectProgress}%</strong>
+                    </span>
+                    <span className="overview-stat-bar">
+                      <i style={{ width: `${studentData.stats.projectProgress}%` }} />
+                    </span>
+                  </button>
+
+                  <button type="button" className="overview-stat" onClick={() => setActiveTab('Assignments')}>
+                    <span className="overview-stat-icon orange"><FiClock /></span>
+                    <span className="overview-stat-content">
+                      <small>Tasks due this week</small>
+                      <strong>{sortedDeadlines.length}</strong>
+                    </span>
+                    <span className="overview-stat-helper orange">
+                      {nearestDeadlineDays === null
+                        ? 'All caught up'
+                        : nearestDeadlineDays < 0
+                        ? 'Overdue'
+                        : nearestDeadlineDays === 0
+                        ? 'Due today'
+                        : `Next due in ${nearestDeadlineDays}d`}
+                    </span>
+                  </button>
+
+                  <button type="button" className="overview-stat" onClick={() => setActiveTab('Achievements')}>
+                    <span className="overview-stat-icon green"><FiAward /></span>
+                    <span className="overview-stat-content">
+                      <small>Certificates earned</small>
+                      <strong>{studentData.stats.certificatesEarned}</strong>
+                    </span>
+                    <span className="overview-stat-helper green">
+                      {studentData.stats.certificatesEarned > 0 ? 'Great progress' : 'Keep learning'}
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* شبكة الإحصائيات */}
-              <div className="stats-grid">
-                <button
-                  type="button"
-                  className="stat-box"
-                  onClick={() => setActiveTab('MyCourses')}
-                >
-                  <div className="icon-wrapper blue-bg">
-                    <FiBookOpen />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-number">{myCourses.length}</span>
-                    <span className="stat-label">Enrolled courses</span>
-                    <span className="stat-status blue-status">On track</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className="stat-box"
-                  onClick={() => setActiveTab('Competitions')}
-                >
-                  <div className="icon-wrapper blue-bg">
-                    <FiAward />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-number">{studentData.stats.activeCompetitions}</span>
-                    <span className="stat-label">Active competitions</span>
-                    <span className="stat-status blue-status">Active</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className="stat-box"
-                  onClick={() => setActiveTab('Projects gallery')}
-                >
-                  <div className="icon-wrapper blue-bg">
-                    <FiBarChart2 />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-number">{studentData.stats.projectProgress}%</span>
-                    <span className="stat-label">Project progress</span>
-                    <span className="stat-mini-progress"><i style={{ width: `${studentData.stats.projectProgress}%` }} /></span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className="stat-box"
-                  onClick={() => setActiveTab('Achievements')}
-                >
-                  <div className="icon-wrapper blue-bg">
-                    <FiAward />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-number">{studentData.stats.certificatesEarned}</span>
-                    <span className="stat-label">Certificates earned</span>
-                    <span className="stat-status green-status">Completed</span>
-                  </div>
-                </button>
-              </div>
-
-              {/* القسم السفلي: التقدم + المواعيد النهائية */}
-              <div className="bottom-grid">
-                <div className="progress-card">
-                  <div className="progress-header">
-                    <h3>Current learning path</h3>
-                  </div>
-                  <div className="learning-path">
-                    <div className="learning-visual"><FiCode /></div>
-                    <div className="learning-content">
-                      <h4>Front-End Development Fundamentals</h4>
-                      <div className="learning-progress-row">
-                        <div className="progress-bar-container">
-                          <div className="progress-bar-fill" style={{ width: '64%' }} />
+              {/* ===== المتابعة + المهام القادمة ===== */}
+              <div className="dashboard-main-grid">
+                <div className="learning-start-card">
+                  {currentLearningCourse ? (
+                    <>
+                      <div className="learning-start-image">
+                        <span className="learning-start-badge">Current path</span>
+                        {currentLearningCourse.coverImage ? (
+                          <img src={currentLearningCourse.coverImage} alt={currentLearningCourse.title} />
+                        ) : (
+                          <div className="learning-image-placeholder"><FiCode /></div>
+                        )}
+                        <div className="learning-image-copy">
+                          <strong>{currentLearningCourse.category || currentLearningCourse.title}</strong>
+                          {/* FIXED: this used to read a "modules completed"
+                              count that was always 0 (dead `&& false` logic)
+                              combined with a second, differently-broken copy
+                              of the same calculation. There's no real
+                              module-level completion tracking in this app,
+                              so instead of faking a number we show the
+                              honest lesson count that's already computed
+                              correctly elsewhere on this page. */}
+                          <small>
+                            {(currentLearningCourse.modules || []).length} modules · {completedLessonCount}/{currentLearningCourse.totalLessons} lessons complete
+                          </small>
                         </div>
-                        <span>64%</span>
                       </div>
-                      <div className="progress-details">
-                        <div><span className="detail-label"><FiClock /> Lesson time</span><h4>2h 15m</h4><small>of 3h 20m</small></div>
-                        <div><span className="detail-label"><FiLayers /> Modules</span><h4>8 / 12</h4><small>Completed</small></div>
-                        <div><span className="detail-label"><FiFlag /> Next milestone</span><h4>Final Project</h4><small>Due in 7 days</small></div>
+
+                      <div className="learning-start-content">
+                        <p className="dashboard-eyebrow">Continue where you left off</p>
+                        <h2>{nextLesson ? nextLesson.title : 'All lessons completed'}</h2>
+                        <p>
+                          {nextLesson
+                            ? `${nextLesson.moduleTitle} · ${nextLesson.duration || 'a few minutes'}`
+                            : "You've finished every published lesson in this course — great work."}
+                        </p>
+
+                        <div className="current-course-progress">
+                          <span><i style={{ width: `${currentLearningCourse.progress}%` }} /></span>
+                          <strong>{currentLearningCourse.progress}%</strong>
+                        </div>
+
+                        <div className="learning-start-actions">
+                          <button className="primary-dashboard-button" onClick={handleResumeCourse}>
+                            <FiPlay /> Continue lesson
+                          </button>
+                          <button className="secondary-dashboard-button" onClick={handleResumeCourse}>
+                            Course outline
+                          </button>
+                        </div>
+
+                        <div className="learning-start-details">
+                          <span>
+                            <small>Lessons completed</small>
+                            <strong>{completedLessonCount}</strong>
+                          </span>
+                          <span>
+                            <small>Next milestone</small>
+                            <strong>{nextMilestone ? nextMilestone.title : 'All caught up'}</strong>
+                          </span>
+                          <span>
+                            <small>Started</small>
+                            <strong>
+                              {currentLearningCourse.enrolledAt ? formatDate(currentLearningCourse.enrolledAt) : '—'}
+                            </strong>
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="progress-actions">
-                    <button className="resume-btn" onClick={() => setActiveTab('MyCourses')}>
-                      <FiPlay /> Resume lesson
-                    </button>
-                    <button className="learning-path-link" onClick={() => setActiveTab('MyCourses')}>
-                      View learning path <FiChevronRight />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="deadlines-card">
-                  <div className="deadlines-header">
-                    <h3>Upcoming deadlines</h3>
-                    <button
-                      type="button"
-                      className="icon-add-btn"
-                      onClick={() => setShowAddDeadline((p) => !p)}
-                      aria-expanded={showAddDeadline}
-                    >
-                      {showAddDeadline ? <><FiX /> Close</> : <><FiPlus /> Add</>}
-                    </button>
-                  </div>
-
-                  {showAddDeadline && (
-                    <form className="add-deadline-form" onSubmit={handleAddDeadline}>
-                      <input
-                        type="text"
-                        placeholder="Deadline title"
-                        value={newDeadline.title}
-                        onChange={(e) => setNewDeadline({ ...newDeadline, title: e.target.value })}
-                        required
-                      />
-                      <input
-                        type="date"
-                        value={newDeadline.date}
-                        onChange={(e) => setNewDeadline({ ...newDeadline, date: e.target.value })}
-                        required
-                      />
-                      <select
-                        value={newDeadline.type}
-                        onChange={(e) => setNewDeadline({ ...newDeadline, type: e.target.value })}
-                      >
-                        <option value="priority">Priority</option>
-                        <option value="event">Event</option>
-                        <option value="research">Research</option>
-                        <option value="practical">Practical</option>
-                      </select>
-                      <div className="add-deadline-actions">
-                        <button type="submit" className="save-deadline-btn">Add</button>
-                        <button
-                          type="button"
-                          className="cancel-deadline-btn"
-                          onClick={() => setShowAddDeadline(false)}
-                        >
-                          Cancel
+                    </>
+                  ) : (
+                    <div className="learning-start-content" style={{ gridColumn: '1 / -1' }}>
+                      <p className="dashboard-eyebrow">Continue where you left off</p>
+                      <h2>No courses in progress yet</h2>
+                      <p>Enroll in a course to start tracking your progress here.</p>
+                      <div className="learning-start-actions">
+                        <button className="primary-dashboard-button" onClick={() => setActiveTab('Courses')}>
+                          Browse courses
                         </button>
                       </div>
-                    </form>
+                    </div>
                   )}
+                </div>
 
-                  <div className="deadline-list">
-                    {deadlines.length === 0 ? (
-                      <p className="dropdown-empty">No upcoming deadlines</p>
-                    ) : (
-                      deadlines.map((d) => {
-                        const meta = deadlineIconMap[d.type] || deadlineIconMap.priority;
-                        const urgency = urgencyLabel(daysUntil(d.date));
-                        return (
-                          <div className="deadline-item" key={d.id}>
-                            <div className="deadline-main-info">
-                              <div className={`deadline-icon ${meta.cls}`}>{meta.icon}</div>
-                              <div className="deadline-info">
-                                <h4>{d.title}</h4>
-                                <p>{meta.label} · {formatDate(d.date)}</p>
-                              </div>
-                            </div>
-                            <span className={`deadline-days ${urgency.cls}`}>{urgency.text}</span>
+                <div className="opportunities-card">
+                  <div className="dashboard-section-header">
+                    <div>
+                      <h2>Your next tasks</h2>
+                      <p>Ordered by what needs attention first.</p>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab('Assignments')}>See calendar</button>
+                  </div>
+
+                  {sortedDeadlines.length === 0 ? (
+                    <div className="empty-opportunities">
+                      <FiCheckCircle />
+                      <strong>Nothing on your plate — you're all caught up!</strong>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="opportunities-list">
+                        {sortedDeadlines.map((d) => {
+                          const meta = deadlineIconMap[d.type] || deadlineIconMap.priority;
+                          const days = daysUntil(d.date);
+                          const variant = urgencyVariant(days);
+                          return (
                             <button
                               type="button"
-                              className="deadline-remove"
-                              onClick={() => removeDeadline(d.id)}
-                              aria-label={`Remove ${d.title}`}
+                              key={d.id}
+                              className={`opportunity-item ${variant.cardCls}`}
+                              onClick={() => setActiveTab('Assignments')}
                             >
-                              <FiX />
+                              <span className="opportunity-icon">{meta.icon}</span>
+                              <span className="opportunity-content">
+                                <strong>{d.title}</strong>
+                                <small>{meta.label} · {formatDate(d.date)}</small>
+                              </span>
+                              <span className="opportunity-status">{variant.statusText}</span>
                             </button>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                          );
+                        })}
+                      </div>
+                      {/* FIXED: this footer link's label reads as an
+                          informational "see more" row ("+2 more upcoming" /
+                          "Nothing overdue"), but its onClick actually called
+                          removeDeadline() on the nearest task — silently
+                          deleting it with no confirmation. It now does what
+                          the label promises: opens the full assignments view,
+                          matching the "See calendar" button above. */}
+                      <button
+                        type="button"
+                        className="opportunities-footer"
+                        onClick={() => setActiveTab('Assignments')}
+                      >
+                        <span /> {deadlines.length > 3 ? `+${deadlines.length - 3} more upcoming` : 'Nothing overdue — you\'re on track'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* الكورسات المقترحة */}
-              {recommendedCourses.length > 0 && (
-                <div className="recommended-section">
-                  <div className="recommended-header">
-                    <h3>Recommended for you</h3>
-                    <span className="view-all-link" onClick={() => setActiveTab('Courses')}>
-                      Explore all courses <FiChevronRight />
-                    </span>
+              {/* ===== الكورسات المقترحة ===== */}
+              <div className="dashboard-recommended">
+                <div className="dashboard-section-header">
+                  <div>
+                    <h2>Recommended for you</h2>
+                    <p>Based on your current path and saved interests.</p>
                   </div>
+                  <button type="button" onClick={() => setActiveTab('Courses')}>
+                    Browse all courses <FiChevronRight />
+                  </button>
+                </div>
 
-                  <div className="recommended-grid">
+                {recommendedCourses.length > 0 ? (
+                  <div className="dashboard-course-grid">
                     {recommendedCourses.map((course) => (
-                      <div
-                        key={course.id}
-                        className="recommended-card"
-                        onClick={() => handleSelectCourseResult(course)}
-                      >
-                        <div className="recommended-avatar">
-                          {course.category.toLowerCase().includes('design') ? <FiPenTool /> : course.title.toLowerCase().includes('react') ? <span>{'{}'}</span> : <FiCode />}
-                        </div>
-                        <div className="recommended-content">
-                          <h4 className="recommended-title">{course.title}</h4>
-                          <p className="recommended-description">{course.description || `Build a strong foundation in ${course.category} through practical lessons.`}</p>
-                        </div>
-                        <div className="recommended-meta">
-                          <span><FiBarChart2 /> {course.level}</span>
-                          <span><FiClock /> {course.duration || '16h'}</span>
-                          <span className="recommended-rating">{course.rating} <FiStar /></span>
+                      <div className="dashboard-course-card" key={course.id}>
+                        <button
+                          type="button"
+                          className="dashboard-course-image"
+                          onClick={() => handleSelectCourseResult(course)}
+                        >
+                          {course.coverImage ? (
+                            <img src={course.coverImage} alt={course.title} />
+                          ) : (
+                            <span className="dashboard-course-image-fallback">
+                              {course.category?.toLowerCase().includes('design') ? <FiPenTool /> : <FiCode />}
+                            </span>
+                          )}
+                        </button>
+                        <div className="dashboard-course-copy">
+                          <span className="dashboard-course-category">{course.category}</span>
+                          <h3>{course.title}</h3>
+                          <div className="dashboard-course-details">
+                            <span className={levelBadgeClass(course.level)}>{course.level}</span>
+                            <span>{course.duration}</span>
+                          </div>
+                          <div className="dashboard-course-meta">
+                            <span><FiStar /> {course.rating || '—'}</span>
+                            <span>{studentCountLabel(course.students)} students</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="view-course-button"
+                            onClick={() => handleSelectCourseResult(course)}
+                          >
+                            View course
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  // FIXED: previously this whole section rendered nothing
+                  // once a student had enrolled in every available course —
+                  // the "Recommended for you" heading was left floating with
+                  // an empty gap under it. Reuses the same empty-state style
+                  // already defined for the tasks card.
+                  <div className="empty-opportunities">
+                    <FiCheckCircle />
+                    <strong>You're enrolled in everything we'd recommend right now — check back soon.</strong>
+                  </div>
+                )}
+              </div>
+
+              <p className="dashboard-update-note">
+                Updated {formatDate(new Date().toISOString())} · Your progress is saved automatically
+              </p>
             </div>
           )}
 
@@ -682,9 +799,11 @@ const StudentDashboard = ({ studentData, onLogout }) => {
             />
           )}
 
-          {activeTab === 'MyCourses' && <MyCourses />}
+          {activeTab === 'MyCourses' && (
+            <MyCourses onExploreCourses={() => setActiveTab('Courses')} />
+          )}
           {activeTab === 'Settings' && <Settings student={studentData} />}
-          {activeTab === 'Messages' && <Messages />}
+          {activeTab === 'Messages' && <Messages studentData={studentData} />}
           {activeTab === 'Assignments' && <Assignments studentData={studentData} />}
           {activeTab === 'Competitions' && <Competitions studentData={studentData} />}
           {activeTab === 'Projects gallery' && <StudentProjects studentData={studentData} />}
@@ -705,7 +824,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
             activeTab !== 'Announcement detail' && (
               <div className="tab-content" style={{ background: '#fff', padding: '30px', borderRadius: '20px' }}>
                 <h2>{activeTab} Section</h2>
-                <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>This section is ready for integrating your sub-components.</p>
+                <p style={{ color: 'var(--dashboard-muted)', marginTop: '10px' }}>This section is ready for integrating your sub-components.</p>
               </div>
             )}
         </section>

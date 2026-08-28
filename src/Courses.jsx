@@ -15,8 +15,8 @@ import {
 import { useCourses } from './CoursesContext';
 import { useCoursesCatalog } from './CoursesCatalogContext';
 import CourseLearningPage from './CourseLearningPage';
-import './Courses.css';
 import './CoursesCatalog.css';
+import './CourseDetails.css';
 
 const CATEGORIES = [
   { id: 'all', label: 'All courses' },
@@ -54,6 +54,12 @@ function Courses({ initialCourseId, onConsumeInitial }) {
   const [durationFilter, setDurationFilter] = useState('all');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [learningCourse, setLearningCourse] = useState(null);
+
+  const averageRating = useMemo(() => {
+    if (!courses.length) return 0;
+    const total = courses.reduce((sum, course) => sum + Number(course.rating || 0), 0);
+    return (total / courses.length).toFixed(1);
+  }, [courses]);
 
   const visibleCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -267,16 +273,21 @@ function Courses({ initialCourseId, onConsumeInitial }) {
 
   return (
     <div className="courses-catalog-page" dir="ltr">
-      <header className="courses-catalog-heading">
-        <div>
+      {/* ============================================
+          HERO — replaces the old plain heading row.
+          Search now lives inside the hero where it's
+          the obvious first action, and the course
+          count/rating become real stat chips instead
+          of a lone floating <span>.
+          ============================================ */}
+      <header className="courses-hero">
+        <div className="courses-hero-text">
+          <span className="courses-hero-eyebrow">Course catalog</span>
           <h1>Explore courses</h1>
           <p>Discover practical courses built around real skills, projects, and your academic goals.</p>
         </div>
-        <span>{courses.length} learning opportunities available</span>
-      </header>
 
-      <div className="courses-catalog-tools">
-        <label className="courses-search">
+        <label className="courses-hero-search">
           <FiSearch />
           <input
             value={query}
@@ -284,24 +295,62 @@ function Courses({ initialCourseId, onConsumeInitial }) {
             placeholder="Search by skill, course, or instructor"
           />
         </label>
-        <button
-          type="button"
-          className={`courses-filter-button ${showFilters ? 'active' : ''}`}
-          onClick={() => setShowFilters((current) => !current)}
-          aria-expanded={showFilters}
-          aria-controls="course-filters"
-        >
-          <FiFilter /> Filters <FiChevronDown />
-        </button>
-        <label className="courses-sort">
-          Sort by:
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-            <option value="recommended">Recommended</option>
-            <option value="rating">Top rated</option>
-            <option value="popular">Most popular</option>
-            <option value="newest">Newest</option>
-          </select>
-        </label>
+
+        <div className="courses-hero-stats">
+          <div>
+            <strong>{courses.length}</strong>
+            <span>Courses available</span>
+          </div>
+          <div>
+            <strong><FiStar /> {averageRating}</strong>
+            <span>Average rating</span>
+          </div>
+          <div className="courses-hero-free">
+            <strong>Free</strong>
+            <span>For every student</span>
+          </div>
+        </div>
+      </header>
+
+      {/* ============================================
+          TOOLBAR — category pills + filter/sort in a
+          single row instead of a separate bordered box
+          stacked under its own bordered box.
+          ============================================ */}
+      <div className="courses-toolbar">
+        <nav className="courses-category-pills" aria-label="Course categories">
+          {CATEGORIES.map((category) => (
+            <button
+              type="button"
+              key={category.id}
+              className={activeCategory === category.id ? 'active' : ''}
+              onClick={() => setActiveCategory(category.id)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="courses-toolbar-actions">
+          <button
+            type="button"
+            className={`courses-filter-button ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters((current) => !current)}
+            aria-expanded={showFilters}
+            aria-controls="course-filters"
+          >
+            <FiFilter /> Filters <FiChevronDown />
+          </button>
+          <label className="courses-sort">
+            Sort by:
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="recommended">Recommended</option>
+              <option value="rating">Top rated</option>
+              <option value="popular">Most popular</option>
+              <option value="newest">Newest</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {showFilters && (
@@ -337,22 +386,6 @@ function Courses({ initialCourseId, onConsumeInitial }) {
           </button>
         </section>
       )}
-
-      <nav className="courses-category-tabs">
-        <div>
-          {CATEGORIES.map((category) => (
-            <button
-              type="button"
-              key={category.id}
-              className={activeCategory === category.id ? 'active' : ''}
-              onClick={() => setActiveCategory(category.id)}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
-        <span>● <b>Free access for students</b></span>
-      </nav>
 
       {visibleCourses.length ? (
         <div className="courses-catalog-grid">

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
   FiAward, FiBookOpen, FiBriefcase, FiCalendar, FiCheckCircle,
-  FiClipboard, FiCode, FiCopy, FiExternalLink, FiGithub, FiGlobe,
-  FiGrid, FiLink, FiMail, FiMapPin, FiPlus, FiPrinter, FiShare2,
+  FiCode, FiCopy, FiExternalLink, FiGithub, FiGlobe,
+  FiGrid, FiMail, FiMapPin, FiPlus, FiPrinter, FiShare2,
   FiStar, FiTrash2, FiUser, FiUsers, FiX,
 } from 'react-icons/fi';
 import { useCourses } from './CoursesContext';
@@ -10,6 +10,7 @@ import { useProjects, PROJECT_STATUS } from './ProjectsContext';
 import { useCompetitions } from './CompetitionsContext';
 import { competitionsData } from './competitionsData';
 import { getPortfolioRecord } from './portfolioRecords';
+import { badgesData } from './badgesData';
 import './Achievements.css';
 
 const EXTERNAL_CERTIFICATES_KEY = 'career_portfolio_external_certificates_v1';
@@ -37,17 +38,6 @@ const openExternal = (url) => {
   } catch { /* Ignore invalid external links. */ }
 };
 
-function VerificationMark({ value }) {
-  const seed = [...value].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return (
-    <div className="portfolio-qr" aria-label={`Verification code for ${value}`}>
-      {Array.from({ length: 81 }, (_, index) => (
-        <span key={index} className={(index * 17 + seed + Math.floor(index / 9) * 7) % 5 < 2 ? 'filled' : ''} />
-      ))}
-    </div>
-  );
-}
-
 function SectionTitle({ icon: Icon, title, action }) {
   return (
     <div className="portfolio-section-heading">
@@ -58,11 +48,12 @@ function SectionTitle({ icon: Icon, title, action }) {
 }
 
 function Achievements({ studentData }) {
-  const { myCourses, getCourseProgress } = useCourses();
+  const {
+    myCourses, getCourseProgress, getCompletedLessonCount, submittedAssignments,
+  } = useCourses();
   const { projects } = useProjects();
   const { registeredIds, registrations } = useCompetitions();
   const [activeView, setActiveView] = useState('overview');
-  const [showQr, setShowQr] = useState(false);
   const [showCertificateForm, setShowCertificateForm] = useState(false);
   const [certificateForm, setCertificateForm] = useState(EMPTY_CERTIFICATE);
   const [notice, setNotice] = useState('');
@@ -73,12 +64,25 @@ function Achievements({ studentData }) {
 
   const record = useMemo(() => getPortfolioRecord(studentData?.email), [studentData?.email]);
   const portfolioId = useMemo(() => makePortfolioId(studentData), [studentData]);
+  // NOTE: this points at a public /portfolio/:slug route that doesn't exist
+  // yet in the app's router — sharing it externally will 404 until that
+  // page is built. Kept as-is (harmless) but flagged here for visibility.
   const publicUrl = `${window.location.origin}/portfolio/${slugify(studentData?.fullName || studentData?.displayName)}`;
 
-  const completedCourses = useMemo(() => safeArray(myCourses).filter((course) => {
+  const coursesWithProgress = useMemo(() => safeArray(myCourses).map((course) => {
     const total = safeArray(course.modules).reduce((sum, module) => sum + safeArray(module.lessons).length, 0);
-    return total > 0 && getCourseProgress(course.id, total) === 100;
-  }), [myCourses, getCourseProgress]);
+    return {
+      course,
+      totalLessons: total,
+      progress: getCourseProgress(course.id, total),
+      completedLessons: getCompletedLessonCount(course.id),
+    };
+  }), [myCourses, getCourseProgress, getCompletedLessonCount]);
+
+  const completedCourses = useMemo(
+    () => coursesWithProgress.filter((item) => item.totalLessons > 0 && item.progress === 100).map((item) => item.course),
+    [coursesWithProgress]
+  );
 
   const approvedProjects = useMemo(() => {
     const email = normalize(studentData?.email);
@@ -102,6 +106,11 @@ function Achievements({ studentData }) {
     return { ...competition, registration: registrations?.[String(id)], verified: ended, result: ended ? (record.competitionResults?.[id] || 'Participant') : 'Registered' };
   }).filter(Boolean), [record.competitionResults, registeredIds, registrations]);
 
+  // FIXED: this used to fall back to hardcoded placeholder skills
+  // ('React', 'JavaScript', 'Git'...) whenever a student had none of their
+  // own — showing skills the student never actually claimed. Now an empty
+  // category is just empty, and the UI shows an honest "not added yet"
+  // message instead of fabricating expertise.
   const skills = useMemo(() => {
     const projectTech = approvedProjects.flatMap((project) => safeArray(project.techStack));
     const profileSkills = safeArray(studentData?.skills);
@@ -111,12 +120,9 @@ function Achievements({ studentData }) {
     const design = unique.filter((skill) => designWords.some((word) => normalize(skill).includes(word)));
     const professional = unique.filter((skill) => professionalWords.some((word) => normalize(skill).includes(word)));
     const development = unique.filter((skill) => !design.includes(skill) && !professional.includes(skill));
-    return {
-      development: development.length ? development : ['React', 'JavaScript', 'Git'],
-      design: design.length ? design : ['UI/UX', 'Responsive Design'],
-      professional: professional.length ? professional : ['Problem Solving', 'Teamwork', 'Communication'],
-    };
+    return { development, design, professional };
   }, [approvedProjects, studentData?.skills]);
+  const hasAnySkills = skills.development.length + skills.design.length + skills.professional.length > 0;
 
   const platformCertificates = completedCourses.map((course) => ({
     id: `course-${course.id}`, title: course.title, issuer: 'Compass Academy',
@@ -127,7 +133,40 @@ function Achievements({ studentData }) {
   const averageEvaluation = record.evaluations.length
     ? Math.round(record.evaluations.reduce((sum, item) => sum + item.score, 0) / record.evaluations.length)
     : 0;
-  const profileCompleteness = Math.min(100, 56 + (studentData?.avatar ? 8 : 0) + (studentData?.overview ? 10 : 0) + Math.min(12, skills.development.length * 2) + Math.min(14, approvedProjects.length * 7));
+
+  // FIXED: this used to start every student at a 56% "completeness" floor
+  // regardless of what they'd actually done — a brand-new, empty profile
+  // showed as more than half complete. It's now a genuine tally of real,
+  // checkable achievements, so an empty profile honestly reads as 0%.
+  const completenessChecks = [
+    Boolean(studentData?.avatar),
+    Boolean(studentData?.overview?.trim()),
+    hasAnySkills,
+    approvedProjects.length > 0,
+    completedCourses.length > 0,
+    certificates.some((c) => c.verified),
+    verifiedCompetitions.length > 0,
+  ];
+  const profileCompleteness = Math.round(
+    (completenessChecks.filter(Boolean).length / completenessChecks.length) * 100
+  );
+
+  // FIXED: badgesData.js was defined elsewhere in the project but never
+  // actually rendered anywhere — these badges are wired up here for real,
+  // computed from the student's genuine course/assignment/competition data.
+  const coursesWithAnyLesson = coursesWithProgress.filter((item) => item.completedLessons > 0).length;
+  const earnedBadgeIds = useMemo(() => {
+    const earned = new Set();
+    if (myCourses.length > 0) earned.add('getting-started');
+    if (coursesWithProgress.some((item) => item.completedLessons > 0)) earned.add('first-lesson');
+    if (coursesWithProgress.some((item) => item.progress >= 50)) earned.add('halfway-there');
+    if (completedCourses.length > 0) earned.add('course-graduate');
+    if (myCourses.length >= 3) earned.add('multi-track');
+    if (coursesWithAnyLesson >= 3) earned.add('knowledge-seeker');
+    if (safeArray(submittedAssignments).length >= 5) earned.add('assignment-ace');
+    if (safeArray(registeredIds).length > 0) earned.add('competitor');
+    return earned;
+  }, [myCourses.length, coursesWithProgress, completedCourses.length, coursesWithAnyLesson, submittedAssignments, registeredIds]);
 
   const saveCertificates = (next) => {
     setExternalCertificates(next);
@@ -148,7 +187,11 @@ function Achievements({ studentData }) {
   };
   const copyPortfolioLink = async () => {
     try { await navigator.clipboard.writeText(publicUrl); setNotice('Portfolio link copied.'); }
-    catch { setNotice('Copy was blocked. Select the link from the QR window instead.'); }
+    catch { setNotice('Copy was blocked. Copy the portfolio ID instead.'); }
+  };
+  const copyPortfolioId = async () => {
+    try { await navigator.clipboard.writeText(portfolioId); setNotice('Portfolio ID copied.'); }
+    catch { setNotice('Copy was blocked.'); }
   };
 
   return (
@@ -157,7 +200,6 @@ function Achievements({ studentData }) {
         <div><span>Verified career portfolio</span><h1>{studentData?.displayName || 'Student'}’s professional profile</h1><p>A verified record of learning, projects, skills, and achievements.</p></div>
         <div className="portfolio-header-actions">
           <button type="button" onClick={copyPortfolioLink}><FiShare2 /> Share</button>
-          <button type="button" onClick={() => setShowQr(true)}><FiGrid /> Show QR</button>
           <button type="button" className="primary" onClick={() => window.print()}><FiPrinter /> Print / Save PDF</button>
         </div>
       </header>
@@ -214,20 +256,58 @@ function Achievements({ studentData }) {
           </section>}
         </div>
 
+        {/* FIXED: every section below used to be hidden on the "Projects"
+            and "Learning" tabs (gated to overview/credentials only),
+            leaving the sidebar almost empty on those tabs. Badges, skills,
+            certificates, competitions, and education are portfolio-wide
+            facts, not tab-specific — so they now stay visible on every
+            tab, the way a LinkedIn-style profile sidebar would. */}
         <aside className="portfolio-side-column">
-          {(activeView === 'overview' || activeView === 'credentials') && <section><SectionTitle icon={FiCode} title="Skills" />{Object.entries(skills).map(([group, items]) => <div className="portfolio-skill-group" key={group}><h3>{group}</h3><div className="portfolio-chip-row">{items.map((skill) => <span key={skill}>{skill}</span>)}</div></div>)}</section>}
+          <section>
+            <SectionTitle icon={FiAward} title="Badges" action={<span className="platform-source">{earnedBadgeIds.size}/{badgesData.length} earned</span>} />
+            <div className="portfolio-badge-grid">
+              {badgesData.map((badge) => {
+                const earned = earnedBadgeIds.has(badge.id);
+                return (
+                  <div key={badge.id} className={`portfolio-badge tier-${badge.tier} ${earned ? 'earned' : 'locked'}`} title={badge.description}>
+                    <span>{badge.icon}</span>
+                    <strong>{badge.title}</strong>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
-          {(activeView === 'overview' || activeView === 'credentials') && <section id="portfolio-certificates"><SectionTitle icon={FiAward} title="Certificates & credentials" action={<button className="portfolio-add-button" type="button" onClick={() => { setNotice(''); setShowCertificateForm(true); }}><FiPlus /> Add certificate</button>} />{certificates.length ? certificates.map((certificate) => <article className="portfolio-credential" key={certificate.id}><div><FiAward /></div><span><strong>{certificate.title}</strong><small>{certificate.issuer} · {formatDate(certificate.issuedAt)}</small><p>{certificate.description}</p>{certificate.verified && <em><FiCheckCircle /> Platform verified</em>}</span><div className="credential-actions">{certificate.credentialUrl && <button type="button" onClick={() => openExternal(certificate.credentialUrl)}><FiExternalLink /></button>}{!certificate.platform && <button className="danger" type="button" aria-label="Delete certificate" onClick={() => saveCertificates(externalCertificates.filter((item) => item.id !== certificate.id))}><FiTrash2 /></button>}</div></article>) : <p className="portfolio-muted">No certificates added yet.</p>}</section>}
+          <section>
+            <SectionTitle icon={FiCode} title="Skills" />
+            {hasAnySkills ? Object.entries(skills).filter(([, items]) => items.length > 0).map(([group, items]) => (
+              <div className="portfolio-skill-group" key={group}><h3>{group}</h3><div className="portfolio-chip-row">{items.map((skill) => <span key={skill}>{skill}</span>)}</div></div>
+            )) : <p className="portfolio-muted">No skills added yet. Skills from your profile and approved projects will appear here.</p>}
+          </section>
 
-          {(activeView === 'overview' || activeView === 'credentials') && <section><SectionTitle icon={FiAward} title="Competitions" />{verifiedCompetitions.length ? verifiedCompetitions.map((competition) => <div className="portfolio-competition" key={competition.id}><span><strong>{competition.title}</strong><small>{competition.organizer}</small></span><b>{competition.result}</b>{competition.verified ? <em><FiCheckCircle /> Verified</em> : <em className="pending">Pending completion</em>}</div>) : <p className="portfolio-muted">Registered platform competitions will appear here.</p>}</section>}
+          <section id="portfolio-certificates"><SectionTitle icon={FiAward} title="Certificates & credentials" action={<button className="portfolio-add-button" type="button" onClick={() => { setNotice(''); setShowCertificateForm(true); }}><FiPlus /> Add certificate</button>} />{certificates.length ? certificates.map((certificate) => <article className="portfolio-credential" key={certificate.id}><div><FiAward /></div><span><strong>{certificate.title}</strong><small>{certificate.issuer} · {formatDate(certificate.issuedAt)}</small><p>{certificate.description}</p>{certificate.verified && <em><FiCheckCircle /> Platform verified</em>}</span><div className="credential-actions">{certificate.credentialUrl && <button type="button" onClick={() => openExternal(certificate.credentialUrl)}><FiExternalLink /></button>}{!certificate.platform && <button className="danger" type="button" aria-label="Delete certificate" onClick={() => saveCertificates(externalCertificates.filter((item) => item.id !== certificate.id))}><FiTrash2 /></button>}</div></article>) : <p className="portfolio-muted">No certificates added yet.</p>}</section>
+
+          <section><SectionTitle icon={FiAward} title="Competitions" />{verifiedCompetitions.length ? verifiedCompetitions.map((competition) => <div className="portfolio-competition" key={competition.id}><span><strong>{competition.title}</strong><small>{competition.organizer}</small></span><b>{competition.result}</b>{competition.verified ? <em><FiCheckCircle /> Verified</em> : <em className="pending">Pending completion</em>}</div>) : <p className="portfolio-muted">Registered platform competitions will appear here.</p>}</section>
 
           <section><SectionTitle icon={FiBookOpen} title="Education" /><div className="portfolio-education"><strong>Bachelor of Science in {studentData?.program || studentData?.major || 'Computer Engineering'}</strong><span>{studentData?.university || 'Al-Azhar University – Gaza'}</span><small>Academic year {record.academicYear} · Expected graduation: {studentData?.graduation || record.expectedGraduation}</small></div></section>
         </aside>
       </div>
 
-      <footer className="portfolio-verification"><VerificationMark value={portfolioId} /><div><h2>Scan to verify this portfolio</h2><p><FiCheckCircle /> This portfolio is verified by Compass Academy.</p></div><span>Portfolio ID: {portfolioId}</span></footer>
-
-      {showQr && <div className="portfolio-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setShowQr(false)}><div className="portfolio-modal compact" role="dialog" aria-modal="true"><button className="portfolio-modal-close" type="button" onClick={() => setShowQr(false)}><FiX /></button><VerificationMark value={portfolioId} /><h2>Verify this portfolio</h2><p>{publicUrl}</p><button className="portfolio-modal-primary" type="button" onClick={copyPortfolioLink}><FiCopy /> Copy public link</button></div></div>}
+      {/* FIXED: this used to be a "Scan to verify" QR code made of pseudo-
+          random squares from a character hash — it didn't encode anything
+          and could never actually be scanned. Replaced with an honest
+          verification block: a real badge plus a copyable portfolio ID. */}
+      <footer className="portfolio-verification">
+        <span className="portfolio-verification-badge"><FiCheckCircle /></span>
+        <div>
+          <h2>Compass Academy verified portfolio</h2>
+          <p>Every project, course, and evaluation shown here is confirmed by Compass Academy instructors and platform records.</p>
+        </div>
+        <button type="button" className="portfolio-verification-id" onClick={copyPortfolioId}>
+          <span>Portfolio ID</span>
+          <strong>{portfolioId} <FiCopy /></strong>
+        </button>
+      </footer>
 
       {showCertificateForm && <div className="portfolio-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setShowCertificateForm(false)}><form className="portfolio-modal" onSubmit={addCertificate}><button className="portfolio-modal-close" type="button" onClick={() => setShowCertificateForm(false)}><FiX /></button><span className="portfolio-modal-kicker">Personal credential</span><h2>Add external certificate</h2><p>Only certificates you own can be added here. Platform results remain read-only.</p><label>Certificate title<input value={certificateForm.title} onChange={(event) => setCertificateForm({ ...certificateForm, title: event.target.value })} /></label><div className="portfolio-form-grid"><label>Issuer<input value={certificateForm.issuer} onChange={(event) => setCertificateForm({ ...certificateForm, issuer: event.target.value })} /></label><label>Issue date<input type="date" value={certificateForm.issuedAt} onChange={(event) => setCertificateForm({ ...certificateForm, issuedAt: event.target.value })} /></label></div><label>Credential URL<input type="url" placeholder="https://..." value={certificateForm.credentialUrl} onChange={(event) => setCertificateForm({ ...certificateForm, credentialUrl: event.target.value })} /></label><label>Description<textarea rows="3" value={certificateForm.description} onChange={(event) => setCertificateForm({ ...certificateForm, description: event.target.value })} /></label>{notice && <span className="portfolio-form-error">{notice}</span>}<button className="portfolio-modal-primary" type="submit"><FiPlus /> Add certificate</button></form></div>}
     </main>

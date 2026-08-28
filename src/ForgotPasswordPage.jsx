@@ -2,34 +2,77 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CompassWordmark from './CompassWordmark';
 import heroImg from './assets/hero.jpg';
+import trainerHero from './assets/course-flutter-workshop.jpg';
 import { MailIcon, LockIcon, CheckIcon } from './AuthIcons';
 import './ForgotPasswordPage.css';
 
 /* ============================================
-   STEP CONTENT FOR THE LEFT VISUAL PANEL
-   Each step of the flow (1–4) shows different
-   copy on the hero image side.
+   VISUAL PANEL CONTENT — one set per role, one
+   set per step (1–4) inside each role.
+
+   FIXED: this used to be a single VISUAL_CONTENT_BY_STEP
+   object keyed only by step number, so the image and the
+   marketing copy on the left were identical no matter who
+   opened the page — a trainer would see the student's
+   picture and the student's wording. Now every role has
+   its own image and its own copy per step, the same way
+   TrainerLogin.jsx already has its own hero image and
+   messaging separate from LoginPage.jsx.
    ============================================ */
-const VISUAL_CONTENT_BY_STEP = {
-  1: {
-    title: 'Your learning progress\nis always protected.',
-    text: 'Recover your account securely and return to your courses, projects, and academic goals.',
-    points: ['Secure recovery', 'Protected account', 'Student support'],
+const VISUAL_CONTENT_BY_ROLE = {
+  student: {
+    image: heroImg,
+    imageAlt: 'Students collaborating on their academic projects',
+    badgeLabel: 'Student platform',
+    steps: {
+      1: {
+        title: 'Your learning progress\nis always protected.',
+        text: 'Recover your account securely and return to your courses, projects, and academic goals.',
+        points: ['Secure recovery', 'Protected account', 'Student support'],
+      },
+      2: {
+        title: 'Your learning progress\nis always protected.',
+        text: 'Recover your account securely and return to your courses, projects, and academic goals.',
+        points: ['Secure recovery', 'Protected account'],
+      },
+      3: {
+        title: 'Choose a strong password.\nKeep your journey secure.',
+        text: 'A secure password helps protect your courses, projects, certificates, and personal academic information.',
+        points: ['8+ characters', 'Upper & lowercase', 'Number or symbol'],
+      },
+      4: {
+        title: 'You\u2019re ready to continue.\nYour progress is waiting.',
+        text: 'Return securely to your dashboard and continue from exactly where you stopped.',
+        points: [],
+      },
+    },
   },
-  2: {
-    title: 'Your learning progress\nis always protected.',
-    text: 'Recover your account securely and return to your courses, projects, and academic goals.',
-    points: ['Secure recovery', 'Protected account'],
-  },
-  3: {
-    title: 'Choose a strong password.\nKeep your journey secure.',
-    text: 'A secure password helps protect your courses, projects, certificates, and personal academic information.',
-    points: ['8+ characters', 'Upper & lowercase', 'Number or symbol'],
-  },
-  4: {
-    title: 'You\u2019re ready to continue.\nYour progress is waiting.',
-    text: 'Return securely to your dashboard and continue from exactly where you stopped.',
-    points: [],
+  trainer: {
+    image: trainerHero,
+    imageAlt: 'A trainer preparing course material for students',
+    badgeLabel: 'Trainer platform',
+    steps: {
+      1: {
+        title: 'Your courses and students\nstay safely in your hands.',
+        text: 'Recover your trainer account securely and get back to managing courses, feedback, and student progress.',
+        points: ['Secure recovery', 'Protected workspace', 'Trainer support'],
+      },
+      2: {
+        title: 'Your courses and students\nstay safely in your hands.',
+        text: 'Recover your trainer account securely and get back to managing courses, feedback, and student progress.',
+        points: ['Secure recovery', 'Protected workspace'],
+      },
+      3: {
+        title: 'Choose a strong password.\nKeep your workspace secure.',
+        text: 'A secure password helps protect your courses, student records, and review history.',
+        points: ['8+ characters', 'Upper & lowercase', 'Number or symbol'],
+      },
+      4: {
+        title: 'You\u2019re ready to continue.\nYour dashboard is waiting.',
+        text: 'Return securely to your trainer dashboard and continue right where you left off.',
+        points: [],
+      },
+    },
   },
 };
 
@@ -51,9 +94,12 @@ function ForgotPasswordPage() {
   const location = useLocation();
 
   // Remembers whether the person arrived from the trainer or student login,
-  // so every "back to sign in" / successful reset sends them to the right place.
+  // so every "back to sign in" / successful reset sends them to the right
+  // place, AND so the visual panel shows the right image and copy.
   const origin = location.state?.from === 'trainer' ? 'trainer' : 'student';
   const loginPath = origin === 'trainer' ? '/trainer-login' : '/login';
+  const roleContent = VISUAL_CONTENT_BY_ROLE[origin];
+  const visualContent = roleContent.steps[step];
 
   useEffect(() => {
     if (step !== 2 || countdown <= 0) return undefined;
@@ -122,15 +168,16 @@ function ForgotPasswordPage() {
     /[^A-Za-z0-9]/.test(newPassword),
   ].filter(Boolean).length;
 
-  const visualContent = VISUAL_CONTENT_BY_STEP[step];
-
   return (
     <main className="fp-page">
       {/* ============================================
           LEFT — VISUAL / BRAND PANEL
+          Image, badge and copy all come from
+          roleContent, so a trainer and a student now
+          genuinely see a different panel.
           ============================================ */}
       <section className="fp-visual">
-        <img src={heroImg} alt="Students working together" />
+        <img src={roleContent.image} alt={roleContent.imageAlt} />
         <div className="fp-visual-overlay" />
 
         <button className="fp-brand" type="button" onClick={() => navigate('/')}>
@@ -140,7 +187,7 @@ function ForgotPasswordPage() {
         {step === 1 && (
           <span className="fp-platform-badge">
             <i />
-            {origin === 'trainer' ? 'Trainer platform' : 'Student platform'}
+            {roleContent.badgeLabel}
           </span>
         )}
 
@@ -162,7 +209,7 @@ function ForgotPasswordPage() {
             </div>
           )}
         </div>
-        <small>© 2026 Compass Academy · Independent learning platform</small>
+        <small>© {new Date().getFullYear()} Compass Academy · Independent learning platform</small>
       </section>
 
       {/* ============================================

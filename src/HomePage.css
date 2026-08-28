@@ -202,6 +202,14 @@ button { font: inherit; }
 .footer-grid p { margin: 7px 0 0; color: #a8c3ce; font-size: 8px; }
 .copyright { border-top: 1px solid rgba(255,255,255,.12); padding-top: 17px; color: #89aab8; font-size: 7px; }
 
+/* ---------- Footer: brand button + functional link lists ---------- */
+.footer-brand { border: 0; background: transparent; padding: 0; margin: 0; color: inherit; cursor: pointer; display: inline-flex; }
+.footer-links { display: flex; flex-wrap: wrap; align-items: center; margin-top: 9px; }
+.footer-links button { border: 0; background: transparent; padding: 0; margin: 0; color: #a8c3ce; font-size: 8px; font-family: inherit; cursor: pointer; }
+.footer-links button:hover,
+.footer-links button:focus-visible { color: #fff; text-decoration: underline; }
+.footer-dot { color: #4f7688; font-size: 8px; margin: 0 6px; }
+
 /* ============================================
    RESPONSIVE
    ============================================ */

@@ -1,0 +1,58 @@
+export const badgesData = [
+  {
+    id: 'getting-started',
+    title: 'Getting Started',
+    description: 'Enroll in your first course',
+    icon: '🎯',
+    tier: 'bronze',
+  },
+  {
+    id: 'first-lesson',
+    title: 'First Lesson Complete',
+    description: 'Complete your first lesson',
+    icon: '📖',
+    tier: 'bronze',
+  },
+  {
+    id: 'halfway-there',
+    title: 'Halfway There',
+    description: 'Reach 50% progress in any course',
+    icon: '⚡',
+    tier: 'silver',
+  },
+  {
+    id: 'course-graduate',
+    title: 'Course Graduate',
+    description: 'Complete 100% of a course',
+    icon: '🎓',
+    tier: 'gold',
+  },
+  {
+    id: 'multi-track',
+    title: 'Multi-Track Learner',
+    description: 'Be enrolled in 3 or more courses',
+    icon: '🧭',
+    tier: 'silver',
+  },
+  {
+    id: 'knowledge-seeker',
+    title: 'Knowledge Seeker',
+    description: 'Complete at least one lesson in 3 different courses',
+    icon: '🔍',
+    tier: 'silver',
+  },
+  {
+    id: 'assignment-ace',
+    title: 'Assignment Ace',
+    description: 'Submit 5 assignments',
+    icon: '📝',
+    tier: 'gold',
+  },
+  {
+    id: 'competitor',
+    title: 'Competitor',
+    description: 'Register for your first competition',
+    icon: '🏆',
+    tier: 'bronze',
+  },
+];

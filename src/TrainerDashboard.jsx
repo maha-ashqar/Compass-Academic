@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import './Courses.css';
 import './Assignments.css';
 import './TrainerDashboard.css';
 import {
@@ -15,7 +14,7 @@ import { useTrainerAssignments } from './TrainerAssignmentsContext';
 import { useTrainerStudents } from './TrainerStudentsContext';
 import { useNotifications } from './NotificationsContext';
 import TrainerMessages from './TrainerMessages';
-import { useTrainerMessages } from './TrainerMessagesContext';
+import { useTrainerConversations } from './SharedConversationsContext';
 import TrainerStudents from './TrainerStudents';
 import TrainerCourses from './TrainerCourses';
 import TrainerAssignments from './TrainerAssignments';
@@ -45,7 +44,23 @@ const TrainerDashboard = ({ trainerData, onTrainerUpdate, onLogout }) => {
   const { assignments } = useTrainerAssignments();
   const { roster } = useTrainerStudents();
   const { unreadCount } = useNotifications();
-  const { conversations = [] } = useTrainerMessages();
+  // FIXED: this used to read from TrainerMessagesContext, a completely
+  // separate mock dataset from whatever the student side saw. It now reads
+  // this trainer's slice of the single shared conversation store (the same
+  // one Messages.jsx reads on the student side), mapped into the
+  // {id, name, avatar, messages, unreadCount} shape this file already
+  // expects so nothing else below needs to change.
+  const { conversations: trainerConversations } = useTrainerConversations(trainerData);
+  const conversations = useMemo(
+    () => trainerConversations.map((c) => ({
+      id: c.id,
+      name: c.studentName,
+      avatar: c.studentAvatar,
+      messages: c.messages,
+      unreadCount: c.unreadForTrainer,
+    })),
+    [trainerConversations]
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogoutClick = () => {
@@ -213,8 +228,12 @@ const TrainerDashboard = ({ trainerData, onTrainerUpdate, onLogout }) => {
             <TrainerAnnouncements trainerData={trainerData} />
           )}
 
-          {/* ==================== الرسائل ==================== */}
-          {activeTab === 'Messages' && <TrainerMessages />}
+          {/* ==================== الرسائل ====================
+              FIXED: was <TrainerMessages /> with no identity at all — the
+              component had no way to know which trainer was logged in.
+              Now it receives trainerData exactly like TrainerProjects and
+              TrainerCourses already do above. */}
+          {activeTab === 'Messages' && <TrainerMessages trainerData={trainerData} />}
 
           {activeTab === 'Competitions' && (
             <TrainerCompetitions trainerData={trainerData} />

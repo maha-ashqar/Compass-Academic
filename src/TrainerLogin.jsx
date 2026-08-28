@@ -14,37 +14,78 @@ const GoogleIcon = () => (
   </svg>
 );
 
+// Key used to persist the trainer's email locally when "remember me" is
+// checked, so the field can be pre-filled the next time they visit.
+const REMEMBER_EMAIL_KEY = 'compass_trainer_remember_email';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const TrainerLogin = ({ onLogin }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+
+  // FIXED: "remember me" used to only *save* the email on submit, never
+  // *read* it back — so the feature had no visible effect. Lazily reading it
+  // here pre-fills the field on return visits.
+  const [email, setEmail] = useState(() => localStorage.getItem(REMEMBER_EMAIL_KEY) || '');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
+
     const normalizedEmail = email.trim().toLowerCase();
+    setError('');
+
     if (!normalizedEmail || !password) {
       setError('Please enter your work email and password.');
       return;
     }
-    setError('');
-    const result = await onLogin?.(normalizedEmail, password, { rememberMe });
-    if (result === false) {
-      setError('The email or password is incorrect.');
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+      setError('Please enter a valid email address.');
       return;
     }
-    if (rememberMe) localStorage.setItem('compass_trainer_remember_email', normalizedEmail);
-    else localStorage.removeItem('compass_trainer_remember_email');
-    navigate('/trainer-dashboard', { replace: true });
+
+    setIsSubmitting(true);
+    try {
+      // `onLogin` is awaited so this component works unchanged once a real
+      // authentication request replaces today's local mock: `false` means
+      // "rejected", anything else means "signed in".
+      const result = await onLogin?.(normalizedEmail, password, { rememberMe });
+      if (result === false) {
+        setError('The email or password is incorrect.');
+        return;
+      }
+
+      if (rememberMe) localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+      else localStorage.removeItem(REMEMBER_EMAIL_KEY);
+
+      navigate('/trainer-dashboard', { replace: true });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Honest placeholder rather than a fake success: no Google OAuth provider
+  // is connected yet, so we tell the trainer plainly instead of pretending
+  // to sign them in.
+  const handleGoogleClick = () => {
+    if (isSubmitting) return;
+    setError('Google sign-in requires connecting a Google authentication provider.');
   };
 
   return (
     <main className="trainer-auth-shell">
+      {/* ============================================
+          LEFT — VISUAL / BRAND PANEL
+          ============================================ */}
       <section className="trainer-auth-story" style={{ '--trainer-hero': `url(${trainerHero})` }} aria-label="Compass Academy trainer portal">
         <button type="button" className="trainer-auth-brand" onClick={() => navigate('/')} aria-label="Return to home page">
-          <CompassWordmark size={28} navy="#ffffff" gold="#37c5f3" />
+          {/* FIXED: prop was `gold` which CompassWordmark doesn't accept
+              (it takes `academyColor`), so the accent color never applied. */}
+          <CompassWordmark size={28} navy="#ffffff" academyColor="#37c5f3" />
         </button>
         <div className="trainer-auth-portal-badge"><span /> TRAINER PORTAL</div>
         <div className="trainer-auth-story-copy">
@@ -54,9 +95,12 @@ const TrainerLogin = ({ onLogin }) => {
             <span><i /> Course management</span><span><i /> Student feedback</span><span><i /> Project reviews</span>
           </div>
         </div>
-        <small>© 2026 Compass Academy · Independent learning platform</small>
+        <small>© {new Date().getFullYear()} Compass Academy · Independent learning platform</small>
       </section>
 
+      {/* ============================================
+          RIGHT — LOGIN FORM PANEL
+          ============================================ */}
       <section className="trainer-auth-panel">
         <div className="trainer-auth-student-link">
           <span>Signing in as a student?</span>
@@ -71,16 +115,41 @@ const TrainerLogin = ({ onLogin }) => {
             <label htmlFor="trainer-email">Work email</label>
             <div className="trainer-auth-input">
               <FiMail />
-              <input id="trainer-email" type="email" autoComplete="email" placeholder="trainer@compass.edu" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <input
+                id="trainer-email"
+                type="email"
+                autoComplete="email"
+                placeholder="trainer@compass.edu"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                aria-invalid={Boolean(error)}
+                required
+              />
             </div>
             <div className="trainer-auth-password-label">
               <label htmlFor="trainer-password">Password</label>
-              <button type="button" onClick={() => navigate('/forgot-password', { state: { from: 'trainer' } })}>Forgot password?</button>
+              <button type="button" onClick={() => navigate('/forgot-password', { state: { from: 'trainer' } })}>
+                Forgot password?
+              </button>
             </div>
             <div className="trainer-auth-input">
               <FiLock />
-              <input id="trainer-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-              <button type="button" className="trainer-auth-password-toggle" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              <input
+                id="trainer-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                aria-invalid={Boolean(error)}
+                required
+              />
+              <button
+                type="button"
+                className="trainer-auth-password-toggle"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
@@ -89,17 +158,33 @@ const TrainerLogin = ({ onLogin }) => {
               <span>{rememberMe && <FiCheck />}</span>Remember me on this device
             </label>
             {error && <p className="trainer-auth-error" role="alert">{error}</p>}
-            <button type="submit" className="trainer-auth-submit">Continue to trainer dashboard <FiArrowRight /></button>
+            <button type="submit" className="trainer-auth-submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Signing in…' : 'Continue to trainer dashboard'}
+              {isSubmitting ? <span className="trainer-auth-spinner" aria-hidden="true" /> : <FiArrowRight />}
+            </button>
           </form>
 
           <div className="trainer-auth-divider"><span>OR SIGN IN WITH</span></div>
-          <button type="button" className="trainer-auth-google" onClick={() => setError('Google sign-in requires connecting a Google authentication provider.')}><GoogleIcon /> Continue with Google</button>
+          <button type="button" className="trainer-auth-google" onClick={handleGoogleClick} disabled={isSubmitting}>
+            <GoogleIcon /> Continue with Google
+          </button>
+
           <div className="trainer-auth-apply">
             <div><strong>Interested in teaching with us?</strong><span>Submit your trainer profile for review.</span></div>
-            <button type="button" onClick={() => navigate('/signup?role=trainer')}>Apply now <FiArrowRight /></button>
+            {/* FIXED: was `navigate('/signup?role=trainer')` — a query param
+                the shared SignupPage never reads. It decides the role from
+                `location.state.from`, exactly like the "Forgot password?"
+                link above, so this now lands there as a trainer. */}
+            <button type="button" onClick={() => navigate('/signup', { state: { from: 'trainer' } })}>
+              Apply now <FiArrowRight />
+            </button>
           </div>
           <div className="trainer-auth-secure"><span /> Secure trainer access · Protected workspace</div>
-          <nav className="trainer-auth-legal" aria-label="Legal links"><button type="button">Privacy Policy</button><span>·</span><button type="button">Terms of Use</button><span>·</span><button type="button">Help Center</button></nav>
+          <nav className="trainer-auth-legal" aria-label="Legal links">
+            <button type="button">Privacy Policy</button><span>·</span>
+            <button type="button">Terms of Use</button><span>·</span>
+            <button type="button">Help Center</button>
+          </nav>
         </div>
       </section>
     </main>

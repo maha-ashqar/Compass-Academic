@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   FiArrowRight,
+  FiBarChart2,
   FiBookOpen,
   FiCheckCircle,
   FiClock,
@@ -126,6 +127,16 @@ function MyCourses({ onExploreCourses }) {
 
   const [featured, ...remaining] = courseSummaries;
 
+  // Stat cards shown at the top of the page — same icon + number + label
+  // shape used by the dashboard's overview stats, so this page reads as
+  // part of the same product instead of a separate mini-design.
+  const summaryCards = [
+    { icon: <FiBookOpen />, value: courseSummaries.length, label: 'Enrolled courses' },
+    { icon: <FiBarChart2 />, value: `${learningStats.average}%`, label: 'Average progress' },
+    { icon: <FiCheckCircle />, value: learningStats.completed, label: 'Lessons completed' },
+    { icon: <FiClock />, value: learningStats.upcoming, label: 'Upcoming tasks' },
+  ];
+
   return (
     <main className="my-learning-page" dir="ltr">
       <header className="my-learning-header">
@@ -138,14 +149,16 @@ function MyCourses({ onExploreCourses }) {
         </button>
       </header>
 
-      <section className="learning-summary" aria-label="Learning summary">
-        <small>Learning summary</small>
-        <div className="learning-summary-grid">
-          <div><strong>{courseSummaries.length}</strong><span>Enrolled courses</span></div>
-          <div><strong>{learningStats.average}%</strong><span>Average progress</span></div>
-          <div><strong>{learningStats.completed}</strong><span>Lessons completed</span></div>
-          <div><strong>{learningStats.upcoming}</strong><span>Upcoming tasks</span></div>
-        </div>
+      <section className="learning-summary-grid" aria-label="Learning summary">
+        {summaryCards.map((card) => (
+          <div className="learning-summary-card" key={card.label}>
+            <span className="learning-summary-icon">{card.icon}</span>
+            <div>
+              <strong>{card.value}</strong>
+              <span>{card.label}</span>
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="continue-learning-section">
@@ -166,6 +179,7 @@ function MyCourses({ onExploreCourses }) {
             ) : (
               <FiBookOpen />
             )}
+            <span className="featured-learning-badge">Continue where you left off</span>
           </button>
 
           <div className="featured-learning-content">
@@ -184,15 +198,15 @@ function MyCourses({ onExploreCourses }) {
             <div className="learning-progress-track">
               <span style={{ width: `${featured.progress}%` }} />
             </div>
-          </div>
 
-          <div className="featured-learning-actions">
-            <button type="button" onClick={() => openLearning(featured.course)}>
-              <FiPlay /> Continue course
-            </button>
-            <span>
-              {featured.completedLessons} of {featured.totalLessons} lessons completed
-            </span>
+            <div className="featured-learning-actions">
+              <button type="button" onClick={() => openLearning(featured.course)}>
+                <FiPlay /> Continue course
+              </button>
+              <span>
+                {featured.completedLessons} of {featured.totalLessons} lessons completed
+              </span>
+            </div>
           </div>
         </article>
 

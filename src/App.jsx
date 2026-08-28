@@ -10,8 +10,7 @@ import { CoursesProvider } from './CoursesContext';
 import { CoursesCatalogProvider } from './CoursesCatalogContext';
 import { DeadlinesProvider } from './DeadlinesContext';
 import { SettingsProvider } from './SettingsContext';
-import { MessagesProvider } from './MessagesContext';
-import { TrainerMessagesProvider } from './TrainerMessagesContext';
+import { ConversationsProvider } from './SharedConversationsContext';
 import { ProjectsProvider } from './ProjectsContext';
 import { TrainerAssignmentsProvider } from './TrainerAssignmentsContext';
 import { TrainerStudentsProvider } from './TrainerStudentsContext';
@@ -85,8 +84,7 @@ function App() {
       <CoursesProvider>
         <CoursesCatalogProvider>
           <DeadlinesProvider>
-            <MessagesProvider>
-              <TrainerMessagesProvider>
+            <ConversationsProvider>
                 <ProjectsProvider>
                   <TrainerAssignmentsProvider>
                     <TrainerStudentsProvider>
@@ -98,7 +96,20 @@ function App() {
                               <Route path="/" element={<Homepage />} />
                               <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
                               <Route path="/forgot-password" element={<ForgotPassword />} />
-                              <Route path="/signup" element={<SignupPage onSignup={handleLogin} />} />
+                              {/* SignupPage is shared by both roles: which account gets
+                                  created (student vs trainer) is decided inside the page
+                                  itself via location.state.from, exactly like
+                                  ForgotPasswordPage already does. Both handlers are just
+                                  passed down so the page can call the right one. */}
+                              <Route
+                                path="/signup"
+                                element={
+                                  <SignupPage
+                                    onStudentSignup={handleLogin}
+                                    onTrainerSignup={handleTrainerLogin}
+                                  />
+                                }
+                              />
                               <Route path="/trainer-login" element={<TrainerLogin onLogin={handleTrainerLogin} />} />
                               <Route
                                 path="/trainer-dashboard/*"
@@ -133,8 +144,7 @@ function App() {
                     </TrainerStudentsProvider>
                   </TrainerAssignmentsProvider>
                 </ProjectsProvider>
-              </TrainerMessagesProvider>
-            </MessagesProvider>
+            </ConversationsProvider>
           </DeadlinesProvider>
         </CoursesCatalogProvider>
       </CoursesProvider>

@@ -63,8 +63,20 @@
 
 .trainer-auth-panel { position: relative; min-height: 100vh; padding: 32px 48px 38px; background: #f8fafc; }
 .trainer-auth-student-link { display: flex; align-items: center; justify-content: flex-end; gap: 18px; color: var(--ta-muted); font-size: 12px; }
-.trainer-auth-student-link button { padding: 11px 15px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 10px; cursor: pointer; font: inherit; font-weight: 800; }
-.trainer-auth-content { width: min(100%, 500px); margin: 95px auto 0; }
+.trainer-auth-student-link button { padding: 11px 15px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 10px; cursor: pointer; font: inherit; font-weight: 800; transition: border-color .18s ease; }
+.trainer-auth-content {
+  width: min(100%, 500px);
+  margin: 95px auto 0;
+  /* Subtle entrance so the panel doesn't just snap into view, matching the
+     student login/signup panels. */
+  animation: ta-fade-up .45s ease both;
+}
+
+@keyframes ta-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .trainer-auth-heading-badge { display: flex; align-items: center; margin-bottom: 32px; padding: 14px 16px; gap: 12px; background: var(--ta-soft); border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .8px; }
 .trainer-auth-heading-badge span { width: 12px; height: 12px; flex-basis: 12px; }
 .trainer-auth-content h2 { margin: 0 0 8px; color: var(--ta-ink); font-size: clamp(36px, 3vw, 48px); line-height: 1.1; letter-spacing: -1px; }
@@ -80,19 +92,35 @@
 .trainer-auth-input input { width: 100%; height: 64px; padding: 0 58px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 13px; outline: none; font: inherit; font-size: 15px; transition: border-color .18s ease, box-shadow .18s ease; }
 .trainer-auth-input input::placeholder { color: #9aacbc; }
 .trainer-auth-input input:focus { border-color: var(--ta-cyan); box-shadow: 0 0 0 4px rgba(23,174,226,.12); }
+.trainer-auth-input input[aria-invalid="true"] { border-color: #eaa8a8; }
 .trainer-auth-password-toggle { position: absolute; right: 18px; display: grid; padding: 5px; place-items: center; color: #71889a; background: transparent; border: 0; cursor: pointer; font-size: 22px; }
 .trainer-auth-remember { display: inline-flex; width: fit-content; align-items: center; margin-top: 22px; gap: 10px; color: var(--ta-muted) !important; cursor: pointer; font-size: 12px !important; font-weight: 500 !important; }
 .trainer-auth-remember input { position: absolute; opacity: 0; pointer-events: none; }
 .trainer-auth-remember > span { display: grid; width: 19px; height: 19px; place-items: center; color: #fff; background: #fff; border: 1px solid var(--ta-border); border-radius: 5px; }
 .trainer-auth-remember input:checked + span { background: var(--ta-cyan); border-color: var(--ta-cyan); }
 .trainer-auth-error { margin: 14px 0 0; padding: 10px 12px; color: #a83838; background: #fff1f1; border-radius: 8px; font-size: 12px; line-height: 1.45; }
-.trainer-auth-submit { display: flex; width: 100%; height: 63px; align-items: center; justify-content: center; margin-top: 34px; padding: 0 24px; gap: 16px; color: #fff; background: var(--ta-navy); border: 0; border-radius: 13px; cursor: pointer; font: inherit; font-size: 15px; font-weight: 800; transition: background .18s ease, transform .18s ease; }
+.trainer-auth-submit { position: relative; display: flex; width: 100%; height: 63px; align-items: center; justify-content: center; margin-top: 34px; padding: 0 24px; gap: 16px; color: #fff; background: var(--ta-navy); border: 0; border-radius: 13px; cursor: pointer; font: inherit; font-size: 15px; font-weight: 800; transition: background .18s ease, transform .18s ease, opacity .18s ease; }
 .trainer-auth-submit svg { margin-left: auto; color: #2ec4f3; font-size: 22px; }
-.trainer-auth-submit:hover { background: #063b53; transform: translateY(-1px); }
+.trainer-auth-submit:hover:not(:disabled) { background: #063b53; transform: translateY(-1px); }
+.trainer-auth-submit:disabled { opacity: .75; cursor: default; transform: none; }
+
+/* ---------- Loading spinner shown on the submit button while signing in ---------- */
+.trainer-auth-spinner {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ta-spin .7s linear infinite;
+}
+@keyframes ta-spin { to { transform: rotate(360deg); } }
+
 .trainer-auth-divider { display: flex; align-items: center; margin: 46px 0 32px; gap: 18px; color: #91a2b1; font-size: 10px; font-weight: 800; }
 .trainer-auth-divider::before, .trainer-auth-divider::after { height: 1px; flex: 1; background: #dae4ea; content: ''; }
-.trainer-auth-google { display: flex; width: 100%; height: 60px; align-items: center; justify-content: center; gap: 16px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 13px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; }
-.trainer-auth-google:hover, .trainer-auth-student-link button:hover { border-color: var(--ta-cyan); }
+.trainer-auth-google { display: flex; width: 100%; height: 60px; align-items: center; justify-content: center; gap: 16px; color: var(--ta-ink); background: #fff; border: 1px solid var(--ta-border); border-radius: 13px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; transition: border-color .18s ease, opacity .18s ease; }
+.trainer-auth-google:hover:not(:disabled), .trainer-auth-student-link button:hover { border-color: var(--ta-cyan); }
+.trainer-auth-google:disabled { opacity: .7; cursor: default; }
 .trainer-auth-apply { display: flex; align-items: center; justify-content: space-between; margin-top: 46px; padding: 20px 24px; gap: 20px; background: #eff8fb; border-radius: 13px; }
 .trainer-auth-apply div { display: flex; flex-direction: column; gap: 8px; }
 .trainer-auth-apply strong { font-size: 12px; }
@@ -131,4 +159,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .trainer-auth-shell *, .trainer-auth-shell *::before, .trainer-auth-shell *::after { scroll-behavior: auto !important; transition: none !important; }
+  .trainer-auth-content { animation: none; }
+  .trainer-auth-spinner { animation-duration: 1.2s; }
 }
