@@ -21,4 +21,9 @@ body {
 
 #root {
   min-height: 100vh;
+}html,
+body,
+#root {
+  direction: ltr !important;
+  text-align: left;
 }

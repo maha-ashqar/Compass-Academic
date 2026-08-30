@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   FiArrowLeft, FiAward, FiCalendar, FiCheck, FiChevronRight, FiClock,
-  FiFile, FiFilter, FiInfo, FiLink, FiPlus, FiSearch, FiShield,
+  FiFile, FiInfo, FiLink, FiPlus, FiSearch, FiShield,
   FiStar, FiTarget, FiUploadCloud, FiUser, FiUsers, FiX,
 } from 'react-icons/fi';
 import { COMPETITION_PHASE, useCompetitions } from './CompetitionsContext';
@@ -46,14 +46,28 @@ function ApplicationForm({ competition, studentData, onBack, onSubmit }) {
   </form></div>;
 }
 
-function SubmissionForm({ competition, registration, studentData, onBack, onSubmit }) {
-  const [form, setForm] = useState({ title: '', description: '', demo: '', github: '', files: [] });
+function SubmissionForm({ competition, registration, studentData, initialSubmission, onBack, onSubmit }) {
+  // FIXED: this used to always start blank, even when the student already
+  // had a submission (e.g. resubmitting after "changes requested") — they'd
+  // lose their previous title, description, and links for no reason.
+  const [form, setForm] = useState({
+    title: initialSubmission?.title || '',
+    description: initialSubmission?.description || '',
+    demo: initialSubmission?.links?.demo || '',
+    github: initialSubmission?.links?.github || '',
+    files: initialSubmission?.files || [],
+  });
+  const isResubmit = Boolean(initialSubmission);
   const addFiles = (event) => setForm((current) => ({ ...current, files: [...current.files, ...Array.from(event.target.files).map((file) => ({ name: file.name, size: file.size, type: file.type }))] }));
   const submit = (event) => { event.preventDefault(); if (!form.title.trim()) return; onSubmit({ ...form, links: { demo: form.demo, github: form.github }, registrationId: registration.id, studentName: studentData?.displayName || studentData?.fullName || 'Student', studentEmail: studentData?.email || '', teamName: registration.teamName || '' }); };
-  return <div className="sc-page sc-form-page"><button className="sc-back" onClick={onBack}><FiArrowLeft /> Back to competition</button><header className="sc-heading"><div><span>WORK SUBMISSION</span><h1>Submit your work</h1><p>{competition.title} · Your trainer will review this version.</p></div></header><form className="sc-application" onSubmit={submit}>
+  return <div className="sc-page sc-form-page"><button className="sc-back" onClick={onBack}><FiArrowLeft /> Back to competition</button><header className="sc-heading"><div><span>{isResubmit ? 'UPDATE SUBMISSION' : 'WORK SUBMISSION'}</span><h1>{isResubmit ? 'Update your submission' : 'Submit your work'}</h1><p>{competition.title} · Your trainer will review this version.</p></div></header>
+    {isResubmit && initialSubmission?.feedback && (
+      <div className="sc-changes-banner"><FiInfo /><div><strong>Trainer feedback from your last submission</strong><p>{initialSubmission.feedback}</p></div></div>
+    )}
+    <form className="sc-application" onSubmit={submit}>
     <section><div className="sc-step"><b>1</b><span><strong>Project information</strong><small>Explain what you built and add its links.</small></span></div><div className="sc-form-grid"><label className="full">Submission title *<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label><label className="full">Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><label>Demo link<input type="url" value={form.demo} onChange={(e) => setForm({ ...form, demo: e.target.value })} /></label><label>GitHub repository<input type="url" value={form.github} onChange={(e) => setForm({ ...form, github: e.target.value })} /></label></div></section>
     <section><div className="sc-step"><b>2</b><span><strong>Files</strong><small>Presentation, report, ZIP, or images.</small></span></div><label className="sc-dropzone"><FiUploadCloud /><strong>Choose files to upload</strong><small>PDF, PPTX, DOCX, ZIP or images</small><input type="file" multiple onChange={addFiles} /></label><div className="sc-file-list">{form.files.map((file, index) => <div key={`${file.name}-${index}`}><FiFile /><span><b>{file.name}</b><small>{Math.max(1, Math.round(file.size / 1024))} KB</small></span><button type="button" onClick={() => setForm({ ...form, files: form.files.filter((_, i) => i !== index) })}><FiX /></button></div>)}</div></section>
-    <footer><button type="button" className="sc-secondary" onClick={onBack}>Cancel</button><button className="sc-primary"><FiUploadCloud /> Submit work</button></footer>
+    <footer><button type="button" className="sc-secondary" onClick={onBack}>Cancel</button><button className="sc-primary"><FiUploadCloud /> {isResubmit ? 'Resubmit work' : 'Submit work'}</button></footer>
   </form></div>;
 }
 
@@ -63,6 +77,7 @@ function Competitions({ studentData }) {
   const [selectedId, setSelectedId] = useState(null);
   const [tab, setTab] = useState('explore');
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
   const email = studentData?.email || '';
   const registrations = useMemo(
     () => Array.isArray(api.registrations) ? api.registrations : [],
@@ -83,41 +98,75 @@ function Competitions({ studentData }) {
     : publishedCompetitions.find((item) => String(item.id) === String(selectedId)) || null;
   const registration = selected ? registrations.find((item) => String(item.competitionId) === String(selected.id) && (!email || item.studentEmail?.toLowerCase() === email.toLowerCase())) : null;
   const submission = selected ? findStudentSubmission(selected.id) : null;
+  const categories = useMemo(
+    () => [...new Set(publishedCompetitions.map((item) => item.category).filter(Boolean))],
+    [publishedCompetitions]
+  );
   const list = useMemo(() => publishedCompetitions.filter((item) => {
     const mine = registrations.some((reg) => String(reg.competitionId) === String(item.id) && (!email || reg.studentEmail?.toLowerCase() === email.toLowerCase()));
     const result = [COMPETITION_PHASE.RESULTS_PUBLISHED, COMPETITION_PHASE.COMPLETED].includes(item.phase);
-    return (tab === 'explore' || (tab === 'mine' && mine) || (tab === 'results' && result)) && `${item.title} ${item.category} ${item.description}`.toLowerCase().includes(query.toLowerCase());
-  }), [publishedCompetitions, registrations, email, query, tab]);
+    return (tab === 'explore' || (tab === 'mine' && mine) || (tab === 'results' && result))
+      && (category === 'all' || item.category === category)
+      && `${item.title} ${item.category} ${item.description}`.toLowerCase().includes(query.toLowerCase());
+  }), [publishedCompetitions, registrations, email, query, category, tab]);
 
   const goList = () => { setView('list'); setSelectedId(null); };
   if (selected && view === 'apply') return <ApplicationForm competition={selected} studentData={studentData} onBack={() => setView('details')} onSubmit={(data) => { api.registerForCompetition(selected.id, data); setView('details'); }} />;
-  if (selected && view === 'submit') return <SubmissionForm competition={selected} registration={registration} studentData={studentData} onBack={() => setView('details')} onSubmit={(data) => {
-    if (typeof api.submitCompetitionWork !== 'function') {
-      window.alert('Replace CompetitionsContext.jsx with the updated version to enable submissions.');
-      return;
-    }
-    api.submitCompetitionWork(selected.id, data);
-    setView('details');
-  }} />;
+  if (selected && view === 'submit') return <SubmissionForm
+    competition={selected}
+    registration={registration}
+    studentData={studentData}
+    initialSubmission={submission}
+    onBack={() => setView('details')}
+    onSubmit={(data) => { api.submitCompetitionWork(selected.id, data); setView('details'); }}
+  />;
 
   if (selected && view === 'details') {
     const [phaseLabel, color] = phaseMeta[selected.phase] || ['Competition', 'neutral'];
     const pending = registration?.status === 'pending';
     const approved = registration?.status === 'approved';
+    const needsChanges = submission?.status === 'changes-requested';
     const canApply = selected.phase === COMPETITION_PHASE.REGISTRATION_OPEN && !registration;
-    const canSubmit = approved && selected.phase === COMPETITION_PHASE.SUBMISSIONS_OPEN && !submission;
-    return <div className="sc-page"><button className="sc-back" onClick={goList}><FiArrowLeft /> Back to competitions</button><header className="sc-detail-head"><span className={`sc-hero-icon ${color}`}>{iconFor(selected.category)}</span><div><div><h1>{selected.title}</h1><i className={`sc-phase ${color}`}>{phaseLabel}</i></div><p>{selected.description}</p></div><aside>{canApply && <button className="sc-primary" onClick={() => setView('apply')}>Apply now</button>}{pending && <><span className="sc-wait"><FiClock /> Awaiting trainer approval</span><small>Your application was sent successfully.</small></>}{approved && !submission && <button className="sc-primary" disabled={!canSubmit} onClick={() => canSubmit && setView('submit')}>{canSubmit ? 'Upload submission' : 'Application approved'}</button>}{submission && <span className={`sc-wait ${submission.status === 'approved' ? 'success' : ''}`}><FiCheck /> {['scored','approved'].includes(submission.status) ? 'Evaluation available' : 'Submission under review'}</span>}</aside></header>
+    // FIXED: previously, if a student never registered and the competition
+    // had already moved past the registration phase (or hadn't opened yet,
+    // or had ended), both the header action area and the "Before you
+    // apply" box below simply rendered nothing useful — an empty header
+    // and a "Before you apply" invitation with no button to act on. This
+    // gives an honest, phase-specific reason instead of a silent dead end.
+    const closedMessage = () => {
+      switch (selected.phase) {
+        case COMPETITION_PHASE.DRAFT: return 'This competition has not opened for registration yet.';
+        case COMPETITION_PHASE.REGISTRATION_CLOSED: return 'Registration is closed. Submissions have not opened yet.';
+        case COMPETITION_PHASE.SUBMISSIONS_OPEN: return 'Registration is closed for this competition.';
+        case COMPETITION_PHASE.JUDGING: return 'Submissions are closed — entries are currently being judged.';
+        case COMPETITION_PHASE.RESULTS_PUBLISHED: return 'This competition has ended. Results are published below.';
+        case COMPETITION_PHASE.COMPLETED: return 'This competition has ended.';
+        default: return 'This competition is not accepting applications right now.';
+      }
+    };
+    // FIXED: this used to be `!submission`, which permanently blocked any
+    // resubmission — once a student submitted once, "changes requested"
+    // from the trainer had no way to actually be acted on.
+    const canSubmit = approved && selected.phase === COMPETITION_PHASE.SUBMISSIONS_OPEN && (!submission || needsChanges);
+    return <div className="sc-page"><button className="sc-back" onClick={goList}><FiArrowLeft /> Back to competitions</button><header className="sc-detail-head"><span className={`sc-hero-icon ${color}`}>{iconFor(selected.category)}</span><div><div><h1>{selected.title}</h1><i className={`sc-phase ${color}`}>{phaseLabel}</i></div><p>{selected.description}</p></div><aside>
+      {canApply && <button className="sc-primary" onClick={() => setView('apply')}>Apply now</button>}
+      {pending && <><span className="sc-wait"><FiClock /> Awaiting trainer approval</span><small>Your application was sent successfully.</small></>}
+      {approved && canSubmit && <button className="sc-primary" onClick={() => setView('submit')}>{needsChanges ? 'Update submission' : 'Upload submission'}</button>}
+      {approved && !canSubmit && !submission && <span className="sc-wait">Application approved</span>}
+      {submission && !needsChanges && <span className={`sc-wait ${submission.status === 'approved' ? 'success' : ''}`}><FiCheck /> {['scored', 'approved'].includes(submission.status) ? 'Evaluation available' : 'Submission under review'}</span>}
+      {!canApply && !registration && !submission && <span className="sc-wait neutral"><FiInfo /> {closedMessage()}</span>}
+    </aside></header>
       <div className="sc-process">{[['Registration', selected.registrationOpenAt, selected.registrationCloseAt, FiCalendar], ['Work period', selected.submissionOpenAt, selected.submissionCloseAt, FiTarget], ['Submission deadline', selected.submissionCloseAt, '', FiClock], ['Results', selected.resultsAt, '', FiAward]].map(([label, from, to, Icon], index) => <div key={label} className={index === 0 ? 'active' : ''}><span><Icon /></span><p><b>{label}</b><small>{formatDate(from)}{to ? ` – ${formatDate(to)}` : ''}</small></p></div>)}</div>
-      <div className="sc-detail-layout"><main><section className="sc-panel"><h2><FiInfo /> About the competition</h2><p>{selected.description}</p><h3>Objective</h3><p>Build an original solution with clear impact and a polished final presentation.</p></section><section className="sc-panel"><h2><FiFile /> Requirements</h2><ul>{(selected.requirements || []).map((item) => <li key={item}><FiCheck /> {item}</li>)}</ul></section><div className="sc-split"><section className="sc-panel"><h2><FiUploadCloud /> What to submit</h2><ul><li><FiFile /> Project description</li><li><FiLink /> Demo or prototype link</li><li><FiFile /> Presentation and documentation</li><li><FiUploadCloud /> Supporting files</li></ul></section><section className="sc-panel"><h2><FiStar /> Evaluation criteria</h2><dl><div><dt>Innovation</dt><dd>25%</dd></div><div><dt>Technical quality</dt><dd>35%</dd></div><div><dt>Impact</dt><dd>20%</dd></div><div><dt>Presentation</dt><dd>20%</dd></div></dl></section></div></main><aside><section className="sc-panel"><h2><FiInfo /> Key information</h2><dl><div><dt>Registration closes</dt><dd>{formatDate(selected.registrationCloseAt)}</dd></div><div><dt>Submission deadline</dt><dd>{formatDate(selected.submissionCloseAt, true)}</dd></div><div><dt>Participation</dt><dd>{selected.participationType?.replaceAll('-', ' ')}</dd></div><div><dt>Team size</dt><dd>Up to {selected.maxTeamMembers || 1}</dd></div><div><dt>Prize</dt><dd>{selected.prize || 'Recognition award'}</dd></div></dl></section>{registration ? <section className="sc-status-panel"><h2>Your participation</h2><div className="sc-status-line"><span className={registration.status}><FiCheck /></span><div><b>Application {registration.status}</b><small>{pending ? 'The trainer will review your request.' : 'You can continue to the submission stage.'}</small></div></div>{submission && <div className="sc-result"><b>{submission.title}</b><span>{submission.finalScore || 0}/100</span><p>{submission.feedback || 'Your work is currently being reviewed.'}</p></div>}{canSubmit && <button className="sc-primary" onClick={() => setView('submit')}>Upload and submit work</button>}</section> : <section className="sc-info-box"><FiInfo /><h3>Before you apply</h3><p>Choose whether you are applying individually or with a team.</p>{canApply && <button className="sc-primary" onClick={() => setView('apply')}>Apply now</button>}</section>}</aside></div></div>;
+      <div className="sc-detail-layout"><main><section className="sc-panel"><h2><FiInfo /> About the competition</h2><p>{selected.description}</p><h3>Objective</h3><p>Build an original solution with clear impact and a polished final presentation.</p></section><section className="sc-panel"><h2><FiFile /> Requirements</h2><ul>{(selected.requirements || []).map((item) => <li key={item}><FiCheck /> {item}</li>)}</ul></section><div className="sc-split"><section className="sc-panel"><h2><FiUploadCloud /> What to submit</h2><ul><li><FiFile /> Project description</li><li><FiLink /> Demo or prototype link</li><li><FiFile /> Presentation and documentation</li><li><FiUploadCloud /> Supporting files</li></ul></section><section className="sc-panel"><h2><FiStar /> Evaluation criteria</h2><dl><div><dt>Innovation</dt><dd>25%</dd></div><div><dt>Technical quality</dt><dd>35%</dd></div><div><dt>Impact</dt><dd>20%</dd></div><div><dt>Presentation</dt><dd>20%</dd></div></dl></section></div></main><aside><section className="sc-panel"><h2><FiInfo /> Key information</h2><dl><div><dt>Registration closes</dt><dd>{formatDate(selected.registrationCloseAt)}</dd></div><div><dt>Submission deadline</dt><dd>{formatDate(selected.submissionCloseAt, true)}</dd></div><div><dt>Participation</dt><dd>{selected.participationType?.replaceAll('-', ' ')}</dd></div><div><dt>Team size</dt><dd>Up to {selected.maxTeamMembers || 1}</dd></div><div><dt>Prize</dt><dd>{selected.prize || 'Recognition award'}</dd></div></dl></section>{registration ? <section className="sc-status-panel"><h2>Your participation</h2><div className="sc-status-line"><span className={registration.status}><FiCheck /></span><div><b>Application {registration.status}</b><small>{pending ? 'The trainer will review your request.' : 'You can continue to the submission stage.'}</small></div></div>{submission && <div className={`sc-result ${needsChanges ? 'needs-changes' : ''}`}><b>{submission.title}</b><span>{needsChanges ? 'Changes requested' : `${submission.finalScore || 0}/100`}</span><p>{submission.feedback || 'Your work is currently being reviewed.'}</p></div>}{canSubmit && <button className="sc-primary" onClick={() => setView('submit')}>{needsChanges ? 'Update submission' : 'Upload and submit work'}</button>}</section> : canApply ? <section className="sc-info-box"><FiInfo /><h3>Before you apply</h3><p>Choose whether you are applying individually or with a team.</p><button className="sc-primary" onClick={() => setView('apply')}>Apply now</button></section> : <section className="sc-info-box closed"><FiInfo /><h3>Applications are closed</h3><p>{closedMessage()}</p></section>}</aside></div></div>;
   }
 
-  return <div className="sc-page"><header className="sc-heading"><div><h1>Competitions</h1><p>Discover challenges, apply, and track your participation.</p></div></header><div className="sc-toolbar"><nav>{[['explore','Explore'],['mine','My competitions'],['results','Results']].map(([id,label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{label}</button>)}</nav><label><FiSearch /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search competitions" /></label><button className="sc-filter"><FiFilter /> Filters</button></div><section className="sc-list-panel"><h2>{tab === 'explore' ? 'Available competitions' : tab === 'mine' ? 'My competitions' : 'Competition results'}</h2><div className="sc-list">{list.map((item) => {
+  return <div className="sc-page"><header className="sc-heading"><div><h1>Competitions</h1><p>Discover challenges, apply, and track your participation.</p></div></header><div className="sc-toolbar"><nav>{[['explore','Explore'],['mine','My competitions'],['results','Results']].map(([id,label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{label}</button>)}</nav><label><FiSearch /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search competitions" /></label><select className="sc-category-select" value={category} onChange={(e) => setCategory(e.target.value)}><option value="all">All categories</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}</select></div><section className="sc-list-panel"><h2>{tab === 'explore' ? 'Available competitions' : tab === 'mine' ? 'My competitions' : 'Competition results'}</h2><div className="sc-list">{list.map((item) => {
     const reg = registrations.find((r) => String(r.competitionId) === String(item.id) && (!email || r.studentEmail?.toLowerCase() === email.toLowerCase()));
     const sub = findStudentSubmission(item.id);
     const [label, color] = phaseMeta[item.phase] || ['Competition', 'neutral'];
     const deadline = item.phase === COMPETITION_PHASE.REGISTRATION_OPEN ? item.registrationCloseAt : item.submissionCloseAt;
-    const action = sub ? (['scored','approved'].includes(sub.status) ? 'View result' : 'View submission') : reg?.status === 'approved' ? 'Continue' : 'View details';
-    return <article key={item.id} onClick={() => { setSelectedId(item.id); setView('details'); }}><span className={`sc-list-icon ${color}`}>{iconFor(item.category)}</span><div className="sc-list-title"><h3>{item.title}</h3><p>{item.description}</p></div><div className="sc-list-meta"><span><FiCalendar /><b>{item.phase === COMPETITION_PHASE.REGISTRATION_OPEN ? 'Registration closes' : 'Submission closes'}</b><small>{formatDate(deadline)}{daysLeft(deadline) !== null ? ` · ${daysLeft(deadline)} days left` : ''}</small></span><span><FiUsers /><b>{item.participationType?.replaceAll('-', ' ')}</b><small>Up to {item.maxTeamMembers || 1} members</small></span></div><div className="sc-list-state"><i className={`sc-phase ${color}`}>{label}</i>{reg && <small className={reg.status}><FiCheck /> {reg.status === 'approved' ? 'Your application is approved' : `Application ${reg.status}`}</small>}{sub && <small><FiClock /> {sub.status === 'scored' ? `${sub.finalScore}/100` : 'Submission under review'}</small>}</div><button>{action}</button><FiChevronRight className="sc-chevron" /></article>;
+    const action = sub ? (['scored','approved'].includes(sub.status) ? 'View result' : sub.status === 'changes-requested' ? 'Update submission' : 'View submission') : reg?.status === 'approved' ? 'Continue' : 'View details';
+    return <article key={item.id} onClick={() => { setSelectedId(item.id); setView('details'); }}><span className={`sc-list-icon ${color}`}>{iconFor(item.category)}</span><div className="sc-list-title"><h3>{item.title}</h3><p>{item.description}</p></div><div className="sc-list-meta"><span><FiCalendar /><b>{item.phase === COMPETITION_PHASE.REGISTRATION_OPEN ? 'Registration closes' : 'Submission closes'}</b><small>{formatDate(deadline)}{daysLeft(deadline) !== null ? ` · ${daysLeft(deadline)} days left` : ''}</small></span><span><FiUsers /><b>{item.participationType?.replaceAll('-', ' ')}</b><small>Up to {item.maxTeamMembers || 1} members</small></span></div><div className="sc-list-state"><i className={`sc-phase ${color}`}>{label}</i>{reg && <small className={reg.status}><FiCheck /> {reg.status === 'approved' ? 'Your application is approved' : `Application ${reg.status}`}</small>}{sub && <small className={sub.status === 'changes-requested' ? 'changes' : ''}><FiClock /> {sub.status === 'scored' ? `${sub.finalScore}/100` : sub.status === 'changes-requested' ? 'Changes requested' : 'Submission under review'}</small>}</div><button>{action}</button><FiChevronRight className="sc-chevron" /></article>;
   })}{!list.length && <div className="sc-empty"><FiAward /><h3>No competitions found</h3><p>Published competitions and your participation will appear here.</p></div>}</div></section><footer className="sc-sync"><FiInfo /> New competitions published by trainers will appear here automatically.</footer></div>;
 }
 

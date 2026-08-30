@@ -74,6 +74,8 @@ const normalizeSubmission = (item, index) => (
         links: {},
         rubricScores: {},
         status: 'submitted',
+        finalScore: 0,
+        feedback: '',
         ...item,
         id: String(item.id ?? `submission-${index + 1}`),
         competitionId: String(item.competitionId ?? item.competition ?? ''),
@@ -81,16 +83,48 @@ const normalizeSubmission = (item, index) => (
     : null
 );
 
-const seedCompetitions = competitionsData.map((item, index) => ({
-  ...item, id: String(item.id), status: 'published',
-  phase: index === 0 ? COMPETITION_PHASE.REGISTRATION_OPEN : index === 1 ? COMPETITION_PHASE.SUBMISSIONS_OPEN : index === 2 ? COMPETITION_PHASE.JUDGING : COMPETITION_PHASE.COMPLETED,
-  participationType: item.teamSize?.toLowerCase().includes('individual') ? 'individual' : 'individual-or-team',
-  registrationOpenAt: item.timeline?.[0]?.date || item.startDate, registrationCloseAt: item.registrationDeadline,
-  submissionOpenAt: item.startDate, submissionCloseAt: item.endDate, resultsAt: item.timeline?.at(-1)?.date || item.endDate,
-  maxTeamMembers: Number(item.teamSize?.match(/\d+/g)?.at(-1)) || 1,
-  applicationsCount: index === 0 ? 18 : 0, submissionsCount: index === 1 ? 12 : index === 2 ? 9 : 0,
-  createdAt: now(), updatedAt: now(),
-}));
+// FIXED: the seed dates used to come straight from competitionsData.js as
+// fixed 2026-06 .. 2026-09 calendar dates. Those become stale the moment
+// "today" moves past them — a competition whose *phase* said "Registration
+// open" could have a registrationCloseAt date that had already passed,
+// which is exactly what made the demo confusing (the badge said one thing,
+// the date said another, even though the code itself was working
+// correctly off the phase field). Dates are now generated relative to
+// today, so whichever competition is seeded as "open" genuinely has an
+// open window when you load the app, no matter what day that is.
+const daysFromNow = (days) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+};
+
+const seedCompetitions = competitionsData.map((item, index) => {
+  const phase = index === 0 ? COMPETITION_PHASE.REGISTRATION_OPEN
+    : index === 1 ? COMPETITION_PHASE.SUBMISSIONS_OPEN
+    : index === 2 ? COMPETITION_PHASE.JUDGING
+    : COMPETITION_PHASE.COMPLETED;
+
+  // Each phase gets a date range that actually matches what it claims:
+  // registration-open has a registration window still ahead; submissions-open
+  // has registration already closed but a submission window still ahead;
+  // judging/completed are fully in the past.
+  const dates = phase === COMPETITION_PHASE.REGISTRATION_OPEN
+    ? { registrationOpenAt: daysFromNow(-7), registrationCloseAt: daysFromNow(7), submissionOpenAt: daysFromNow(8), submissionCloseAt: daysFromNow(21), resultsAt: daysFromNow(28) }
+    : phase === COMPETITION_PHASE.SUBMISSIONS_OPEN
+    ? { registrationOpenAt: daysFromNow(-21), registrationCloseAt: daysFromNow(-7), submissionOpenAt: daysFromNow(-6), submissionCloseAt: daysFromNow(7), resultsAt: daysFromNow(14) }
+    : phase === COMPETITION_PHASE.JUDGING
+    ? { registrationOpenAt: daysFromNow(-28), registrationCloseAt: daysFromNow(-14), submissionOpenAt: daysFromNow(-13), submissionCloseAt: daysFromNow(-1), resultsAt: daysFromNow(6) }
+    : { registrationOpenAt: daysFromNow(-45), registrationCloseAt: daysFromNow(-30), submissionOpenAt: daysFromNow(-29), submissionCloseAt: daysFromNow(-16), resultsAt: daysFromNow(-9) };
+
+  return {
+    ...item, id: String(item.id), status: 'published', phase,
+    participationType: item.teamSize?.toLowerCase().includes('individual') ? 'individual' : 'individual-or-team',
+    ...dates,
+    maxTeamMembers: Number(item.teamSize?.match(/\d+/g)?.at(-1)) || 1,
+    applicationsCount: index === 0 ? 18 : 0, submissionsCount: index === 1 ? 12 : index === 2 ? 9 : 0,
+    createdAt: now(), updatedAt: now(),
+  };
+});
 
 const seedRegistrations = [
   { id: 'registration-1', competitionId: '1', studentId: 'STU-1001', studentName: 'Maha Alashqar', studentEmail: 'maha@university.edu.sa', type: 'team', teamName: 'Team Orbit', members: [{ name: 'Maha Alashqar', role: 'Team lead' }, { name: 'Omar Fares', role: 'Developer' }], status: 'pending', createdAt: now() },
@@ -154,10 +188,57 @@ export function CompetitionsProvider({ children }) {
   const getCompetitionSubmissions = useCallback((competitionId) => submissions.filter((item) => String(item.competitionId) === String(competitionId) && item.status !== 'deleted'), [submissions]);
   const getSubmissionById = useCallback((id) => submissions.find((item) => item.id === id) || null, [submissions]);
   const mutateSubmission = useCallback((id, updater) => setSubmissions((items) => items.map((item) => item.id === id ? { ...updater(item), updatedAt: now() } : item)), []);
+
+  // FIXED: this was the one missing piece breaking the whole trainer <-> student
+  // link. Competitions.jsx (student side) called api.submitCompetitionWork(),
+  // but this context never actually defined it — every submission attempt
+  // silently failed and fell back to an alert telling the student the app
+  // needed a code update it would never receive. Written as an upsert: if the
+  // student already has a non-deleted submission for this competition, it's
+  // updated in place (and reset to "submitted" so it re-enters the trainer's
+  // review queue) instead of creating a duplicate — this is also what makes
+  // resubmitting after a trainer requests changes actually work.
+  const submitCompetitionWork = useCallback((competitionId, data = {}) => {
+    const email = (data.studentEmail || '').toLowerCase();
+    let result;
+    setSubmissions((current) => {
+      const existingIndex = current.findIndex((item) => (
+        String(item.competitionId) === String(competitionId)
+        && item.status !== 'deleted'
+        && email && item.studentEmail?.toLowerCase() === email
+      ));
+      if (existingIndex >= 0) {
+        const updated = normalizeSubmission({
+          ...current[existingIndex],
+          ...data,
+          competitionId: String(competitionId),
+          status: 'submitted',
+          rubricScores: {},
+          finalScore: 0,
+          submittedAt: now(),
+        });
+        result = updated;
+        const next = [...current];
+        next[existingIndex] = updated;
+        return next;
+      }
+      const created = normalizeSubmission({
+        id: uid('submission'),
+        competitionId: String(competitionId),
+        status: 'submitted',
+        submittedAt: now(),
+        ...data,
+      });
+      result = created;
+      return [created, ...current];
+    });
+    return result;
+  }, []);
+
   const approveSubmission = useCallback((id) => mutateSubmission(id, (item) => ({ ...item, status: 'approved' })), [mutateSubmission]);
   const requestSubmissionChanges = useCallback((id, feedback) => mutateSubmission(id, (item) => ({ ...item, status: 'changes-requested', feedback })), [mutateSubmission]);
   const deleteSubmission = useCallback((id, reason) => { if (!reason?.trim()) return { ok: false, error: 'A deletion reason is required.' }; mutateSubmission(id, (item) => ({ ...item, status: 'deleted', deleteReason: reason, deletedAt: now() })); return { ok: true }; }, [mutateSubmission]);
-  const calculateFinalScore = useCallback((scores = {}) => Object.values(scores).reduce((total, score) => total + (Number(score) || 0), 0), []);
+  const calculateFinalScore = useCallback((scores = {}) => Object.values(scores).reduce((total, score) => total + Math.max(0, Number(score) || 0), 0), []);
   const saveSubmissionScore = useCallback((id, rubricScores) => mutateSubmission(id, (item) => ({ ...item, rubricScores, finalScore: calculateFinalScore(rubricScores), status: 'scored' })), [calculateFinalScore, mutateSubmission]);
   const addSubmissionFeedback = useCallback((id, feedback) => mutateSubmission(id, (item) => ({ ...item, feedback })), [mutateSubmission]);
 
@@ -179,7 +260,7 @@ export function CompetitionsProvider({ children }) {
 
   const publishedCompetitions = useMemo(() => competitions.filter((item) => item.status === 'published'), [competitions]);
   const registeredIds = useMemo(() => [...new Set(registrations.filter((item) => item.status !== 'rejected').map((item) => item.competitionId))], [registrations]);
-  const value = { competitions, publishedCompetitions, registrations, submissions, registeredIds, createCompetition, updateCompetition, publishCompetition, closeCompetition, deleteCompetition, getTrainerCompetitions, getCompetitionById, getRegistrationRequests, approveRegistration, rejectRegistration, approveIndividualParticipant, approveTeamRegistration, updateTeamMembers, registerForCompetition, register, unregister, isRegistered, isRegistrationApproved, getCompetitionSubmissions, getSubmissionById, approveSubmission, requestSubmissionChanges, deleteSubmission, saveSubmissionScore, addSubmissionFeedback, calculateFinalScore, calculateCompetitionRanking, assignParticipantRank, publishCompetitionResults, exportCompetitionResults, openRegistration, closeRegistrationAutomatically, openSubmissionPeriod, closeSubmissionsAutomatically, extendCompetitionDeadline };
+  const value = { competitions, publishedCompetitions, registrations, submissions, registeredIds, createCompetition, updateCompetition, publishCompetition, closeCompetition, deleteCompetition, getTrainerCompetitions, getCompetitionById, getRegistrationRequests, approveRegistration, rejectRegistration, approveIndividualParticipant, approveTeamRegistration, updateTeamMembers, registerForCompetition, register, unregister, isRegistered, isRegistrationApproved, getCompetitionSubmissions, getSubmissionById, submitCompetitionWork, approveSubmission, requestSubmissionChanges, deleteSubmission, saveSubmissionScore, addSubmissionFeedback, calculateFinalScore, calculateCompetitionRanking, assignParticipantRank, publishCompetitionResults, exportCompetitionResults, openRegistration, closeRegistrationAutomatically, openSubmissionPeriod, closeSubmissionsAutomatically, extendCompetitionDeadline };
   return <CompetitionsContext.Provider value={value}>{children}</CompetitionsContext.Provider>;
 }
 

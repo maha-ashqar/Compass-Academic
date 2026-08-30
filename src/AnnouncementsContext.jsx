@@ -1,11 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNotifications } from './NotificationsContext';
+import { useTrainerStudents } from './TrainerStudentsContext';
 
 const AnnouncementsContext = createContext(null);
 const STORAGE_KEY = 'compass_announcements_v1';
 
 export const ANNOUNCEMENT_TYPES = ['Policy', 'Competition', 'Faculty instructions', 'General'];
+
+// FIXED: was `Date.now()` alone, which can collide if two announcements
+// are created within the same millisecond (e.g. rapid duplicate clicks).
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const seedAnnouncements = [
   {
@@ -15,7 +20,7 @@ const seedAnnouncements = [
     type: 'Policy', status: 'published', audienceType: 'all', audienceLabel: 'All students',
     attachment: { name: 'Academic Integrity Policy_2025.pdf', size: '512 KB' },
     createdAt: '2026-08-12T10:00:00.000Z', publishedAt: '2026-08-12T10:00:00.000Z',
-    recipients: 428, readBy: [],
+    recipients: 0, readBy: [],
   },
   {
     id: 2, title: 'AI Innovation Challenge 2026',
@@ -36,6 +41,7 @@ const loadAnnouncements = () => {
 export const AnnouncementsProvider = ({ children }) => {
   const [announcements, setAnnouncements] = useState(loadAnnouncements);
   const { addNotification } = useNotifications();
+  const { roster } = useTrainerStudents();
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements)); }
@@ -57,7 +63,7 @@ export const AnnouncementsProvider = ({ children }) => {
   }, [addNotification]);
 
   const createAnnouncement = useCallback((data) => {
-    const item = { ...data, id: Date.now(), status: 'draft', createdAt: new Date().toISOString(), recipients: 0, readBy: [], auditLog: [] };
+    const item = { ...data, id: makeId(), status: 'draft', createdAt: new Date().toISOString(), recipients: 0, readBy: [], auditLog: [] };
     setAnnouncements((prev) => [item, ...prev]);
     return item;
   }, []);
@@ -68,17 +74,28 @@ export const AnnouncementsProvider = ({ children }) => {
       : item));
   }, []);
 
-  const publishAnnouncement = useCallback((id, { notifyUpdate = false } = {}) => {
+  // FIXED: every publish used to record a hardcoded `recipients: 428`
+  // fallback — a fabricated number with no connection to how many students
+  // were actually targeted. The caller can pass a real, audience-filtered
+  // count; if it doesn't, this now falls back to the trainer's actual
+  // roster size instead of a made-up figure or a dishonest 0.
+  const publishAnnouncement = useCallback((id, { notifyUpdate = false, recipients } = {}) => {
     let published;
     setAnnouncements((prev) => prev.map((item) => {
       if (String(item.id) !== String(id)) return item;
       const firstPublish = item.status !== 'published';
-      published = { ...item, status: 'published', publishedAt: item.publishedAt || new Date().toISOString(), publishAt: null, recipients: item.recipients || 428 };
+      published = {
+        ...item,
+        status: 'published',
+        publishedAt: item.publishedAt || new Date().toISOString(),
+        publishAt: null,
+        recipients: recipients ?? item.recipients ?? roster.length,
+      };
       if (firstPublish || notifyUpdate) createAnnouncementNotifications(published);
       return published;
     }));
     return published;
-  }, [createAnnouncementNotifications]);
+  }, [createAnnouncementNotifications, roster.length]);
 
   const scheduleAnnouncement = useCallback((id, publishAt) => updateAnnouncement(id, { status: 'scheduled', publishAt }), [updateAnnouncement]);
   const archiveAnnouncement = useCallback((id) => updateAnnouncement(id, { status: 'archived', archivedAt: new Date().toISOString() }), [updateAnnouncement]);

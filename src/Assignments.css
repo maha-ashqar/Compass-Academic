@@ -1,11 +1,11 @@
 .student-assignments-page {
-  --sa-navy: #073c58;
-  --sa-blue: #079ed8;
-  --sa-ink: #102f49;
-  --sa-muted: #6f8498;
-  --sa-line: #d8e5ec;
-  --sa-green: #168c60;
-  --sa-red: #dc5050;
+  --sa-navy: var(--dashboard-navy, #082d47);
+  --sa-blue: var(--dashboard-blue, #0f8fd1);
+  --sa-ink: var(--dashboard-text, #17324a);
+  --sa-muted: var(--dashboard-muted, #6c8298);
+  --sa-line: var(--dashboard-border, #dce8f1);
+  --sa-green: var(--dashboard-green, #179365);
+  --sa-red: var(--dashboard-red, #df4d3d);
   width: 100%;
   max-width: 1320px;
   margin: 0 auto;
@@ -104,7 +104,7 @@
   padding: 0 5px;
   place-items: center;
   border-radius: 99px;
-  background: rgba(7, 158, 216, .12);
+  background: rgba(15, 143, 209, .12);
   font-size: 10px;
 }
 
@@ -157,14 +157,19 @@
 }
 
 .student-assignment-course {
+  min-width: 0;
+  overflow: hidden;
   color: var(--sa-blue);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .7px;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .student-assignment-status {
+  flex-shrink: 0;
   padding: 4px 9px;
   border-radius: 99px;
   background: #eaf7fc;
@@ -205,7 +210,6 @@
   color: var(--sa-muted);
   font-size: 10px;
 }
-
 .student-assignment-meta span { display: inline-flex; align-items: center; gap: 6px; }
 
 .student-assignment-feedback {
@@ -268,11 +272,11 @@
 
 /* Student submission workspace — intentionally namespaced to avoid trainer CSS. */
 .student-submission-page {
-  --sub-blue: #079ed8;
-  --sub-navy: #073c58;
-  --sub-ink: #102f49;
-  --sub-muted: #6f8498;
-  --sub-line: #d8e5ec;
+  --sub-blue: var(--dashboard-blue, #0f8fd1);
+  --sub-navy: var(--dashboard-navy, #082d47);
+  --sub-ink: var(--dashboard-text, #17324a);
+  --sub-muted: var(--dashboard-muted, #6c8298);
+  --sub-line: var(--dashboard-border, #dce8f1);
   width: 100%;
   max-width: 1320px;
   margin: 0 auto;
@@ -377,7 +381,7 @@
 }
 .student-submission-field textarea { min-height: 95px; resize: vertical; }
 .student-submission-field input:focus,
-.student-submission-field textarea:focus { border-color: var(--sub-blue); box-shadow: 0 0 0 3px rgba(7,158,216,.1); }
+.student-submission-field textarea:focus { border-color: var(--sub-blue); box-shadow: 0 0 0 3px rgba(15, 143, 209, .1); }
 
 .student-upload-area {
   display: flex;
@@ -392,6 +396,7 @@
   background: #f9fdff;
   text-align: center;
 }
+
 .student-upload-area > svg { color: var(--sub-blue); font-size: 37px; }
 .student-upload-area h3 { margin: 9px 0 4px; font-size: 15px; }
 .student-upload-area p { margin: 0 0 13px; color: var(--sub-muted); font-size: 10px; }
@@ -496,4 +501,3 @@
   .student-uploaded-files article { grid-template-columns: 38px minmax(0, 1fr) auto; }
   .student-uploaded-files article img { display: none; }
 }
-

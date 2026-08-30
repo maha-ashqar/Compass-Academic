@@ -23,8 +23,12 @@ const FILTERS = [
   { id: 'submitted', label: 'Submitted' },
   { id: 'graded', label: 'Graded' },
 ];
-
 const DAY = 1000 * 60 * 60 * 24;
+// FIXED: every "course" label on this page used to read `course.category`
+// first — a broad shared label like "Web Development" that many courses
+// can share — instead of `course.title`, the course's actual unique name.
+// Two enrolled courses in the same category looked identical here.
+const courseName = (course) => course?.title || course?.category || 'General course';
 
 const Assignments = ({ studentData }) => {
   const { myCourses, isAssignmentSubmitted, toggleAssignmentSubmitted } = useCourses();
@@ -64,7 +68,7 @@ const Assignments = ({ studentData }) => {
         list.push({
           ...assignment,
           courseId: course.id,
-          courseTitle: course.category || course.title,
+          courseTitle: courseName(course),
           daysLeft: Number(assignment.dueInDays || 0) - daysSinceEnrollment,
           submitted: isAssignmentSubmitted(assignment.id),
           graded: false,
@@ -90,7 +94,7 @@ const Assignments = ({ studentData }) => {
             title: assignment.title,
             description: assignment.description || assignment.instructions || 'No description provided.',
             courseId: course.id,
-            courseTitle: course.category || course.title,
+            courseTitle: courseName(course),
             dueAt: assignment.dueAt || assignment.dueDate,
             daysLeft,
             assignmentState,
@@ -343,7 +347,6 @@ const Assignments = ({ studentData }) => {
                 ))}
               </div>
             )}
-
             {submissionError && <p className="student-submission-message is-error">{submissionError}</p>}
             {submissionNotice && <p className="student-submission-message is-success">{submissionNotice}</p>}
 
@@ -436,7 +439,7 @@ const Assignments = ({ studentData }) => {
 
                 <div className="student-assignment-content">
                   <div className="student-assignment-topline">
-                    <span className="student-assignment-course">{assignment.courseTitle}</span>
+                    <span className="student-assignment-course" title={assignment.courseTitle}>{assignment.courseTitle}</span>
                     <span className={`student-assignment-status is-${status.type}`}>
                       {status.label}
                     </span>

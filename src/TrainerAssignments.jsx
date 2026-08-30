@@ -21,6 +21,12 @@ const timeLeft = (dueAt, now) => {
   const days = Math.floor(hours / 24);
   return days ? `${days}d ${hours % 24}h left` : `${hours}h left`;
 };
+const capitalize = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+// FIXED: every course label in this file used to read `course.category`
+// first — a broad shared label like "Web Development" — instead of
+// `course.title`, the actual unique course name. Two courses in the same
+// category were indistinguishable in the course picker and filter.
+const courseName = (course) => course?.title || course?.category || 'General course';
 
 function TrainerAssignments({ trainerData }) {
   const api = useTrainerAssignments();
@@ -39,6 +45,7 @@ function TrainerAssignments({ trainerData }) {
   const [grade, setGrade] = useState('');
   const [feedback, setFeedback] = useState('');
   const [privateNote, setPrivateNote] = useState('');
+  const [resubmitDate, setResubmitDate] = useState('');
   const [actionModal, setActionModal] = useState(null);
   const [actionReason, setActionReason] = useState('');
   const [newDate, setNewDate] = useState('');
@@ -87,11 +94,12 @@ function TrainerAssignments({ trainerData }) {
   const openEdit = (assignment) => {
     setForm({ ...assignment, openAt: assignment.openAt?.slice(0, 16), dueAt: assignment.dueAt?.slice(0, 16) });
     setEditingId(assignment.id); setFormOpen(true);
+    setMenuId(null);
   };
   const saveAssignment = (event, publish = false) => {
     event.preventDefault();
     const course = courses.find((item) => String(item.id) === String(form.courseId));
-    const payload = { ...form, courseTitle: course?.category || course?.title || 'General course', maxGrade: Number(form.maxGrade) || 100 };
+    const payload = { ...form, courseTitle: courseName(course), maxGrade: Number(form.maxGrade) || 100 };
     if (editingId) {
       api.updateAssignment(editingId, payload);
       if (publish) api.publishAssignment(editingId);
@@ -107,6 +115,17 @@ function TrainerAssignments({ trainerData }) {
     title: `Deadline updated: ${assignment.title}`,
     text: `The new deadline is ${formatDate(dueAt)}.`, icon: '📅', actionTab: 'Assignments',
   });
+  // FIXED: this used to reuse `duplicateAssignment()` with zero feedback —
+  // the new draft was created but never selected, shown, or announced, so
+  // clicking "Duplicate" looked like it did nothing.
+  const handleDuplicate = (assignment) => {
+    const copy = api.duplicateAssignment(assignment.id);
+    setMenuId(null);
+    if (!copy) return;
+    setTab('draft');
+    setSelectedId(copy.id);
+    flash('Duplicated as a new draft.');
+  };
   const submitAction = () => {
     if (!selected) return;
     if (actionModal === 'extend') {
@@ -139,16 +158,30 @@ function TrainerAssignments({ trainerData }) {
     const firstSubmission = api.getAssignmentSubmissions(assignment.id, { includeDeleted: true })[0];
     setSelectedId(assignment.id);
     setReviewOpen(true);
+    setMenuId(null);
     if (firstSubmission) chooseSubmission(firstSubmission);
     else setSubmissionId(null);
   };
   const chooseSubmission = (item) => {
-    setSubmissionId(item.id); setGrade(item.grade ?? ''); setFeedback(item.feedback || ''); setPrivateNote(item.privateNote || '');
+    setSubmissionId(item.id); setGrade(item.grade ?? ''); setFeedback(item.feedback || ''); setPrivateNote(item.privateNote || ''); setResubmitDate('');
   };
   const saveGrade = () => {
     if (!selectedSubmission || grade === '') return;
-    api.gradeSubmission(selected.id, selectedSubmission.id, { grade: Math.min(selected.maxGrade, Math.max(0, Number(grade))), feedback, privateNote });
+    // FIXED: a non-numeric grade used to silently become NaN with no
+    // warning — this now tells the trainer instead of saving garbage.
+    const numericGrade = Number(grade);
+    if (Number.isNaN(numericGrade)) return flash('Enter a valid numeric grade.');
+    api.gradeSubmission(selected.id, selectedSubmission.id, { grade: Math.min(selected.maxGrade, Math.max(0, numericGrade)), feedback, privateNote });
     flash('Grade and feedback published.');
+  };
+  // FIXED: this used to call `api.requestResubmission(..., newDate)` — but
+  // `newDate` is the state field owned by the completely separate
+  // extend/reopen ActionModal, so a resubmission request almost always
+  // carried a stale or empty due date. It now has its own dedicated field.
+  const handleRequestResubmission = () => {
+    if (!selectedSubmission) return;
+    api.requestResubmission(selected.id, selectedSubmission.id, feedback, resubmitDate || undefined);
+    flash('Resubmission requested.');
   };
 
   return (
@@ -167,8 +200,19 @@ function TrainerAssignments({ trainerData }) {
       <div className="ta-layout">
         <section className="ta-list-card">
           <h2>Assignments</h2>
-          <div className="ta-toolbar"><label><FiSearch /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search assignments" /></label><select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}><option value="all">All courses</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.category}</option>)}</select><select><option>Nearest deadline</option></select></div>
-          <div className="ta-tabs">{['active', 'scheduled', 'closed', 'draft'].map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}</div>
+          <div className="ta-toolbar">
+            <label><FiSearch /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search assignments" /></label>
+            {/* FIXED: was `course.category` (a shared label like "Web
+                Development"), which made two courses with the same
+                category indistinguishable in this filter. */}
+            <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}><option value="all">All courses</option>{courses.map((course) => <option key={course.id} value={course.id}>{courseName(course)}</option>)}</select>
+          </div>
+          {/* FIXED: was a <select> with exactly one static option and no
+              onChange — a fake control that couldn't do anything. Rows are
+              already sorted by nearest deadline below, so this is now
+              just an honest label instead of a non-functional dropdown. */}
+          <p className="ta-sort-note">Sorted by nearest deadline</p>
+          <div className="ta-tabs">{['active', 'scheduled', 'closed', 'draft'].map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{capitalize(item)}</button>)}</div>
           <div className="ta-rows">
             {rows.map((assignment) => {
               const assignmentState = api.getAssignmentState(assignment, currentNow);
@@ -182,7 +226,19 @@ function TrainerAssignments({ trainerData }) {
                 <div className="ta-count"><strong>{graded}/{assignmentSubmissions.length || '—'}</strong><small>graded</small><i><b style={{ width: `${progress}%` }} /></i></div>
                 <div className="ta-state"><span className={assignmentState}>{assignmentState}</span><small>{assignmentState === 'open' ? timeLeft(assignment.dueAt, currentNow) : assignmentState === 'scheduled' ? `Opens ${formatDate(assignment.openAt)}` : ''}</small></div>
                 <button className="ta-review" onClick={(event) => { event.stopPropagation(); openReview(assignment); }}>Review submissions</button>
-                <div className="ta-more"><button onClick={(event) => { event.stopPropagation(); setMenuId(menuId === assignment.id ? null : assignment.id); }}><FiMoreHorizontal /></button>{menuId === assignment.id && <div><button onClick={() => openEdit(assignment)}><FiEdit3 /> Edit</button><button onClick={() => api.duplicateAssignment(assignment.id)}><FiCopy /> Duplicate</button><button onClick={() => api.archiveAssignment(assignment.id)}><FiArchive /> Archive</button><button className="danger" onClick={() => { setSelectedId(assignment.id); setActionModal('delete-assignment'); }}><FiTrash2 /> Delete</button></div>}</div>
+                <div className="ta-more">
+                  <button onClick={(event) => { event.stopPropagation(); setMenuId(menuId === assignment.id ? null : assignment.id); }}><FiMoreHorizontal /></button>
+                  {/* FIXED: none of these buttons closed the menu after
+                      being clicked, so it stayed open on screen after the
+                      action ran, and clicks bubbled up to also re-select
+                      the row underneath. */}
+                  {menuId === assignment.id && <div>
+                    <button onClick={(event) => { event.stopPropagation(); openEdit(assignment); }}><FiEdit3 /> Edit</button>
+                    <button onClick={(event) => { event.stopPropagation(); handleDuplicate(assignment); }}><FiCopy /> Duplicate</button>
+                    <button onClick={(event) => { event.stopPropagation(); api.archiveAssignment(assignment.id); setMenuId(null); flash('Assignment archived.'); }}><FiArchive /> Archive</button>
+                    <button className="danger" onClick={(event) => { event.stopPropagation(); setSelectedId(assignment.id); setActionModal('delete-assignment'); setMenuId(null); }}><FiTrash2 /> Delete</button>
+                  </div>}
+                </div>
               </article>;
             })}
             {!rows.length && <div className="ta-empty">No assignments match this section.</div>}
@@ -201,7 +257,7 @@ function TrainerAssignments({ trainerData }) {
       <button className="ta-preview-bar" onClick={() => selected ? setPreview(true) : flash('Select an assignment first.')}><FiEye /> Changes sync automatically with the student dashboard.<span>Preview student view →</span></button>
 
       {formOpen && <AssignmentForm form={form} setForm={setForm} courses={courses} editing={Boolean(editingId)} onClose={() => setFormOpen(false)} onSave={saveAssignment} />}
-      {reviewOpen && selected && <ReviewModal assignment={selected} submissions={selectedSubmissions} selected={selectedSubmission} onChoose={chooseSubmission} grade={grade} setGrade={setGrade} feedback={feedback} setFeedback={setFeedback} privateNote={privateNote} setPrivateNote={setPrivateNote} onGrade={saveGrade} onAccept={() => selectedSubmission && api.acceptSubmission(selected.id, selectedSubmission.id)} onResubmit={() => selectedSubmission && api.requestResubmission(selected.id, selectedSubmission.id, feedback, newDate)} onDelete={() => setActionModal('delete-submission')} onRestore={() => selectedSubmission && api.restoreSubmission(selected.id, selectedSubmission.id)} onClose={() => setReviewOpen(false)} />}
+      {reviewOpen && selected && <ReviewModal assignment={selected} submissions={selectedSubmissions} selected={selectedSubmission} onChoose={chooseSubmission} grade={grade} setGrade={setGrade} feedback={feedback} setFeedback={setFeedback} privateNote={privateNote} setPrivateNote={setPrivateNote} resubmitDate={resubmitDate} setResubmitDate={setResubmitDate} onGrade={saveGrade} onAccept={() => selectedSubmission && api.acceptSubmission(selected.id, selectedSubmission.id)} onResubmit={handleRequestResubmission} onDelete={() => setActionModal('delete-submission')} onRestore={() => selectedSubmission && api.restoreSubmission(selected.id, selectedSubmission.id)} onClose={() => setReviewOpen(false)} />}
       {actionModal && <ActionModal type={actionModal} reason={actionReason} setReason={setActionReason} date={newDate} setDate={setNewDate} onClose={() => setActionModal(null)} onConfirm={submitAction} />}
       {preview && selected && <StudentPreview assignment={selected} state={api.getAssignmentState(selected, currentNow)} onClose={() => setPreview(false)} />}
       {notice && <div className="ta-toast">{notice}</div>}
@@ -210,11 +266,11 @@ function TrainerAssignments({ trainerData }) {
 }
 
 function AssignmentForm({ form, setForm, courses, editing, onClose, onSave }) {
-  return <div className="ta-modal"><form onSubmit={(event) => onSave(event, false)}><button type="button" className="ta-close" onClick={onClose}><FiX /></button><h2>{editing ? 'Edit assignment' : 'Create assignment'}</h2><p>Save it as a draft or publish it immediately to enrolled students.</p><div className="ta-two"><label>Course<select required value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}><option value="">Select course</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.category}</option>)}</select></label><label>Maximum grade<input type="number" min="1" value={form.maxGrade} onChange={(e) => setForm({ ...form, maxGrade: e.target.value })} /></label></div><label>Title<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><label>Submission instructions<textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></label><div className="ta-two"><label>Opens at<input required type="datetime-local" value={form.openAt} onChange={(e) => setForm({ ...form, openAt: e.target.value })} /></label><label>Deadline<input required type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} /></label></div><div className="ta-form-actions"><button type="submit">Save draft</button><button type="button" className="primary" onClick={(event) => onSave(event, true)}><FiUpload /> Publish assignment</button></div></form></div>;
+  return <div className="ta-modal"><form onSubmit={(event) => onSave(event, false)}><button type="button" className="ta-close" onClick={onClose}><FiX /></button><h2>{editing ? 'Edit assignment' : 'Create assignment'}</h2><p>Save it as a draft or publish it immediately to enrolled students.</p><div className="ta-two"><label>Course<select required value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}><option value="">Select course</option>{courses.map((course) => <option key={course.id} value={course.id}>{courseName(course)}</option>)}</select></label><label>Maximum grade<input type="number" min="1" value={form.maxGrade} onChange={(e) => setForm({ ...form, maxGrade: e.target.value })} /></label></div><label>Title<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><label>Submission instructions<textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></label><div className="ta-two"><label>Opens at<input required type="datetime-local" value={form.openAt} onChange={(e) => setForm({ ...form, openAt: e.target.value })} /></label><label>Deadline<input required type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} /></label></div><div className="ta-form-actions"><button type="submit">Save draft</button><button type="button" className="primary" onClick={(event) => onSave(event, true)}><FiUpload /> Publish assignment</button></div></form></div>;
 }
 
-function ReviewModal({ assignment, submissions, selected, onChoose, grade, setGrade, feedback, setFeedback, privateNote, setPrivateNote, onGrade, onAccept, onResubmit, onDelete, onRestore, onClose }) {
-  return <div className="ta-modal"><div className="ta-review-modal"><button className="ta-close" onClick={onClose}><FiX /></button><div className="ta-review-head"><span>SUBMISSION REVIEW</span><h2>{assignment.title}</h2><p>{submissions.filter((item) => item.status !== 'deleted').length} submissions · maximum grade {assignment.maxGrade}</p></div><div className="ta-review-layout"><aside>{submissions.map((item) => <button key={item.id} className={selected?.id === item.id ? 'active' : ''} onClick={() => onChoose(item)}><span>{item.studentName.split(' ').map((part) => part[0]).slice(0,2).join('')}</span><div><strong>{item.studentName}</strong><small>{item.status}</small></div></button>)}{!submissions.length && <p>No submissions yet.</p>}</aside><main>{selected ? <><div className="ta-submission-meta"><div><span>Student</span><strong>{selected.studentName}</strong></div><div><span>Submitted</span><strong>{formatDate(selected.submittedAt)}</strong></div><div><span>Status</span><strong>{selected.status}</strong></div></div><section><h3>{selected.title || 'Student submission'}</h3><p>{selected.text || 'No written description was included.'}</p>{selected.links.map((link) => <a key={link} href={link} target="_blank" rel="noreferrer">{link}</a>)}{selected.files.map((file) => <a key={file.id || file.name} href={file.dataUrl || file.url} download={file.name} target="_blank" rel="noreferrer"><FiFileText /> {file.name}</a>)}</section><div className="ta-two"><label>Grade / {assignment.maxGrade}<input type="number" min="0" max={assignment.maxGrade} value={grade} onChange={(e) => setGrade(e.target.value)} /></label><label>Private trainer note<textarea value={privateNote} onChange={(e) => setPrivateNote(e.target.value)} /></label></div><label>Feedback visible to student<textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} /></label><div className="ta-review-actions"><button onClick={onAccept}><FiCheck /> Accept</button><button onClick={onResubmit}><FiRefreshCw /> Request resubmission</button><button className="primary" onClick={onGrade}>Publish grade</button>{selected.status === 'deleted' ? <button onClick={onRestore}>Restore</button> : <button className="danger-text" onClick={onDelete}><FiTrash2 /> Soft delete</button>}</div></> : <div className="ta-empty">Choose a student submission.</div>}</main></div></div></div>;
+function ReviewModal({ assignment, submissions, selected, onChoose, grade, setGrade, feedback, setFeedback, privateNote, setPrivateNote, resubmitDate, setResubmitDate, onGrade, onAccept, onResubmit, onDelete, onRestore, onClose }) {
+  return <div className="ta-modal"><div className="ta-review-modal"><button className="ta-close" onClick={onClose}><FiX /></button><div className="ta-review-head"><span>SUBMISSION REVIEW</span><h2>{assignment.title}</h2><p>{submissions.filter((item) => item.status !== 'deleted').length} submissions · maximum grade {assignment.maxGrade}</p></div><div className="ta-review-layout"><aside>{submissions.map((item) => <button key={item.id} className={selected?.id === item.id ? 'active' : ''} onClick={() => onChoose(item)}><span>{item.studentName.split(' ').map((part) => part[0]).slice(0,2).join('')}</span><div><strong>{item.studentName}</strong><small>{item.status}</small></div></button>)}{!submissions.length && <p>No submissions yet.</p>}</aside><main>{selected ? <><div className="ta-submission-meta"><div><span>Student</span><strong>{selected.studentName}</strong></div><div><span>Submitted</span><strong>{formatDate(selected.submittedAt)}</strong></div><div><span>Status</span><strong>{selected.status}</strong></div></div><section><h3>{selected.title || 'Student submission'}</h3><p>{selected.text || 'No written description was included.'}</p>{selected.links.map((link) => <a key={link} href={link} target="_blank" rel="noreferrer">{link}</a>)}{selected.files.map((file) => <a key={file.id || file.name} href={file.dataUrl || file.url} download={file.name} target="_blank" rel="noreferrer"><FiFileText /> {file.name}</a>)}</section><div className="ta-two"><label>Grade / {assignment.maxGrade}<input type="number" min="0" max={assignment.maxGrade} value={grade} onChange={(e) => setGrade(e.target.value)} /></label><label>Private trainer note<textarea value={privateNote} onChange={(e) => setPrivateNote(e.target.value)} /></label></div><label>Feedback visible to student<textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} /></label><label>New deadline if requesting resubmission (optional)<input type="datetime-local" value={resubmitDate} onChange={(e) => setResubmitDate(e.target.value)} /></label><div className="ta-review-actions"><button onClick={onAccept}><FiCheck /> Accept</button><button onClick={onResubmit}><FiRefreshCw /> Request resubmission</button><button className="primary" onClick={onGrade}>Publish grade</button>{selected.status === 'deleted' ? <button onClick={onRestore}>Restore</button> : <button className="danger-text" onClick={onDelete}><FiTrash2 /> Soft delete</button>}</div></> : <div className="ta-empty">Choose a student submission.</div>}</main></div></div></div>;
 }
 
 function ActionModal({ type, reason, setReason, date, setDate, onClose, onConfirm }) {
@@ -222,7 +278,6 @@ function ActionModal({ type, reason, setReason, date, setDate, onClose, onConfir
   const needsReason = ['reopen', 'close', 'delete-assignment', 'delete-submission'].includes(type);
   return <div className="ta-modal"><div className="ta-action-dialog"><button className="ta-close" onClick={onClose}><FiX /></button><h2>{type.replaceAll('-', ' ')}</h2><p>This action is recorded in the audit history.</p>{needsDate && <label>New deadline<input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} /></label>}{needsReason && <label>Reason<textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="A clear reason is required" /></label>}<button className="primary" onClick={onConfirm}>Confirm action</button></div></div>;
 }
-
 function StudentPreview({ assignment, state, onClose }) {
   return <div className="ta-modal"><div className="ta-student-preview"><button className="ta-close" onClick={onClose}><FiX /></button><span>STUDENT PREVIEW</span><h2>{assignment.title}</h2><p>{assignment.courseTitle}</p><i className={state}>{state}</i><dl><div><dt>Available from</dt><dd>{formatDate(assignment.openAt)}</dd></div><div><dt>Deadline</dt><dd>{formatDate(assignment.dueAt)}</dd></div><div><dt>Maximum grade</dt><dd>{assignment.maxGrade}</dd></div></dl><section><h3>Description</h3><p>{assignment.description}</p><h3>Submission instructions</h3><p>{assignment.instructions}</p></section><button className="primary" disabled={state !== 'open'}>{state === 'open' ? 'Submit assignment' : 'Submission is closed'}</button></div></div>;
 }

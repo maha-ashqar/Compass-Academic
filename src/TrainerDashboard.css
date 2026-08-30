@@ -6,20 +6,21 @@
    Space Grotesk is used for headings/numbers; Plus Jakarta Sans
    for body copy — same pairing as everywhere else in the app.
 
+   FIXED: this file used to also carry styles for course cards,
+   student cards, project cards, assignment grading, a guidance
+   card, an empty state, and a settings card (~300 lines) — all
+   leftover from before Courses/Students/Projects/Assignments/
+   Announcements became separate components, each with its own
+   dedicated stylesheet (TrainerCourses.css etc.). Those rules
+   were dead code here and have been removed; only what the
+   "Home" tab and the shared layout actually use remains.
+
    Sections in this file:
      1. Design tokens
      2. Base layout (sidebar shell, header)
      3. Home tab — welcome banner, quick actions, stat cards
      4. Home tab — panel grid (review queue, students, courses, messages)
-     5. Shared form card (used by Add Course / Add Assignment forms)
-     6. Course management cards
-     7. Students grid
-     8. Projects list
-     9. Assignments grading
-    10. Guidance / announcements card
-    11. Empty state
-    12. Settings
-    13. Responsive
+     5. Responsive
    ============================================================ */
 
 /* ---------- 1. Design tokens ---------- */
@@ -114,6 +115,51 @@
 
 .header-controls { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
 
+/* ---------- Notification dropdown (real trainer alerts) ---------- */
+.notif-dropdown-wrap { position: relative; }
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: 300px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 14px;
+  box-shadow: var(--dashboard-shadow-md);
+}
+.notif-dropdown-head { padding: 14px 16px; border-bottom: 1px solid var(--dashboard-soft-border); }
+.notif-dropdown-head h4 { margin: 0; color: var(--dashboard-navy); font-size: 13px; }
+.notif-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  gap: 12px;
+  color: var(--dashboard-text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  transition: background-color var(--dashboard-transition);
+}
+.notif-dropdown-item:hover { background: var(--dashboard-blue-soft); }
+.notif-dropdown-item + .notif-dropdown-item { border-top: 1px solid var(--dashboard-soft-border); }
+.notif-dropdown-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  place-items: center;
+  color: var(--dashboard-blue-dark);
+  background: var(--dashboard-blue-soft);
+  border-radius: 50%;
+  font-size: 15px;
+}
+.notif-dropdown-empty { padding: 22px 16px; color: var(--dashboard-muted); font-size: 12px; text-align: center; }
+
 .icon-btn {
   position: relative;
   display: grid;
@@ -147,16 +193,67 @@
   font-weight: 800;
 }
 
+.header-user-wrap { position: relative; }
 .header-user {
   display: flex;
   align-items: center;
   margin-left: 8px;
   gap: 10px;
+  padding: 4px 6px 4px 12px;
   color: var(--dashboard-navy);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
   font-weight: 800;
+  transition: background-color var(--dashboard-transition);
 }
+.header-user:hover { background: var(--dashboard-blue-soft); }
 .header-avatar { width: 43px; height: 43px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dashboard-soft-border); }
 .user-name { font-size: 13px; }
+
+.header-user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: 250px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 14px;
+  box-shadow: var(--dashboard-shadow-md);
+}
+.header-user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px;
+  border-bottom: 1px solid var(--dashboard-soft-border);
+}
+.header-user-menu-head img { width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.header-user-menu-head strong { display: block; overflow: hidden; color: var(--dashboard-navy); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.header-user-menu-head small { display: block; overflow: hidden; color: var(--dashboard-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.header-user-menu > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  gap: 11px;
+  color: var(--dashboard-text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background-color var(--dashboard-transition);
+}
+.header-user-menu > button:hover { background: var(--dashboard-blue-soft); }
+.header-user-menu > button svg { color: var(--dashboard-blue); font-size: 16px; }
+.header-user-menu > button.danger { color: var(--dashboard-red); border-top: 1px solid var(--dashboard-soft-border); }
+.header-user-menu > button.danger svg { color: var(--dashboard-red); }
+.header-user-menu > button.danger:hover { background: var(--dashboard-red-soft); }
 
 .dashboard-body { padding: 34px 38px 55px; min-width: 0; overflow-x: hidden; }
 
@@ -328,12 +425,16 @@
   width: 40px;
   height: 40px;
   place-items: center;
-  color: var(--dashboard-red);
-  background: var(--dashboard-red-soft);
+  /* FIXED: was --dashboard-brass (gold) here, while "pending" work is
+     shown in orange everywhere else in the app (TrainerCompetitions,
+     TrainerAnnouncements). This now matches that convention instead of
+     using a one-off color just for this badge. */
+  color: var(--dashboard-orange);
+  background: var(--dashboard-orange-soft);
   border-radius: 11px;
   font-weight: 800;
 }
-.td-type.project { color: var(--dashboard-orange); background: var(--dashboard-orange-soft); }
+.td-type.project { color: var(--dashboard-red); background: var(--dashboard-red-soft); }
 .td-review-list article > div,
 .td-course-rows article > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
 .td-review-list strong,
@@ -433,262 +534,7 @@
 
 .td-panel-empty { padding: 34px 15px; color: var(--dashboard-muted); text-align: center; font-size: 12px; }
 
-/* ---------- 5. Shared form card ---------- */
-.td-form-card {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 24px 28px;
-  background: #fff;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 18px;
-}
-.td-form-card h3 { margin: 0; color: var(--dashboard-navy); font-family: var(--font-display); font-size: 16px; font-weight: 700; }
-
-.td-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.td-form-field { display: flex; flex-direction: column; gap: 6px; }
-.td-form-field.full { grid-column: 1 / -1; }
-.td-form-field label { color: var(--dashboard-muted); font-size: 12.5px; font-weight: 700; }
-.td-form-field input,
-.td-form-field select,
-.td-form-field textarea {
-  padding: 12px 14px;
-  color: var(--dashboard-navy);
-  background: #f5f6f8;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 10px;
-  outline: none;
-  font-family: inherit;
-  font-size: 13.5px;
-  transition: border-color var(--dashboard-transition), background-color var(--dashboard-transition);
-}
-.td-form-field input:focus,
-.td-form-field select:focus,
-.td-form-field textarea:focus { background: #fff; border-color: var(--dashboard-cyan); }
-.td-form-field textarea { min-height: 80px; resize: vertical; }
-
-.td-form-actions { display: flex; justify-content: flex-end; }
-.td-submit-btn {
-  padding: 12px 26px;
-  color: #fff;
-  background: var(--dashboard-navy);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13.5px;
-  font-weight: 700;
-  transition: background-color var(--dashboard-transition);
-}
-.td-submit-btn:hover { background: var(--dashboard-blue); }
-.td-submit-btn.danger { background: var(--dashboard-red); }
-.td-submit-btn.danger:hover { background: #c23d38; }
-
-.td-section-toggle { display: flex; justify-content: flex-end; }
-.td-toggle-btn {
-  padding: 10px 20px;
-  color: var(--dashboard-blue);
-  background: var(--dashboard-blue-soft);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  transition: background-color var(--dashboard-transition);
-}
-.td-toggle-btn:hover { background: #dce9ff; }
-
-/* ---------- 6. Course management cards ---------- */
-.td-manage-course-card { position: relative; }
-.td-delete-course-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 2;
-  width: 30px;
-  height: 30px;
-  color: var(--dashboard-red);
-  background: var(--dashboard-red-soft);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 800;
-  transition: all var(--dashboard-transition);
-}
-.td-delete-course-btn:hover { color: #fff; background: var(--dashboard-red); }
-
-/* ---------- 7. Students grid ---------- */
-.td-students-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-.td-student-card {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  background: #fff;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 16px;
-}
-.td-student-top { display: flex; align-items: center; gap: 12px; }
-.td-student-avatar { width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
-.td-student-name { margin: 0; color: var(--dashboard-navy); font-size: 14.5px; font-weight: 800; }
-.td-student-course { margin: 2px 0 0; color: var(--dashboard-muted); font-size: 12px; }
-.td-student-progress-row { display: flex; justify-content: space-between; color: var(--dashboard-muted); font-size: 12px; font-weight: 700; }
-.td-student-progress-bar { width: 100%; height: 6px; overflow: hidden; background: var(--dashboard-soft-border); border-radius: 20px; }
-.td-student-progress-fill { height: 100%; background: var(--dashboard-brass); border-radius: 20px; }
-
-.td-rating-stars { display: flex; gap: 4px; }
-.td-star-btn { padding: 0; color: #dcdfef; background: none; border: none; cursor: pointer; font-size: 18px; transition: color 0.15s ease; }
-.td-star-btn.filled { color: var(--dashboard-brass); }
-
-.td-feedback-input {
-  width: 100%;
-  min-height: 60px;
-  padding: 10px 12px;
-  background: #f5f6f8;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 10px;
-  outline: none;
-  font-family: inherit;
-  font-size: 12.5px;
-  resize: vertical;
-}
-.td-save-rating-btn {
-  align-self: flex-start;
-  padding: 8px 18px;
-  color: #fff;
-  background: var(--dashboard-navy);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 700;
-  transition: background-color var(--dashboard-transition);
-}
-.td-save-rating-btn:hover { background: var(--dashboard-blue); }
-
-/* ---------- 8. Projects list ---------- */
-.td-projects-list { display: flex; flex-direction: column; gap: 14px; }
-.td-project-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px 24px;
-  background: #fff;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 16px;
-}
-.td-project-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-.td-project-student { color: var(--dashboard-brass); font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
-.td-project-status { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-.td-project-status.pending { color: var(--dashboard-brass); background: var(--dashboard-brass-soft); }
-.td-project-status.approved { color: var(--dashboard-green); background: var(--dashboard-green-soft); }
-.td-project-status.rejected { color: var(--dashboard-red); background: var(--dashboard-red-soft); }
-.td-project-title { margin: 0; color: var(--dashboard-navy); font-size: 15.5px; font-weight: 800; }
-.td-project-desc { margin: 0; color: var(--dashboard-muted); font-size: 13px; line-height: 1.6; }
-
-.td-project-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-.td-approve-btn,
-.td-reject-btn,
-.td-delete-btn {
-  padding: 9px 18px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 700;
-  transition: background-color var(--dashboard-transition);
-}
-.td-approve-btn { color: #fff; background: var(--dashboard-green); }
-.td-approve-btn:hover { background: #128a3e; }
-.td-reject-btn { color: var(--dashboard-text); background: #f5f6f8; }
-.td-reject-btn:hover { background: var(--dashboard-soft-border); }
-.td-delete-btn { color: var(--dashboard-red); background: var(--dashboard-red-soft); }
-.td-delete-btn:hover { color: #fff; background: var(--dashboard-red); }
-.td-delete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ---------- 9. Assignments grading ---------- */
-.td-assignments-list { display: flex; flex-direction: column; gap: 14px; }
-.td-grade-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--dashboard-soft-border);
-}
-.td-grade-form input {
-  width: 90px;
-  padding: 8px 10px;
-  background: #f5f6f8;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 8px;
-  outline: none;
-  font-size: 13px;
-}
-.td-grade-form input.feedback { width: auto; flex: 1; min-width: 180px; }
-.td-grade-form button {
-  padding: 9px 16px;
-  color: #fff;
-  background: var(--dashboard-navy);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background-color var(--dashboard-transition);
-}
-.td-grade-form button:hover { background: var(--dashboard-blue); }
-.td-graded-summary { margin-top: 8px; color: var(--dashboard-green); font-size: 12.5px; font-weight: 700; }
-
-/* ---------- 10. Guidance / announcements card ---------- */
-.td-guidance-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 640px;
-  padding: 28px;
-  background: #fff;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 18px;
-}
-.td-guidance-card textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 14px 16px;
-  background: #f5f6f8;
-  border: 1px solid var(--dashboard-soft-border);
-  border-radius: 12px;
-  outline: none;
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;
-}
-.td-guidance-sent { color: var(--dashboard-green); font-size: 13px; font-weight: 700; }
-
-/* ---------- 11. Empty state ---------- */
-.td-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  background: #fff;
-  border: 1px dashed var(--dashboard-border);
-  border-radius: 20px;
-}
-.td-empty-icon { margin-bottom: 12px; font-size: 38px; }
-.td-empty h3 { margin-bottom: 6px; color: var(--dashboard-navy); font-size: 15px; font-weight: 800; }
-.td-empty p { color: var(--dashboard-muted); font-size: 13px; }
-
-/* ---------- 12. Settings ---------- */
-.td-settings-card { max-width: 480px; padding: 30px; background: #fff; border-radius: 20px; }
-.td-settings-card h2 { margin-bottom: 12px; color: var(--dashboard-navy); font-family: var(--font-display); }
-.td-settings-card p { margin-bottom: 20px; color: var(--dashboard-muted); }
-
-/* ---------- 13. Responsive ---------- */
+/* ---------- 5. Responsive ---------- */
 @media (max-width: 1200px) {
   .td-operations-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .td-operations-grid { grid-template-columns: 1fr; }
@@ -706,5 +552,4 @@
   .td-review-list em { display: none; }
   .td-course-rows article { grid-template-columns: 42px minmax(0, 1fr) 18px; }
   .td-course-rows i { display: none; }
-  .td-form-grid { grid-template-columns: 1fr; }
 }

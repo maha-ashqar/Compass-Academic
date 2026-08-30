@@ -11,7 +11,9 @@ export default function TrainerSidebar({ activeTab, onSelect, onLogout, trainerD
   return (
     <aside className="trainer-sidebar">
       <div className="trainer-sidebar-brand">
-        <CompassWordmark size={23} navy="#fff" gold="#fff" />
+        {/* FIXED: prop was `gold`, which CompassWordmark doesn't accept
+            (it takes `academyColor`), so the accent color never applied. */}
+        <CompassWordmark size={23} navy="#fff" academyColor="#fff" />
       </div>
       <button type="button" className="trainer-sidebar-profile" onClick={() => onSelect('Profile')}>
         <img src={avatar} alt={name} />
@@ -27,9 +29,15 @@ export default function TrainerSidebar({ activeTab, onSelect, onLogout, trainerD
           </li>
         ))}</ul>
       </nav>
-      <button type="button" className="trainer-sidebar-help" onClick={() => onSelect('Help')}>
+      {/* FIXED: this used to be a <button onClick={() => onSelect('Help')}>,
+          but no 'Help' tab exists anywhere in TrainerDashboard.jsx or
+          trainerMenuItems.jsx — clicking it set activeTab to a value none
+          of the tab conditions match, rendering a completely blank
+          dashboard body. Rather than invent a fake destination, this is
+          now an informational block instead of a button that goes nowhere. */}
+      <div className="trainer-sidebar-help">
         <FiHelpCircle /><span><strong>Need help?</strong><small>Open the instructor help center</small></span>
-      </button>
+      </div>
       <button type="button" className="trainer-sidebar-logout" onClick={onLogout}><FiLogOut /><span>Logout</span></button>
     </aside>
   );

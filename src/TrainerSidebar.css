@@ -1,1 +1,157 @@
-.trainer-sidebar{--w:254px;position:sticky;top:0;z-index:50;display:flex;flex-direction:column;width:var(--w);min-width:var(--w);height:100vh;padding:27px 16px 18px;color:#fff;background:linear-gradient(180deg,#06465f,#075e78);font-family:'Plus Jakarta Sans','Inter',sans-serif;box-sizing:border-box}.trainer-sidebar *{box-sizing:border-box}.trainer-sidebar button{font:inherit}.trainer-sidebar-brand{margin:0 12px 28px}.trainer-sidebar-profile{display:grid;grid-template-columns:50px minmax(0,1fr) 16px;align-items:center;width:100%;padding:0 8px 21px;gap:12px;color:#fff;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.2);text-align:left;cursor:pointer}.trainer-sidebar-profile img{width:50px;height:50px;border:2px solid rgba(255,255,255,.75);border-radius:50%;object-fit:cover}.trainer-sidebar-profile span{display:flex;min-width:0;flex-direction:column;gap:5px}.trainer-sidebar-profile strong,.trainer-sidebar-profile small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.trainer-sidebar-profile strong{font-size:13px}.trainer-sidebar-profile small{color:#c2dfe7;font-size:9px}.trainer-sidebar-nav{min-height:0;flex:1;overflow-y:auto;scrollbar-width:none}.trainer-sidebar-nav::-webkit-scrollbar{display:none}.trainer-sidebar-nav ul{margin:18px 0 0;padding:0;list-style:none}.trainer-sidebar-item{position:relative;display:flex;align-items:center;width:100%;min-height:46px;margin-bottom:3px;padding:10px 16px;gap:15px;color:rgba(255,255,255,.78);background:none;border:0;border-radius:10px;text-align:left;cursor:pointer;transition:.18s}.trainer-sidebar-item:hover{color:#fff;background:rgba(255,255,255,.09)}.trainer-sidebar-item.active{color:#fff;background:rgba(43,190,232,.3)}.trainer-sidebar-item.active:before{position:absolute;inset:7px auto 7px 0;width:4px;border-radius:0 4px 4px 0;background:#35c7f3;content:''}.trainer-sidebar-item>span{display:grid;width:20px;place-items:center;font-size:18px}.trainer-sidebar-item b{font-size:13px;font-weight:600}.trainer-sidebar-help{display:flex;align-items:flex-start;width:100%;margin-top:15px;padding:14px;gap:10px;color:#fff;background:rgba(53,190,226,.2);border:0;border-radius:13px;text-align:left;cursor:pointer}.trainer-sidebar-help>svg{color:#5dd8fa;font-size:20px}.trainer-sidebar-help span{display:flex;flex-direction:column;gap:5px}.trainer-sidebar-help strong{font-size:11px}.trainer-sidebar-help small{color:#c7e2e9;font-size:9px}.trainer-sidebar-logout{display:flex;align-items:center;width:100%;margin-top:17px;padding:16px 16px 4px;gap:15px;color:#fff;background:none;border:0;border-top:1px solid rgba(255,255,255,.18);cursor:pointer}@media(max-width:1050px) and (min-width:701px){.trainer-sidebar{--w:78px;padding-inline:8px}.trainer-sidebar-brand{margin-inline:0}.trainer-sidebar-profile span,.trainer-sidebar-profile>svg,.trainer-sidebar-item b,.trainer-sidebar-help span,.trainer-sidebar-logout span{display:none}.trainer-sidebar-profile,.trainer-sidebar-item,.trainer-sidebar-logout{display:flex;justify-content:center;padding-inline:0}.trainer-sidebar-help{width:54px;justify-content:center;margin-inline:auto}}@media(max-width:700px){.trainer-sidebar{position:relative;width:100%;min-width:0;height:auto}.trainer-sidebar-nav ul{display:grid;grid-template-columns:repeat(2,1fr)}}
+/* ============================================================
+   COMPASS ACADEMY — TRAINER SIDEBAR
+   FIXED: was a one-off teal/blue-green palette (#06465f/#075e78
+   gradient, #35c7f3 accent) that didn't match the navy/cyan
+   brand used everywhere else in the app. Now uses the same
+   --dashboard-navy / --dashboard-cyan tokens (with fallbacks,
+   since this can render before TrainerDashboard.css's :root
+   block in some load orders) so both the trainer and student
+   sidebars read as the same product.
+   ============================================================ */
+
+.trainer-sidebar {
+  --ts-navy: var(--dashboard-navy, #082d47);
+  --ts-navy-deep: #0a516d;
+  --ts-cyan: var(--dashboard-cyan, #24b8ec);
+  --w: 254px;
+
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: var(--w);
+  min-width: var(--w);
+  height: 100vh;
+  padding: 27px 16px 18px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--ts-navy), var(--ts-navy-deep));
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+.trainer-sidebar * { box-sizing: border-box; }
+.trainer-sidebar button { font: inherit; }
+
+/* ---------- Brand ---------- */
+.trainer-sidebar-brand { margin: 0 12px 28px; }
+
+/* ---------- Profile ---------- */
+.trainer-sidebar-profile {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) 16px;
+  align-items: center;
+  width: 100%;
+  padding: 0 8px 21px;
+  gap: 12px;
+  color: #fff;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: left;
+  cursor: pointer;
+}
+.trainer-sidebar-profile img {
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  object-fit: cover;
+}
+.trainer-sidebar-profile span { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+.trainer-sidebar-profile strong,
+.trainer-sidebar-profile small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-sidebar-profile strong { font-size: 13px; }
+.trainer-sidebar-profile small { color: #cfe6ee; font-size: 9px; }
+
+/* ---------- Nav ---------- */
+.trainer-sidebar-nav { min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: none; }
+.trainer-sidebar-nav::-webkit-scrollbar { display: none; }
+.trainer-sidebar-nav ul { margin: 18px 0 0; padding: 0; list-style: none; }
+
+.trainer-sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  margin-bottom: 3px;
+  padding: 10px 16px;
+  gap: 15px;
+  color: rgba(255, 255, 255, 0.78);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.trainer-sidebar-item:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+.trainer-sidebar-item.active { color: #fff; background: rgba(36, 184, 236, 0.25); }
+.trainer-sidebar-item.active::before {
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--ts-cyan);
+  content: '';
+}
+.trainer-sidebar-item > span { display: grid; width: 20px; place-items: center; font-size: 18px; }
+.trainer-sidebar-item b { font-size: 13px; font-weight: 600; }
+
+/* ---------- Help block (informational, not a link — see JSX comment) ---------- */
+.trainer-sidebar-help {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  gap: 10px;
+  color: #fff;
+  background: rgba(36, 184, 236, 0.16);
+  border-radius: 13px;
+  text-align: left;
+}
+.trainer-sidebar-help > svg { color: var(--ts-cyan); font-size: 20px; }
+.trainer-sidebar-help span { display: flex; flex-direction: column; gap: 5px; }
+.trainer-sidebar-help strong { font-size: 11px; }
+.trainer-sidebar-help small { color: #cfe6ee; font-size: 9px; }
+
+/* ---------- Logout ---------- */
+.trainer-sidebar-logout {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 17px;
+  padding: 16px 16px 4px;
+  gap: 15px;
+  color: #fff;
+  background: none;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Tablet: collapse to an icon-only rail */
+@media (max-width: 1050px) and (min-width: 701px) {
+  .trainer-sidebar { --w: 78px; padding-inline: 8px; }
+  .trainer-sidebar-brand { margin-inline: 0; }
+  .trainer-sidebar-profile span,
+  .trainer-sidebar-profile > svg,
+  .trainer-sidebar-item b,
+  .trainer-sidebar-help span,
+  .trainer-sidebar-logout span { display: none; }
+  .trainer-sidebar-profile,
+  .trainer-sidebar-item,
+  .trainer-sidebar-logout { display: flex; justify-content: center; padding-inline: 0; }
+  .trainer-sidebar-help { width: 54px; justify-content: center; margin-inline: auto; }
+}
+
+/* Mobile: horizontal bar, nav becomes a two-column grid */
+@media (max-width: 700px) {
+  .trainer-sidebar { position: relative; width: 100%; min-width: 0; height: auto; }
+  .trainer-sidebar-nav ul { display: grid; grid-template-columns: repeat(2, 1fr); }
+}
