@@ -68,7 +68,6 @@
 .student-settings-form input:focus,
 .student-settings-permissions select:focus { border-color: var(--settings-blue); box-shadow: 0 0 0 3px rgba(7,152,223,.09); }
 .student-settings-form > button { grid-column: 1 / -1; justify-self: end; min-height: 38px; padding: 0 16px; color: #fff; background: var(--settings-deep); border: 0; border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: 800; }
-
 .student-settings-device-list { display: flex; flex-direction: column; gap: 10px; }
 .student-settings-device { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; padding: 11px 0; align-items: center; gap: 11px; border-bottom: 1px solid #e8eff4; }
 .student-settings-device > svg { box-sizing: content-box; padding: 8px; color: var(--settings-blue); background: var(--settings-soft); border-radius: 9px; }
@@ -83,6 +82,9 @@
 .student-settings-options { display: flex; width: min(100%, 420px); padding: 4px; gap: 4px; background: #eaf2f6; border-radius: 9px; }
 .student-settings-options button { min-height: 36px; flex: 1; padding: 0 14px; color: var(--settings-muted); background: transparent; border: 0; border-radius: 7px; cursor: pointer; font-size: 10px; font-weight: 700; text-transform: capitalize; }
 .student-settings-options button.active { color: var(--settings-blue); background: #fff; box-shadow: 0 2px 8px rgba(11,41,71,.09); }
+.student-settings-options button:disabled { cursor: not-allowed; opacity: .55; }
+.student-settings-options button:disabled.active { opacity: 1; }
+.student-settings-hint { margin: 10px 0 0; color: var(--settings-muted); font-size: 9px; line-height: 1.6; }
 
 .student-settings-permissions { display: flex; flex-direction: column; gap: 13px; }
 .student-settings-permissions > label { max-width: 420px; margin-bottom: 5px; }

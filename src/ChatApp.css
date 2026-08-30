@@ -224,3 +224,36 @@
 @media (prefers-reduced-motion: reduce) {
   .chat-app { animation: none; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   Shared by both Messages.jsx (student) and TrainerMessages.jsx.
+   ============================================================ */
+.dark-theme .chat-app { color: #d7e4ec; }
+.dark-theme .chat-list-pane,
+.dark-theme .chat-thread-pane,
+.dark-theme .chat-search,
+.dark-theme .chat-thread-search,
+.dark-theme .chat-composer,
+.dark-theme .chat-newchat-panel,
+.dark-theme .chat-preview-modal,
+.dark-theme .chat-thread-menu-list {
+  background: #101f2c;
+  border-color: #29414f;
+  color: #d7e4ec;
+}
+.dark-theme .chat-list-head h1,
+.dark-theme .chat-thread-identity h2,
+.dark-theme .chat-newchat-panel h3,
+.dark-theme .chat-list-item-copy strong { color: #eef6fb; }
+.dark-theme .chat-list-head p,
+.dark-theme .chat-thread-identity p,
+.dark-theme .chat-list-item-copy > span,
+.dark-theme .chat-thread-empty p,
+.dark-theme .chat-list-empty p { color: #93a8b8; }
+.dark-theme .chat-list-item:hover { background: #16283e; }
+.dark-theme .chat-list-item.active { background: #16283e; }
+.dark-theme .chat-bubble { background: #16283e; color: #d7e4ec; }
+.dark-theme .chat-thread-topic { background: #16283e; }
+.dark-theme .chat-newchat-list button:hover { background: #16283e; }
+.dark-theme .chat-avatar { background: #16283e; }

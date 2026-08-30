@@ -61,11 +61,27 @@ export function SettingsProvider({ children }) {
   const [syncState, setSyncState] = useState('saved');
   const [error, setError] = useState(null);
 
+  // FIXED: this used to also set `root.dir = next.language === 'ar' ?
+  // 'rtl' : 'ltr'`. document.documentElement is the single, shared <html>
+  // tag for the *entire* app — so picking "العربية" here didn't just
+  // affect this settings page, it silently flipped every page in the
+  // whole product (including the public marketing homepage) to RTL and
+  // persisted that choice in localStorage. Since there is no actual
+  // Arabic translation anywhere in the app, the visible result was
+  // English text rendered in a mirrored RTL layout — exactly the
+  // "flipped homepage" bug reported separately. `lang` is kept (harmless,
+  // semantically correct); the direction override has been removed.
+  // FIXED: `.main-viewport { zoom: var(--ui-zoom, 1); }` already existed
+  // in the CSS but nothing ever set --ui-zoom, so the "Font size" setting
+  // saved a value with zero visual effect. It now genuinely scales the
+  // dashboard's main content area. `zoom` is Chromium/WebKit-only (not
+  // Firefox) — an honest limitation worth knowing, not a bug.
+  const FONT_ZOOM = { small: 0.92, medium: 1, large: 1.15 };
   const applySettings = useCallback((next) => {
     const root = document.documentElement;
     root.lang = next.language;
-    root.dir = next.language === 'ar' ? 'rtl' : 'ltr';
     root.dataset.fontSize = next.accessibility.fontSize;
+    root.style.setProperty('--ui-zoom', FONT_ZOOM[next.accessibility.fontSize] ?? 1);
     root.classList.toggle('dark-theme', next.theme === 'dark');
     root.classList.toggle('high-contrast', next.accessibility.highContrast);
     root.classList.toggle('reduce-motion', next.accessibility.reduceMotion);
@@ -87,7 +103,6 @@ export function SettingsProvider({ children }) {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
-
   const saveSettings = useCallback((nextSettings) => {
     const normalized = mergeSettings(nextSettings);
     setSyncState('saving');
@@ -127,7 +142,6 @@ export function SettingsProvider({ children }) {
   const signOutOtherSessions = useCallback(() => {
     persistDevices((current) => current.filter((device) => device.current));
   }, [persistDevices]);
-
   const formatDate = useCallback((value, includeTime = false) => {
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return '—';

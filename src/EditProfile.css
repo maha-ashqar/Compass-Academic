@@ -82,3 +82,26 @@
 
 @media(max-width:1050px) and (min-width:701px){.compass-edit-layout{grid-template-columns:76px minmax(0,1fr)}}
 @media(max-width:700px){.compass-edit-layout{grid-template-columns:1fr}.cep-topbar{display:none}.cep-page{padding:28px 18px}.cep-hero{display:flex;align-items:flex-start;flex-direction:column}.cep-link-field{grid-template-columns:1fr}.cep-form-card{padding:24px 18px}.cep-actions{flex-direction:column}.cep-actions button{width:100%}}
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   ============================================================ */
+.dark-theme .compass-edit-layout { color: #d7e4ec; background: #0d1923; }
+.dark-theme .cep-topbar { background: #101f2c; border-color: #29414f; }
+.dark-theme .cep-search { background: #16283e; color: #93a8b8; }
+.dark-theme .cep-hero { background: #101f2c; border-color: #29414f; }
+.dark-theme .cep-hero h1 { color: #eef6fb; }
+.dark-theme .cep-hero p { color: #93a8b8; }
+.dark-theme .cep-form-card,
+.dark-theme .cep-subcard { background: #101f2c; border-color: #29414f; }
+.dark-theme .cep-form-heading h2 { color: #eef6fb; }
+.dark-theme .cep-form-heading p { color: #93a8b8; }
+.dark-theme .cep-subcard h3 { color: #eef6fb; }
+.dark-theme .cep-field { color: #d7e4ec; }
+.dark-theme .cep-field input,
+.dark-theme .cep-field textarea,
+.dark-theme .cep-link-field input,
+.dark-theme .cep-skill-input { background: #16283e; color: #eef6fb; }
+.dark-theme .cep-actions button { background: #101f2c; border-color: #29414f; color: #d7e4ec; }
+.dark-theme .cep-actions button[type=submit] { color: #fff; }
+.dark-theme .cep-suggested-skill { background: #101f2c; border-color: #29414f; color: #93a8b8; }

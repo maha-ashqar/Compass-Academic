@@ -585,7 +585,7 @@ a:focus-visible {
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(145deg, var(--dashboard-cyan), var(--dashboard-navy));
+  background: linear-gradient(145deg, var(--dashboard-cyan), var(--dashboard-blue-dark));
   font-size: 54px;
 }
 
@@ -1060,7 +1060,7 @@ a:focus-visible {
   height: 100%;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(145deg, var(--dashboard-cyan), var(--dashboard-navy));
+  background: linear-gradient(145deg, var(--dashboard-cyan), var(--dashboard-blue-dark));
   font-size: 28px;
 }
 
@@ -1653,3 +1653,80 @@ a:focus-visible {
 }
 
 .opportunities-footer { cursor: pointer; }
+
+/* ============================================================
+   DARK MODE — student dashboard shell + primary card types.
+   FIXED: previously "Dark mode" only visibly affected the
+   Settings page and two unrelated elements. --dashboard-navy is
+   now exclusively used for *text*, never as a button/background
+   fill (the couple of spots that did were moved to the separate
+   --dashboard-blue-dark token), so it's safe to invert here
+   without breaking the sidebar or any primary button.
+   This covers the dashboard shell and the main card types on the
+   Home tab. Course/Messages/Competitions/etc. pages still render
+   in light mode — that's a known, separate follow-up, not
+   something this block silently papers over.
+   ============================================================ */
+/* ============================================================
+   DARK MODE — REVERTED AND FIXED.
+   The previous version of this block overrode the *shared*
+   --dashboard-navy / --dashboard-text / --dashboard-muted
+   tokens. Those tokens are referenced by every other page in the
+   app (Courses, My Courses, Competitions, Assignments,
+   Messages...), so the override made all of *their* text render
+   light — but none of those pages' backgrounds were touched, so
+   the result was near-invisible light text on still-white
+   backgrounds across the whole app. That is now fixed: this
+   block no longer touches the shared tokens at all. It sets
+   explicit background+text-color pairs directly on the specific
+   Home-tab elements this file owns, so it cannot leak into any
+   other page.
+   ============================================================ */
+.dark-theme body,
+.dark-theme .dashboard-container { background: #0d1923; }
+.dark-theme .student-dashboard-header {
+  background: #101f2c;
+  border-color: #29414f;
+}
+.dark-theme .dashboard-search { background: #16283e; border-color: #29414f; }
+.dark-theme .dashboard-search input { color: #eef6fb; }
+.dark-theme .dashboard-header-icon { background: #16283e; }
+.dark-theme .student-overview-page,
+.dark-theme .stat-box,
+.dark-theme .overview-stat,
+.dark-theme .progress-card,
+.dark-theme .deadlines-card,
+.dark-theme .recommended-section,
+.dark-theme .learning-start-card,
+.dark-theme .opportunities-card,
+.dark-theme .dashboard-course-card,
+.dark-theme .dashboard-search-results {
+  background: #101f2c;
+  border-color: #29414f;
+}
+.dark-theme .dashboard-welcome h1,
+.dark-theme .learning-overview h2,
+.dark-theme .overview-stat-content strong,
+.dark-theme .learning-start-content h2,
+.dark-theme .opportunities-card h2,
+.dark-theme .dashboard-recommended h2,
+.dark-theme .dashboard-course-copy h3 {
+  color: #eef6fb;
+}
+.dark-theme .dashboard-welcome p,
+.dark-theme .overview-stat-content small,
+.dark-theme .learning-start-content > p:not(.dashboard-eyebrow),
+.dark-theme .opportunities-card p,
+.dark-theme .dashboard-recommended p {
+  color: #93a8b8;
+}
+
+/* FIXED: the header icon buttons and account name kept their original
+   dark-navy icon/text color, which was nearly invisible once their own
+   background also turned dark. */
+.dark-theme .dashboard-search-icon,
+.dark-theme .dashboard-header-icon,
+.dark-theme .user-name,
+.dark-theme .dashboard-header-user svg { color: #d7e4ec; }
+.dark-theme .dashboard-header-user:hover { background: #16283e; }
+.dark-theme .dashboard-avatar-chip { background: #16283e; color: #d7e4ec; }

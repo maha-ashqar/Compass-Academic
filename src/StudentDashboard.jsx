@@ -4,7 +4,7 @@ import './StudentDashboard.css';
 import {
   FiBookOpen, FiAward, FiFileText,
   FiSearch, FiBell, FiMessageSquare, FiBriefcase, FiTarget,
-  FiBarChart2, FiCode,  FiPlay,
+  FiBarChart2, FiCode, FiPlay,
   FiClock, FiStar, FiChevronRight, FiChevronDown, FiPenTool,
   FiUser, FiSettings, FiLogOut, FiCheckCircle,
 } from 'react-icons/fi';

@@ -430,3 +430,26 @@
 @media (max-width: 460px) {
   .learning-summary-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   ============================================================ */
+.dark-theme .my-learning-page { color: #d7e4ec; }
+.dark-theme .my-learning-header h1,
+.dark-theme .my-learning-section-heading h2,
+.dark-theme .learning-summary-card strong,
+.dark-theme .featured-learning-content h3,
+.dark-theme .learning-course-copy h3 { color: #eef6fb; }
+.dark-theme .my-learning-header p,
+.dark-theme .my-learning-section-heading > span,
+.dark-theme .learning-summary-card span,
+.dark-theme .featured-learning-content > p,
+.dark-theme .learning-course-copy > p { color: #93a8b8; }
+.dark-theme .learning-summary-card,
+.dark-theme .featured-learning-card,
+.dark-theme .learning-course-card {
+  background: #101f2c;
+  border-color: #29414f;
+}
+.dark-theme .learning-summary-icon { background: #16283e; }
+.dark-theme .my-learning-empty > span { background: #16283e; }

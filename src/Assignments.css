@@ -501,3 +501,44 @@
   .student-uploaded-files article { grid-template-columns: 38px minmax(0, 1fr) auto; }
   .student-uploaded-files article img { display: none; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   Covers both root pages in this file: the list page and the
+   submission workspace.
+   ============================================================ */
+.dark-theme .student-assignments-page,
+.dark-theme .student-submission-page { color: #d7e4ec; }
+.dark-theme .student-assignments-header h1,
+.dark-theme .student-submission-header h1,
+.dark-theme .student-assignment-content h2,
+.dark-theme .student-submission-section-title h2,
+.dark-theme .student-submission-brief h2,
+.dark-theme .student-uploaded-files > h3,
+.dark-theme .student-upload-area h3 { color: #eef6fb; }
+.dark-theme .student-assignments-header p,
+.dark-theme .student-submission-header p,
+.dark-theme .student-assignment-content > p,
+.dark-theme .student-submission-section-title p,
+.dark-theme .student-upload-area p,
+.dark-theme .student-submission-brief > p,
+.dark-theme .student-assignment-meta { color: #93a8b8; }
+.dark-theme .student-assignments-summary,
+.dark-theme .student-assignments-filters,
+.dark-theme .student-assignments-list,
+.dark-theme .student-assignment-card,
+.dark-theme .student-assignments-empty,
+.dark-theme .student-submission-form-card,
+.dark-theme .student-submission-brief,
+.dark-theme .student-upload-area,
+.dark-theme .student-uploaded-files article,
+.dark-theme .student-submission-field input,
+.dark-theme .student-submission-field textarea,
+.dark-theme .student-upload-area label {
+  background: #101f2c;
+  border-color: #29414f;
+  color: #d7e4ec;
+}
+.dark-theme .student-assignment-icon { background: #16283e; }
+.dark-theme .student-assignments-filters button { color: #93a8b8; }
+.dark-theme .student-assignments-empty { color: #93a8b8; }

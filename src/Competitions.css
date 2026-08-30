@@ -237,3 +237,39 @@
   .sc-form-grid label.full { grid-column: auto; }
   .sc-heading h1 { font-size: 28px; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   ============================================================ */
+.dark-theme .sc-page { color: #d7e4ec; }
+.dark-theme .sc-heading h1, .dark-theme .sc-detail-head h1,
+.dark-theme .sc-list-panel > h2, .dark-theme .sc-panel h2,
+.dark-theme .sc-status-panel h2, .dark-theme .sc-info-box h3,
+.dark-theme .sc-list-title h3, .dark-theme .sc-step strong {
+  color: #eef6fb;
+}
+.dark-theme .sc-heading p, .dark-theme .sc-detail-head p,
+.dark-theme .sc-panel p, .dark-theme .sc-list-title p,
+.dark-theme .sc-step small { color: #93a8b8; }
+.dark-theme .sc-list-panel,
+.dark-theme .sc-panel,
+.dark-theme .sc-toolbar > label,
+.dark-theme .sc-category-select,
+.dark-theme .sc-secondary,
+.dark-theme .sc-process,
+.dark-theme .sc-application > section,
+.dark-theme .sc-form-grid input,
+.dark-theme .sc-form-grid textarea,
+.dark-theme .sc-member-list > div,
+.dark-theme .sc-file-list > div,
+.dark-theme .sc-choice-grid button,
+.dark-theme .sc-application > footer {
+  background: #101f2c;
+  border-color: #29414f;
+  color: #d7e4ec;
+}
+.dark-theme .sc-list-icon, .dark-theme .sc-hero-icon { background: #16283e; }
+.dark-theme .sc-list > article:hover { background: #16283e; }
+.dark-theme .sc-toolbar nav button { color: #93a8b8; }
+.dark-theme .sc-empty { color: #93a8b8; }
+.dark-theme .sc-dropzone { background: #16283e; border-color: #2c5a72; }
