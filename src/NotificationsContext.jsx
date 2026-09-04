@@ -1,131 +1,357 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  getStudentNotifications,
+  getStudentToken,
+  markAllStudentNotificationsRead,
+  markStudentNotificationRead,
+} from './api/studentNotifications';
 
 const NotificationsContext = createContext(null);
 
-const initialNotifications = [
-  {
-    id: 1, group: 'Today', category: 'academics', icon: '🎓',
-    title: 'Grade Released: Data Structures',
-    text: "Your final grade for CS301 has been posted. You achieved an 'A'. Well done!",
-    time: '10m ago', read: false, actionLabel: 'View Grade', actionTab: 'Courses',
-  },
-  {
-    id: 2, group: 'Today', category: 'system', icon: '⚠️',
-    title: 'Library Book Overdue',
-    text: "'Advanced Algorithms' was due yesterday. Please return it to avoid further fines.",
-    time: '2h ago', read: false, actionLabel: 'Renew Now', actionTab: null,
-  },
-  {
-    id: 3, group: 'Yesterday', category: 'internships', icon: '💼',
-    title: 'Google Summer Internship 2024',
-    text: "Your application status has been updated to 'Interview Stage'. Please select a time slot for your technical screening.",
-    time: '1d ago', read: false, featured: true,
-    actionLabel: 'Schedule Interview', actionTab: 'Messages',
-    secondaryLabel: 'View Details', secondaryTab: 'Messages',
-  },
-  {
-    id: 4, group: 'Yesterday', category: 'internships', icon: '👥',
-    title: 'New Workshop: AI in Ethics',
-    text: 'Join Dr. Sarah Chen for a deep dive into the societal impacts of large language models this Friday at 4 PM.',
-    time: '1d ago', read: false, actionTab: 'Courses',
-  },
-  {
-    id: 5, group: 'Last Week', category: 'system', icon: 'ℹ️',
-    title: 'Maintenance Notice',
-    text: 'Student portal will be down for scheduled maintenance this Sunday.',
-    time: '4d ago', read: true, actionTab: null,
-  },
-  {
-    id: 6, group: 'Last Week', category: 'academics', icon: '✅',
-    title: 'Tuition Payment Received',
-    text: 'Your payment for Semester 2 has been processed successfully. Your receipt is attached.',
-    time: '5d ago', read: true, actionTab: null,
-  },
-  {
-    id: 7, group: 'Last Week', category: 'academics', icon: '✉️',
-    title: 'New Message from Mentor',
-    text: 'Your mentor sent you a message regarding your project proposal.',
-    time: '6d ago', read: true, actionTab: 'Messages',
-  },
-];
+export const NotificationsProvider = ({
+  children,
+}) => {
+  const [notifications, setNotifications] =
+    useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-export const NotificationsProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const saved = localStorage.getItem('notifications');
-      return saved ? JSON.parse(saved) : initialNotifications;
-    } catch {
-      return initialNotifications;
-    }
-  });
+  const lastTokenRef = useRef(
+    getStudentToken()
+  );
+
+  const refreshNotifications =
+    useCallback(async () => {
+      const token = getStudentToken();
+
+      if (!token) {
+        setNotifications([]);
+        setError('');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError('');
+
+        const data =
+          await getStudentNotifications();
+
+        setNotifications(
+          Array.isArray(data.notifications)
+            ? data.notifications
+            : []
+        );
+      } catch (requestError) {
+        setError(
+          requestError.message ||
+            'Unable to load notifications.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-    } catch (error) {
-      console.error('Failed to save notifications:', error);
-    }
-  }, [notifications]);
+    refreshNotifications();
 
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
+    const handleNotificationsChanged = () => {
+      refreshNotifications();
+    };
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+    const handleWindowFocus = () => {
+      if (getStudentToken()) {
+        refreshNotifications();
+      }
+    };
 
-  // يستخدمها المدرب لبث توجيه/إعلان يوصل مباشرة لكل الطلاب (نفس الـ Provider مشترك بين الطالب والمدرب)
-  const addNotification = ({
-    title,
-    text,
-    category = 'academics',
-    icon = '📢',
-    actionLabel = null,
-    actionTab = null,
-    featured = false,
-    actionPath = null,
-    announcementId = null,
-    audienceType = 'all',
-    audienceValue = '',
-  }) => {
-    const newNotification = {
-      id: Date.now(),
-      group: 'Today',
-      category,
-      icon,
+    window.addEventListener(
+      'student-notifications-changed',
+      handleNotificationsChanged
+    );
+
+    window.addEventListener(
+      'focus',
+      handleWindowFocus
+    );
+
+    const tokenWatcher = window.setInterval(
+      () => {
+        const currentToken =
+          getStudentToken();
+
+        if (
+          currentToken !==
+          lastTokenRef.current
+        ) {
+          lastTokenRef.current =
+            currentToken;
+
+          if (currentToken) {
+            refreshNotifications();
+          } else {
+            setNotifications([]);
+            setError('');
+          }
+        }
+      },
+      500
+    );
+
+    return () => {
+      window.removeEventListener(
+        'student-notifications-changed',
+        handleNotificationsChanged
+      );
+
+      window.removeEventListener(
+        'focus',
+        handleWindowFocus
+      );
+
+      window.clearInterval(tokenWatcher);
+    };
+  }, [refreshNotifications]);
+
+  const markAsRead = useCallback(
+    async (id) => {
+      const current = notifications.find(
+        (item) => item.id === id
+      );
+
+      if (!current || current.read) {
+        return;
+      }
+
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, read: true }
+            : item
+        )
+      );
+
+      if (
+        !getStudentToken() ||
+        current.localOnly
+      ) {
+        return;
+      }
+
+      try {
+        const data =
+          await markStudentNotificationRead(id);
+
+        if (data.notification) {
+          setNotifications((prev) =>
+            prev.map((item) =>
+              item.id === id
+                ? data.notification
+                : item
+            )
+          );
+        }
+      } catch (requestError) {
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? { ...item, read: false }
+              : item
+          )
+        );
+
+        setError(
+          requestError.message ||
+            'Unable to update notification.'
+        );
+      }
+    },
+    [notifications]
+  );
+
+  const markAllRead =
+    useCallback(async () => {
+      const snapshot = notifications;
+
+      setNotifications((prev) =>
+        prev.map((item) => ({
+          ...item,
+          read: true,
+        }))
+      );
+
+      if (!getStudentToken()) {
+        return;
+      }
+
+      try {
+        await markAllStudentNotificationsRead();
+      } catch (requestError) {
+        setNotifications(snapshot);
+
+        setError(
+          requestError.message ||
+            'Unable to update notifications.'
+        );
+      }
+    }, [notifications]);
+
+  const addNotification = useCallback(
+    ({
       title,
       text,
-      time: 'Just now',
-      read: false,
-      featured,
-      actionLabel,
-      actionTab,
-      actionPath,
-      announcementId,
-      audienceType,
-      audienceValue,
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
-    return newNotification;
-  };
+      category = 'academics',
+      icon = '📢',
+      actionLabel = null,
+      actionTab = null,
+      featured = false,
+      actionPath = null,
+      announcementId = null,
+      audienceType = 'all',
+      audienceValue = '',
+      secondaryLabel = null,
+      secondaryTab = null,
+    }) => {
+      const newNotification = {
+        id: `local-${Date.now()}`,
+        group: 'Today',
+        category,
+        icon,
+        title,
+        text,
+        time: 'Just now',
+        read: false,
+        featured,
+        actionLabel,
+        actionTab,
+        actionPath,
+        announcementId,
+        audienceType,
+        audienceValue,
+        secondaryLabel,
+        secondaryTab,
+        localOnly: true,
+      };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+      setNotifications((prev) => [
+        newNotification,
+        ...prev,
+      ]);
 
-  const getStudentNotifications = (student) => notifications.filter((item) => {
-    if (!item.audienceType || item.audienceType === 'all') return true;
-    const expected = String(item.audienceValue || '').toLowerCase();
-    if (item.audienceType === 'faculty') return String(student?.faculty || '').toLowerCase() === expected;
-    if (item.audienceType === 'major') return String(student?.major || student?.program || '').toLowerCase() === expected;
-    if (item.audienceType === 'course') return (student?.courses || []).some((course) => String(course.id || course.title || course).toLowerCase() === expected);
-    if (item.audienceType === 'students') return expected.split(',').map((value) => value.trim()).includes(String(student?.email || student?.id).toLowerCase());
-    return true;
-  });
+      return newNotification;
+    },
+    []
+  );
+
+  const unreadCount = useMemo(
+    () =>
+      notifications.filter(
+        (notification) =>
+          !notification.read
+      ).length,
+    [notifications]
+  );
+
+  const getVisibleNotifications =
+    useCallback(
+      (student) =>
+        notifications.filter((item) => {
+          if (
+            !item.audienceType ||
+            item.audienceType === 'all'
+          ) {
+            return true;
+          }
+
+          const expected = String(
+            item.audienceValue || ''
+          ).toLowerCase();
+
+          if (
+            item.audienceType === 'faculty'
+          ) {
+            return (
+              String(
+                student?.faculty || ''
+              ).toLowerCase() === expected
+            );
+          }
+
+          if (
+            item.audienceType === 'major'
+          ) {
+            return (
+              String(
+                student?.major ||
+                  student?.program ||
+                  ''
+              ).toLowerCase() === expected
+            );
+          }
+
+          if (
+            item.audienceType === 'course'
+          ) {
+            return (
+              student?.courses || []
+            ).some(
+              (course) =>
+                String(
+                  course.id ||
+                    course.title ||
+                    course
+                ).toLowerCase() ===
+                expected
+            );
+          }
+
+          if (
+            item.audienceType ===
+            'students'
+          ) {
+            return expected
+              .split(',')
+              .map((value) =>
+                value.trim()
+              )
+              .includes(
+                String(
+                  student?.email ||
+                    student?.id ||
+                    ''
+                ).toLowerCase()
+              );
+          }
+
+          return true;
+        }),
+      [notifications]
+    );
 
   return (
     <NotificationsContext.Provider
-      value={{ notifications, getStudentNotifications, markAsRead, markAllRead, addNotification, unreadCount }}
+      value={{
+        notifications,
+        getStudentNotifications:
+          getVisibleNotifications,
+        markAsRead,
+        markAllRead,
+        addNotification,
+        unreadCount,
+        loading,
+        error,
+        refreshNotifications,
+      }}
     >
       {children}
     </NotificationsContext.Provider>
@@ -133,9 +359,15 @@ export const NotificationsProvider = ({ children }) => {
 };
 
 export const useNotifications = () => {
-  const context = useContext(NotificationsContext);
+  const context = useContext(
+    NotificationsContext
+  );
+
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationsProvider');
+    throw new Error(
+      'useNotifications must be used within a NotificationsProvider'
+    );
   }
+
   return context;
 };

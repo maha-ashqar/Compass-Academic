@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  updateStudentProfile,
+  uploadStudentAvatar,
+} from './api/studentProfile';
+import {
   FiBell,
   FiCamera,
   FiCheck,
@@ -63,10 +67,13 @@ function EditProfile({ student = {}, onSave }) {
   const navigate = useNavigate();
   const initialName = useMemo(() => splitName(student), [student]);
 
-  /* ---------- Avatar ---------- */
-  const [avatar, setAvatar] = useState(student.avatar || '');
-  const [error, setError] = useState('');
+ /* ---------- Avatar ---------- */
+const [avatar, setAvatar] = useState(student.avatar || '');
+const [avatarFile, setAvatarFile] = useState(null);
+const [error, setError] = useState('');
+const [isSaving, setIsSaving] = useState(false);
 
+/* ---------- Skills ---------- */
   /* ---------- Skills ---------- */
   const [skillInput, setSkillInput] = useState('');
   const [skills, setSkills] = useState(Array.isArray(student.skills) ? student.skills : []);
@@ -99,15 +106,28 @@ function EditProfile({ student = {}, onSave }) {
   const changeAvatar = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
+
     if (!file) return;
-    if (!file.type.startsWith('image/')) return setError('Please select a valid image.');
-    if (file.size > MAX_AVATAR_SIZE) return setError('The image must be smaller than 1.5 MB.');
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image.');
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_SIZE) {
+      setError('The image must be smaller than 1.5 MB.');
+      return;
+    }
+
+    setAvatarFile(file);
 
     const reader = new FileReader();
+
     reader.onload = () => {
       setAvatar(String(reader.result));
       setError('');
     };
+
     reader.readAsDataURL(file);
   };
 
@@ -131,29 +151,77 @@ function EditProfile({ student = {}, onSave }) {
   const backToProfile = () =>
     navigate('/student-dashboard', { state: { activeTab: 'Profile' } });
 
-  const save = (event) => {
+  const save = async (event) => {
     event.preventDefault();
+
+    if (isSaving) return;
+
     const fullName = `${form.firstName} ${form.lastName}`.trim();
 
-    onSave?.({
-      ...student,
-      fullName,
-      displayName: form.firstName.trim() || fullName,
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      major: form.specialty.trim(),
-      program: form.specialty.trim(),
-      overview: form.overview.trim(),
-      avatar: avatar || student.avatar,
-      skills,
-      connections: {
-        ...student.connections,
-        github: form.github.trim(),
-        linkedin: form.linkedin.trim(),
-        gmail: form.gmail.trim(),
-      },
-    });
-    backToProfile();
+    try {
+      setIsSaving(true);
+      setError('');
+
+      const data = await updateStudentProfile({
+        name: fullName,
+        email: form.email.trim(),
+        phone: form.phone.trim() || null,
+        professional_summary: form.overview.trim() || null,
+        github_url: form.github.trim() || null,
+        linkedin_url: form.linkedin.trim() || null,
+        education: {
+          major: form.specialty.trim() || null,
+        },
+        skills,
+      });
+
+      const profile = data.profile;
+      const education = profile.education;
+
+      let savedAvatar = profile.avatar || student.avatar || '';
+
+      if (avatarFile) {
+        const avatarData = await uploadStudentAvatar(avatarFile);
+        savedAvatar = avatarData.avatar;
+      }
+
+      onSave?.({
+        ...student,
+        fullName: profile.name,
+        displayName: profile.name,
+        phone: profile.phone || '',
+        email: profile.email,
+        gender: profile.gender || student.gender || '',
+        dob: profile.date_of_birth || student.dob || '',
+        nationality: profile.nationality || student.nationality || '',
+        major: education?.major || '',
+        program: education?.major || '',
+        university: education?.university || student.university || '',
+        college: education?.faculty || student.college || '',
+        graduation:
+          education?.expected_graduation_date ||
+          student.graduation ||
+          '',
+        overview: profile.professional_summary || '',
+        avatar: savedAvatar,
+        skills: profile.skills?.map((skill) => skill.name) || [],
+        connections: {
+          ...student.connections,
+          github: profile.github_url || '',
+          linkedin: profile.linkedin_url || '',
+          gmail: profile.email,
+        },
+      });
+
+      backToProfile();
+    } catch (error) {
+      setError(
+        error.message ||
+        'Unable to update your profile. Please try again.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /* ============================================
@@ -290,8 +358,9 @@ function EditProfile({ student = {}, onSave }) {
               <button type="button" onClick={backToProfile}>
                 Cancel
               </button>
-              <button type="submit">
-                <FiCheck /> Save changes
+              <button type="submit" disabled={isSaving}>
+                <FiCheck />
+                {isSaving ? 'Saving...' : 'Save changes'}
               </button>
             </footer>
           </form>

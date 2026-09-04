@@ -4,7 +4,7 @@ import './StudentDashboard.css';
 import {
   FiBookOpen, FiAward, FiFileText,
   FiSearch, FiBell, FiMessageSquare, FiBriefcase, FiTarget,
-  FiBarChart2, FiCode,  FiPlay,
+  FiBarChart2, FiCode, FiPlay,
   FiClock, FiStar, FiChevronRight, FiChevronDown, FiPenTool,
   FiUser, FiSettings, FiLogOut, FiCheckCircle,
 } from 'react-icons/fi';
@@ -14,18 +14,17 @@ import StudentProfile from './StudentProfile';
 import Courses from './Courses';
 import MyCourses from './MyCourses';
 import Assignments from './Assignments';
-import { useCourses } from './CoursesContext';
 import { useCoursesCatalog } from './CoursesCatalogContext';
-import { useDeadlines } from './DeadlinesContext';
 import Settings from './Settings';
 import Messages from './Messages';
-import { useStudentConversations } from './SharedConversationsContext';
+import { useStudentConversations } from './useStudentMessages';
 import Notifications from './Notifications';
 import Competitions from './Competitions';
 import StudentProjects from './StudentProjects';
 import StudentAnnouncement from './StudentAnnouncement';
 import Achievements from './Achievements';
 import { useNotifications } from './NotificationsContext';
+import { getStudentDashboard } from './api/studentDashboard';
 
 const deadlineIconMap = {
   priority: { icon: <FiFileText />, cls: 'red-icon', label: 'Priority' },
@@ -70,8 +69,8 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     location.pathname.startsWith('/student-dashboard/announcements/')
       ? 'Announcement detail'
       : location.pathname.startsWith('/student-dashboard/projects')
-      ? 'Projects gallery'
-      : location.state?.activeTab || 'Home'
+        ? 'Projects gallery'
+        : location.state?.activeTab || 'Home'
   );
   const isProjectsRoute = location.pathname.startsWith('/student-dashboard/projects');
 
@@ -81,16 +80,18 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     else if (isProjectsRoute) navigate('/student-dashboard');
   };
 
-  const {
-    myCourses, getCourseProgress, getCompletedLessonCount, getNextLesson,
-  } = useCourses();
   const { publishedCourses } = useCoursesCatalog();
-  const { deadlines, removeDeadline } = useDeadlines();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState('');
   // FIXED: this used to read from a MessagesContext seeded with its own
   // fake instructor list, disconnected from whatever the trainer side saw.
   // Now it reads this student's slice of the single shared conversation
   // store, so the preview here always matches what's really in their inbox.
-  const { conversations: studentConversations } = useStudentConversations(studentData);
+  const {
+    conversations: studentConversations,
+    unreadCount: messagesUnreadCount,
+  } = useStudentConversations(studentData);
   const conversations = useMemo(
     () => studentConversations.map((c) => ({
       id: c.id,
@@ -100,6 +101,24 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     })),
     [studentConversations]
   );
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setDashboardLoading(true);
+        setDashboardError('');
+
+        const data = await getStudentDashboard();
+        setDashboardData(data.dashboard);
+      } catch (error) {
+        setDashboardError(error.message || 'Unable to load dashboard.');
+      } finally {
+        setDashboardLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   // ============ البحث ============
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,10 +142,21 @@ const StudentDashboard = ({ studentData, onLogout }) => {
   }, [searchQuery, publishedCourses]);
 
   // ============ الكورسات المقترحة — من نفس كتالوج صفحة Courses ============
-  const recommendedCourses = useMemo(() => {
-    const enrolledIds = myCourses.map((c) => String(c.id));
-    return publishedCourses.filter((c) => !enrolledIds.includes(String(c.id))).slice(0, 3);
-  }, [myCourses, publishedCourses]);
+  const recommendedCourses = useMemo(
+    () => (dashboardData?.recommended_courses || []).map((course) => ({
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      category: course.category,
+      level: course.level,
+      duration: course.duration_weeks ? `${course.duration_weeks} weeks` : 'Self-paced',
+      coverImage: course.cover_image || '',
+      rating: course.rating,
+      students: course.students,
+    })),
+    [dashboardData]
+  );
 
   const handleSelectCourseResult = (course) => {
     setOpenCourseId(course.id);
@@ -153,18 +183,45 @@ const StudentDashboard = ({ studentData, onLogout }) => {
 
   // ============ Current learning path — كورس حقيقي من اللي مسجّلة فيه ============
   const currentLearningCourse = useMemo(() => {
-    if (myCourses.length === 0) return null;
-    const withProgress = myCourses.map((c) => {
-      const totalLessons = (c.modules || []).reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
-      return { ...c, totalLessons, progress: getCourseProgress(c.id, totalLessons) };
-    });
-    const inProgress = withProgress.filter((c) => c.progress < 100).sort((a, b) => b.progress - a.progress);
-    return inProgress[0] || withProgress[0];
-  }, [myCourses, getCourseProgress]);
+    const course = dashboardData?.current_course;
 
-  const completedLessonCount = currentLearningCourse
-    ? getCompletedLessonCount(currentLearningCourse.id)
-    : 0;
+    if (!course) return null;
+
+    return {
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      category: course.category,
+      level: course.level,
+      duration: course.duration_weeks ? `${course.duration_weeks} weeks` : 'Self-paced',
+      coverImage: course.cover_image || '',
+      enrolledAt: course.enrolled_at,
+      totalModules: course.total_modules || 0,
+      totalLessons: course.total_lessons || 0,
+      completedLessons: course.completed_lessons || 0,
+      progress: course.progress || 0,
+      nextLesson: course.next_lesson
+        ? {
+          id: course.next_lesson.id,
+          title: course.next_lesson.title,
+          moduleTitle: course.next_lesson.module_title,
+          duration: course.next_lesson.duration_minutes
+            ? `${course.next_lesson.duration_minutes} min`
+            : '',
+        }
+        : null,
+      nextMilestone: course.next_milestone
+        ? {
+          id: course.next_milestone.id,
+          title: course.next_milestone.title,
+          date: course.next_milestone.deadline_at,
+        }
+        : null,
+    };
+  }, [dashboardData]);
+
+  const completedLessonCount = currentLearningCourse?.completedLessons || 0;
 
   // FIXED: this used to be a useMemo that always returned 0 (it ended in
   // `&& false`), and the render below had a *second*, equally broken copy of
@@ -174,18 +231,8 @@ const StudentDashboard = ({ studentData, onLogout }) => {
   // app yet, so rather than fake it we just show the honest lesson count
   // (completedLessonCount / totalLessons) computed from real data below.
 
-  const nextLesson = currentLearningCourse ? getNextLesson(currentLearningCourse) : null;
-
-  const nextMilestone = useMemo(() => {
-    if (!currentLearningCourse) return null;
-    const daysSinceEnrollment = currentLearningCourse.enrolledAt
-      ? Math.floor((Date.now() - new Date(currentLearningCourse.enrolledAt).getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
-    const withStatus = (currentLearningCourse.assignments || [])
-      .map((a) => ({ ...a, daysLeft: a.dueInDays - daysSinceEnrollment }))
-      .sort((a, b) => a.daysLeft - b.daysLeft);
-    return withStatus.find((a) => a.daysLeft >= 0) || withStatus[0] || null;
-  }, [currentLearningCourse]);
+  const nextLesson = currentLearningCourse?.nextLesson || null;
+  const nextMilestone = currentLearningCourse?.nextMilestone || null;
 
   const handleResumeCourse = () => {
     if (currentLearningCourse) handleSelectCourseResult(currentLearningCourse);
@@ -270,18 +317,43 @@ const StudentDashboard = ({ studentData, onLogout }) => {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const handleLogoutClick = () => {
-    if (onLogout) onLogout();
+  const handleLogoutClick = async () => {
+    if (onLogout) {
+      await onLogout();
+    }
+
     navigate('/login');
   };
 
   // ============ المواعيد النهائية مرتبة حسب الإلحاح ============
   const sortedDeadlines = useMemo(
-    () => [...deadlines].sort((a, b) => daysUntil(a.date) - daysUntil(b.date)).slice(0, 3),
-    [deadlines]
+    () => (dashboardData?.next_tasks || [])
+      .map((task) => ({
+        id: task.id,
+        type: 'priority',
+        title: task.title,
+        date: task.date,
+        courseTitle: task.course_title,
+      }))
+      .sort((a, b) => daysUntil(a.date) - daysUntil(b.date))
+      .slice(0, 3),
+    [dashboardData]
   );
 
-  const nearestDeadlineDays = sortedDeadlines[0] ? daysUntil(sortedDeadlines[0].date) : null;
+  const dashboardStats = {
+    coursesInProgress: dashboardData?.stats?.courses_in_progress || 0,
+    projectCompletion: dashboardData?.stats?.project_completion || 0,
+    tasksDueThisWeek: dashboardData?.stats?.tasks_due_this_week || 0,
+    certificatesEarned: dashboardData?.stats?.certificates_earned || 0,
+  };
+
+  const dashboardFirstName =
+    dashboardData?.student?.first_name ||
+    studentData.displayName.split(' ')[0];
+
+  const nearestDeadlineDays = sortedDeadlines[0]
+    ? daysUntil(sortedDeadlines[0].date)
+    : null;
 
   return (
     <div className="dashboard-container">
@@ -425,6 +497,14 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                 aria-label="Messages"
               >
                 <FiMessageSquare />
+
+                {messagesUnreadCount > 0 && (
+                  <span className="dashboard-notification-badge">
+                    {messagesUnreadCount > 99
+                      ? '99+'
+                      : messagesUnreadCount}
+                  </span>
+                )}
               </button>
 
               {showMessagesPreview && (
@@ -514,11 +594,29 @@ const StudentDashboard = ({ studentData, onLogout }) => {
         <section className="dashboard-body">
           {activeTab === 'Announcement detail' && <StudentAnnouncement studentData={studentData} />}
 
-          {activeTab === 'Home' && (
+          {activeTab === 'Home' && dashboardLoading && (
+            <div className="student-overview-page">
+              <div className="empty-opportunities">
+                <FiClock />
+                <strong>Loading your dashboard...</strong>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Home' && !dashboardLoading && dashboardError && (
+            <div className="student-overview-page">
+              <div className="empty-opportunities">
+                <FiFileText />
+                <strong>{dashboardError}</strong>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Home' && !dashboardLoading && !dashboardError && (
             <div className="student-overview-page">
               <div className="dashboard-welcome">
                 <div>
-                  <h1>Welcome back, {studentData.displayName.split(' ')[0]}</h1>
+                  <h1>Welcome back, {dashboardFirstName}</h1>
                   <p>You're making steady progress. Here is the clearest next step for today.</p>
                 </div>
                 <button className="progress-report-button" onClick={() => setActiveTab('Achievements')}>
@@ -534,19 +632,19 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                     <span className="overview-stat-icon"><FiBookOpen /></span>
                     <span className="overview-stat-content">
                       <small>Courses in progress</small>
-                      <strong>{myCourses.length}</strong>
+                      <strong>{dashboardStats.coursesInProgress}</strong>
                     </span>
-                    <span className="overview-stat-helper">{myCourses.length > 0 ? 'On track' : 'Get started'}</span>
+                    <span className="overview-stat-helper">{dashboardStats.coursesInProgress > 0 ? 'On track' : 'Get started'}</span>
                   </button>
 
                   <button type="button" className="overview-stat" onClick={handleResumeCourse}>
                     <span className="overview-stat-icon"><FiBarChart2 /></span>
                     <span className="overview-stat-content">
                       <small>Project completion</small>
-                      <strong>{studentData.stats.projectProgress}%</strong>
+                      <strong>{dashboardStats.projectCompletion}%</strong>
                     </span>
                     <span className="overview-stat-bar">
-                      <i style={{ width: `${studentData.stats.projectProgress}%` }} />
+                      <i style={{ width: `${dashboardStats.projectCompletion}%` }} />
                     </span>
                   </button>
 
@@ -554,16 +652,16 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                     <span className="overview-stat-icon orange"><FiClock /></span>
                     <span className="overview-stat-content">
                       <small>Tasks due this week</small>
-                      <strong>{sortedDeadlines.length}</strong>
+                      <strong>{dashboardStats.tasksDueThisWeek}</strong>
                     </span>
                     <span className="overview-stat-helper orange">
                       {nearestDeadlineDays === null
                         ? 'All caught up'
                         : nearestDeadlineDays < 0
-                        ? 'Overdue'
-                        : nearestDeadlineDays === 0
-                        ? 'Due today'
-                        : `Next due in ${nearestDeadlineDays}d`}
+                          ? 'Overdue'
+                          : nearestDeadlineDays === 0
+                            ? 'Due today'
+                            : `Next due in ${nearestDeadlineDays}d`}
                     </span>
                   </button>
 
@@ -571,10 +669,10 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                     <span className="overview-stat-icon green"><FiAward /></span>
                     <span className="overview-stat-content">
                       <small>Certificates earned</small>
-                      <strong>{studentData.stats.certificatesEarned}</strong>
+                      <strong>{dashboardStats.certificatesEarned}</strong>
                     </span>
                     <span className="overview-stat-helper green">
-                      {studentData.stats.certificatesEarned > 0 ? 'Great progress' : 'Keep learning'}
+                      {dashboardStats.certificatesEarned > 0 ? 'Great progress' : 'Keep learning'}
                     </span>
                   </button>
                 </div>
@@ -603,7 +701,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                               honest lesson count that's already computed
                               correctly elsewhere on this page. */}
                           <small>
-                            {(currentLearningCourse.modules || []).length} modules · {completedLessonCount}/{currentLearningCourse.totalLessons} lessons complete
+                            {currentLearningCourse.totalModules} modules · {completedLessonCount}/{currentLearningCourse.totalLessons} lessons complete
                           </small>
                         </div>
                       </div>
@@ -694,7 +792,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                               <span className="opportunity-icon">{meta.icon}</span>
                               <span className="opportunity-content">
                                 <strong>{d.title}</strong>
-                                <small>{meta.label} · {formatDate(d.date)}</small>
+                                <small>{d.courseTitle || meta.label} · {formatDate(d.date)}</small>
                               </span>
                               <span className="opportunity-status">{variant.statusText}</span>
                             </button>
@@ -713,7 +811,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
                         className="opportunities-footer"
                         onClick={() => setActiveTab('Assignments')}
                       >
-                        <span /> {deadlines.length > 3 ? `+${deadlines.length - 3} more upcoming` : 'Nothing overdue — you\'re on track'}
+                        <span /> {dashboardStats.tasksDueThisWeek > 3 ? `+${dashboardStats.tasksDueThisWeek - 3} more due this week` : 'Nothing overdue — you\'re on track'}
                       </button>
                     </>
                   )}
@@ -785,7 +883,7 @@ const StudentDashboard = ({ studentData, onLogout }) => {
               </div>
 
               <p className="dashboard-update-note">
-                Updated {formatDate(new Date().toISOString())} · Your progress is saved automatically
+                Updated {dashboardData?.updated_at ? formatDate(dashboardData.updated_at) : '—'} · Your progress is saved automatically
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FiArrowRight,
   FiBarChart2,
@@ -8,89 +8,175 @@ import {
   FiPlay,
   FiTrash2,
 } from 'react-icons/fi';
-import { useCourses } from './CoursesContext';
+import {
+  getStudentMyCourses,
+  removeStudentCourse,
+} from './api/studentLearning';
 import CourseLearningPage from './CourseLearningPage';
 import './MyCourses.css';
 
-const getLessonCount = (course) =>
-  (course.modules || []).reduce(
-    (total, module) => total + (module.lessons || []).length,
-    0
-  );
-
-const getUpcomingTasksCount = (courses, submittedAssignments) =>
-  courses.reduce((total, course) => {
-    const openAssignments = (course.assignments || []).filter(
-      (assignment) => !submittedAssignments.includes(assignment.id)
-    ).length;
-    return total + openAssignments;
-  }, 0);
+const formatCourse = (course) => ({
+  id: course.id,
+  title: course.title,
+  shortTitle: course.title,
+  slug: course.slug,
+  description: course.description || '',
+  level: course.level || 'beginner',
+  duration: `${course.duration_weeks || 0} weeks`,
+  durationWeeks: Number(course.duration_weeks || 0),
+  coverImage: course.cover_image || '',
+  category: course.category?.name || 'General',
+  categorySlug: course.category?.slug || '',
+  instructor:
+    course.instructor?.name || 'Compass Academy instructor',
+  instructorTitle:
+    course.instructor?.title || 'Instructor',
+  enrollment: course.enrollment || null,
+  enrolledAt: course.enrollment?.enrolled_at || null,
+  completedAt: course.enrollment?.completed_at || null,
+  enrollmentStatus:
+    course.enrollment?.status || 'active',
+  progress: Number(course.progress || 0),
+  completedLessons: Number(
+    course.completed_lessons || 0
+  ),
+  totalLessons: Number(course.total_lessons || 0),
+  nextLesson: course.next_lesson
+    ? {
+        id: course.next_lesson.id,
+        title: course.next_lesson.title,
+        type: course.next_lesson.type,
+        duration: course.next_lesson.duration_minutes
+          ? `${course.next_lesson.duration_minutes} min`
+          : '',
+        module: course.next_lesson.module || null,
+      }
+    : null,
+  upcomingAssignments: Array.isArray(
+    course.upcoming_assignments
+  )
+    ? course.upcoming_assignments
+    : [],
+});
 
 function MyCourses({ onExploreCourses }) {
-  const {
-    myCourses,
-    unenrollCourse,
-    getCourseProgress,
-    getCompletedLessonCount,
-    getNextLesson,
-    submittedAssignments,
-  } = useCourses();
-
+  const [myCourses, setMyCourses] = useState([]);
   const [learningCourse, setLearningCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [removingCourseId, setRemovingCourseId] =
+    useState(null);
+  const [error, setError] = useState('');
+
+  const loadMyCourses = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const data = await getStudentMyCourses();
+
+      setMyCourses(
+        Array.isArray(data.courses)
+          ? data.courses.map(formatCourse)
+          : []
+      );
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          'Unable to load your courses.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMyCourses();
+  }, []);
 
   const courseSummaries = useMemo(
     () =>
-      [...myCourses]
-        .sort(
-          (a, b) =>
-            new Date(b.lastOpenedAt || b.enrolledAt || 0) -
-            new Date(a.lastOpenedAt || a.enrolledAt || 0)
-        )
-        .map((course) => {
-          const totalLessons = getLessonCount(course);
-          return {
-            course,
-            totalLessons,
-            completedLessons: getCompletedLessonCount(course.id),
-            progress: getCourseProgress(course.id, totalLessons),
-            nextLesson: getNextLesson(course),
-          };
-        }),
-    [myCourses, getCourseProgress, getCompletedLessonCount, getNextLesson]
+      [...myCourses].sort(
+        (a, b) =>
+          new Date(b.enrolledAt || 0) -
+          new Date(a.enrolledAt || 0)
+      ),
+    [myCourses]
   );
 
   const learningStats = useMemo(() => {
     const completed = courseSummaries.reduce(
-      (total, item) => total + item.completedLessons,
+      (total, course) =>
+        total + course.completedLessons,
       0
     );
+
     const average = courseSummaries.length
       ? Math.round(
-          courseSummaries.reduce((total, item) => total + item.progress, 0) /
-            courseSummaries.length
+          courseSummaries.reduce(
+            (total, course) =>
+              total + course.progress,
+            0
+          ) / courseSummaries.length
         )
       : 0;
+
+    const upcoming = courseSummaries.reduce(
+      (total, course) =>
+        total + course.upcomingAssignments.length,
+      0
+    );
 
     return {
       average,
       completed,
-      upcoming: getUpcomingTasksCount(myCourses, submittedAssignments),
+      upcoming,
     };
-  }, [courseSummaries, myCourses, submittedAssignments]);
+  }, [courseSummaries]);
 
   const openLearning = (course) => {
     setLearningCourse(course);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
   };
 
-  const handleUnenroll = (event, course) => {
+  const closeLearning = async () => {
+    setLearningCourse(null);
+    await loadMyCourses();
+  };
+
+  const handleUnenroll = async (event, course) => {
     event.stopPropagation();
+
     const confirmed = window.confirm(
-      `Remove “${course.shortTitle || course.title}” from My Learning? Your saved lesson progress for this course will be removed.`
+      `Remove “${course.shortTitle || course.title}” from My Learning?`
     );
 
-    if (confirmed) {
-      unenrollCourse(course.id);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setRemovingCourseId(course.id);
+      setError('');
+
+      await removeStudentCourse(course.id);
+
+      setMyCourses((current) =>
+        current.filter(
+          (item) =>
+            String(item.id) !== String(course.id)
+        )
+      );
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          'Unable to remove this course.'
+      );
+    } finally {
+      setRemovingCourseId(null);
     }
   };
 
@@ -98,26 +184,53 @@ function MyCourses({ onExploreCourses }) {
     return (
       <CourseLearningPage
         course={learningCourse}
-        onBack={() => setLearningCourse(null)}
+        onBack={closeLearning}
       />
     );
   }
 
-  if (!courseSummaries.length) {
+  if (loading) {
+    return (
+      <main className="my-learning-page" dir="ltr">
+        <section className="my-learning-empty">
+          <span>
+            <FiBookOpen />
+          </span>
+          <h2>Loading your courses...</h2>
+        </section>
+      </main>
+    );
+  }
+
+  if (!courseSummaries.length && !error) {
     return (
       <main className="my-learning-page" dir="ltr">
         <header className="my-learning-header">
           <div>
             <h1>My learning</h1>
-            <p>Continue your enrolled courses and keep your learning momentum.</p>
+            <p>
+              Continue your enrolled courses and keep
+              your learning momentum.
+            </p>
           </div>
         </header>
 
         <section className="my-learning-empty">
-          <span><FiBookOpen /></span>
+          <span>
+            <FiBookOpen />
+          </span>
+
           <h2>Your learning journey starts here</h2>
-          <p>Explore practical courses, enroll for free, and track every completed lesson.</p>
-          <button type="button" onClick={onExploreCourses}>
+
+          <p>
+            Explore practical courses, enroll for free,
+            and track every completed lesson.
+          </p>
+
+          <button
+            type="button"
+            onClick={onExploreCourses}
+          >
             Explore courses <FiArrowRight />
           </button>
         </section>
@@ -127,14 +240,27 @@ function MyCourses({ onExploreCourses }) {
 
   const [featured, ...remaining] = courseSummaries;
 
-  // Stat cards shown at the top of the page — same icon + number + label
-  // shape used by the dashboard's overview stats, so this page reads as
-  // part of the same product instead of a separate mini-design.
   const summaryCards = [
-    { icon: <FiBookOpen />, value: courseSummaries.length, label: 'Enrolled courses' },
-    { icon: <FiBarChart2 />, value: `${learningStats.average}%`, label: 'Average progress' },
-    { icon: <FiCheckCircle />, value: learningStats.completed, label: 'Lessons completed' },
-    { icon: <FiClock />, value: learningStats.upcoming, label: 'Upcoming tasks' },
+    {
+      icon: <FiBookOpen />,
+      value: courseSummaries.length,
+      label: 'Enrolled courses',
+    },
+    {
+      icon: <FiBarChart2 />,
+      value: `${learningStats.average}%`,
+      label: 'Average progress',
+    },
+    {
+      icon: <FiCheckCircle />,
+      value: learningStats.completed,
+      label: 'Lessons completed',
+    },
+    {
+      icon: <FiClock />,
+      value: learningStats.upcoming,
+      label: 'Upcoming tasks',
+    },
   ];
 
   return (
@@ -142,17 +268,48 @@ function MyCourses({ onExploreCourses }) {
       <header className="my-learning-header">
         <div>
           <h1>My learning</h1>
-          <p>Continue your enrolled courses and keep your learning momentum.</p>
+
+          <p>
+            Continue your enrolled courses and keep your
+            learning momentum.
+          </p>
         </div>
-        <button type="button" onClick={onExploreCourses}>
+
+        <button
+          type="button"
+          onClick={onExploreCourses}
+        >
           Explore more courses
         </button>
       </header>
 
-      <section className="learning-summary-grid" aria-label="Learning summary">
+      {error && (
+        <section className="my-learning-empty">
+          <h2>Something went wrong</h2>
+          <p>{error}</p>
+
+          <button
+            type="button"
+            onClick={loadMyCourses}
+          >
+            Try again
+          </button>
+        </section>
+      )}
+
+      <section
+        className="learning-summary-grid"
+        aria-label="Learning summary"
+      >
         {summaryCards.map((card) => (
-          <div className="learning-summary-card" key={card.label}>
-            <span className="learning-summary-icon">{card.icon}</span>
+          <div
+            className="learning-summary-card"
+            key={card.label}
+          >
+            <span className="learning-summary-icon">
+              {card.icon}
+            </span>
+
             <div>
               <strong>{card.value}</strong>
               <span>{card.label}</span>
@@ -164,30 +321,41 @@ function MyCourses({ onExploreCourses }) {
       <section className="continue-learning-section">
         <div className="my-learning-section-heading">
           <h2>Continue learning</h2>
-          <span>Sorted by recent activity</span>
+          <span>Sorted by enrollment date</span>
         </div>
 
         <article className="featured-learning-card">
           <button
             type="button"
             className="featured-learning-image"
-            onClick={() => openLearning(featured.course)}
-            aria-label={`Continue ${featured.course.title}`}
+            onClick={() => openLearning(featured)}
+            aria-label={`Continue ${featured.title}`}
           >
-            {featured.course.coverImage ? (
-              <img src={featured.course.coverImage} alt="" />
+            {featured.coverImage ? (
+              <img src={featured.coverImage} alt="" />
             ) : (
               <FiBookOpen />
             )}
-            <span className="featured-learning-badge">Continue where you left off</span>
+
+            <span className="featured-learning-badge">
+              Continue where you left off
+            </span>
           </button>
 
           <div className="featured-learning-content">
-            <small>{featured.course.category}</small>
-            <h3>{featured.course.shortTitle || featured.course.title}</h3>
+            <small>{featured.category}</small>
+
+            <h3>
+              {featured.shortTitle || featured.title}
+            </h3>
+
             <p>
               {featured.nextLesson
-                ? `Next: ${featured.nextLesson.title}${featured.nextLesson.duration ? ` · ${featured.nextLesson.duration}` : ''}`
+                ? `Next: ${featured.nextLesson.title}${
+                    featured.nextLesson.duration
+                      ? ` · ${featured.nextLesson.duration}`
+                      : ''
+                  }`
                 : 'All available lessons are complete.'}
             </p>
 
@@ -195,16 +363,26 @@ function MyCourses({ onExploreCourses }) {
               <span>Course progress</span>
               <strong>{featured.progress}%</strong>
             </div>
+
             <div className="learning-progress-track">
-              <span style={{ width: `${featured.progress}%` }} />
+              <span
+                style={{
+                  width: `${featured.progress}%`,
+                }}
+              />
             </div>
 
             <div className="featured-learning-actions">
-              <button type="button" onClick={() => openLearning(featured.course)}>
+              <button
+                type="button"
+                onClick={() => openLearning(featured)}
+              >
                 <FiPlay /> Continue course
               </button>
+
               <span>
-                {featured.completedLessons} of {featured.totalLessons} lessons completed
+                {featured.completedLessons} of{' '}
+                {featured.totalLessons} lessons completed
               </span>
             </div>
           </div>
@@ -212,16 +390,22 @@ function MyCourses({ onExploreCourses }) {
 
         {remaining.length > 0 && (
           <div className="learning-course-grid">
-            {remaining.map((item) => (
-              <article className="learning-course-card" key={item.course.id}>
+            {remaining.map((course) => (
+              <article
+                className="learning-course-card"
+                key={course.id}
+              >
                 <button
                   type="button"
                   className="learning-course-image"
-                  onClick={() => openLearning(item.course)}
-                  aria-label={`Open ${item.course.title}`}
+                  onClick={() => openLearning(course)}
+                  aria-label={`Open ${course.title}`}
                 >
-                  {item.course.coverImage ? (
-                    <img src={item.course.coverImage} alt="" />
+                  {course.coverImage ? (
+                    <img
+                      src={course.coverImage}
+                      alt=""
+                    />
                   ) : (
                     <FiBookOpen />
                   )}
@@ -229,32 +413,50 @@ function MyCourses({ onExploreCourses }) {
 
                 <div className="learning-course-copy">
                   <div className="learning-course-title-row">
-                    <small>{item.course.category}</small>
+                    <small>{course.category}</small>
+
                     <button
                       type="button"
                       className="learning-remove-button"
-                      onClick={(event) => handleUnenroll(event, item.course)}
+                      onClick={(event) =>
+                        handleUnenroll(event, course)
+                      }
+                      disabled={
+                        String(removingCourseId) ===
+                        String(course.id)
+                      }
                       title="Remove from My Learning"
-                      aria-label={`Remove ${item.course.title} from My Learning`}
+                      aria-label={`Remove ${course.title} from My Learning`}
                     >
                       <FiTrash2 />
                     </button>
                   </div>
-                  <h3>{item.course.shortTitle || item.course.title}</h3>
-                  <p>{item.course.instructor} · {item.course.duration}</p>
+
+                  <h3>
+                    {course.shortTitle || course.title}
+                  </h3>
+
+                  <p>
+                    {course.instructor} · {course.duration}
+                  </p>
 
                   <div className="learning-progress-label">
                     <span>Progress</span>
-                    <strong>{item.progress}%</strong>
+                    <strong>{course.progress}%</strong>
                   </div>
+
                   <div className="learning-progress-track">
-                    <span style={{ width: `${item.progress}%` }} />
+                    <span
+                      style={{
+                        width: `${course.progress}%`,
+                      }}
+                    />
                   </div>
 
                   <button
                     type="button"
                     className="learning-card-continue"
-                    onClick={() => openLearning(item.course)}
+                    onClick={() => openLearning(course)}
                   >
                     Continue learning <FiArrowRight />
                   </button>
@@ -266,16 +468,24 @@ function MyCourses({ onExploreCourses }) {
       </section>
 
       <section className="next-study-goal">
-        <span><FiCheckCircle /></span>
+        <span>
+          <FiCheckCircle />
+        </span>
+
         <div>
           <h2>Your next study goal</h2>
+
           <p>
             {featured.nextLesson
               ? `Complete “${featured.nextLesson.title}” to move forward in your learning path.`
               : 'Choose another course and keep building your skills.'}
           </p>
         </div>
-        <button type="button" onClick={() => openLearning(featured.course)}>
+
+        <button
+          type="button"
+          onClick={() => openLearning(featured)}
+        >
           <FiClock /> View course plan
         </button>
       </section>
