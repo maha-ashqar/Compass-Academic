@@ -124,7 +124,63 @@ function ForgotPasswordPage() {
 
   const roleContent = VISUAL_CONTENT_BY_ROLE[origin];
   const visualContent = roleContent.steps[step];
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
 
+    const resetEmail =
+      params.get('email')?.trim().toLowerCase() || '';
+
+    const resetCode =
+      params.get('code')?.trim() || '';
+
+    if (!resetEmail || !/^\d{6}$/.test(resetCode)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifyLinkCode = async () => {
+      setEmail(resetEmail);
+      setCode(resetCode);
+      setError('');
+      setStep(2);
+      setIsSubmitting(true);
+
+      try {
+        await verifyStudentPasswordResetCode(
+          resetEmail,
+          resetCode
+        );
+
+        if (cancelled) return;
+
+        setStep(3);
+
+        navigate('/forgot-password', {
+          replace: true,
+        });
+      } catch (error) {
+        if (cancelled) return;
+
+        setStep(2);
+
+        setError(
+          error.message ||
+          'The verification code is invalid or expired.'
+        );
+      } finally {
+        if (!cancelled) {
+          setIsSubmitting(false);
+        }
+      }
+    };
+
+    verifyLinkCode();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.search, navigate]);
   useEffect(() => {
     if (step !== 2 || countdown <= 0) {
       return undefined;
@@ -174,7 +230,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-          'Unable to send the reset code. Please try again.'
+        'Unable to send the reset code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -204,7 +260,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-          'Unable to resend the code. Please try again.'
+        'Unable to resend the code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -247,7 +303,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-          'The verification code is invalid or expired.'
+        'The verification code is invalid or expired.'
       );
     } finally {
       setIsSubmitting(false);
@@ -295,7 +351,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-          'Unable to update your password. Please try again.'
+        'Unable to update your password. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -305,7 +361,7 @@ function ForgotPasswordPage() {
   const passwordScore = [
     newPassword.length >= 8,
     /[A-Z]/.test(newPassword) &&
-      /[a-z]/.test(newPassword),
+    /[a-z]/.test(newPassword),
     /\d/.test(newPassword),
     /[^A-Za-z0-9]/.test(newPassword),
   ].filter(Boolean).length;
@@ -552,8 +608,8 @@ function ForgotPasswordPage() {
                 >
                   {countdown > 0
                     ? `Resend code in 00:${String(
-                        countdown
-                      ).padStart(2, '0')}`
+                      countdown
+                    ).padStart(2, '0')}`
                     : 'Resend code'}
                 </button>
               </div>
@@ -695,7 +751,7 @@ function ForgotPasswordPage() {
                     <span
                       className={
                         /[A-Z]/.test(newPassword) &&
-                        /[a-z]/.test(newPassword)
+                          /[a-z]/.test(newPassword)
                           ? 'valid'
                           : ''
                       }
