@@ -238,3 +238,50 @@
   .tc-workspace-tabs { overflow-x: auto; }
   .tc-workspace-tabs button { min-width: 130px; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation
+   (see StudentDashboard.css for why that approach broke things).
+   ============================================================ */
+.dark-theme .tc-page { color: #d7e4ec; }
+.dark-theme .tc-title h1, .dark-theme .tc-workspace-head h1,
+.dark-theme .tc-panel > h2, .dark-theme .tc-panel-head h2,
+.dark-theme .tc-comp-main h3, .dark-theme .tc-selected h3,
+.dark-theme .tc-submission-title h3 { color: #eef6fb; }
+.dark-theme .tc-title p, .dark-theme .tc-workspace-head p,
+.dark-theme .tc-panel-head p, .dark-theme .tc-comp-main > p,
+.dark-theme .tc-panel > p, .dark-theme .tc-panel li,
+.dark-theme .tc-detail-list dt { color: #93a8b8; }
+.dark-theme .tc-detail-list dd { color: #d7e4ec; }
+.dark-theme .tc-panel,
+.dark-theme .tc-competition-list > article,
+.dark-theme .tc-toolbar-controls > label,
+.dark-theme .tc-category-select,
+.dark-theme .tc-manage,
+.dark-theme .tc-secondary,
+.dark-theme .tc-workspace-tabs,
+.dark-theme .tc-form > section,
+.dark-theme .tc-stage-actions button,
+.dark-theme .tc-panel > input[type="datetime-local"],
+.dark-theme .tc-form-grid input,
+.dark-theme .tc-form-grid select,
+.dark-theme .tc-form-grid textarea,
+.dark-theme .tc-table article,
+.dark-theme .tc-row-actions button,
+.dark-theme .tc-form footer {
+  background: #101f2c;
+  border-color: #29414f;
+  color: #d7e4ec;
+}
+.dark-theme .tc-comp-icon,
+.dark-theme .tc-table-head,
+.dark-theme .tc-submission-title > span,
+.dark-theme .tc-ranking article > strong {
+  background: #16283e;
+}
+.dark-theme .tc-filter-tabs button { color: #93a8b8; }
+.dark-theme .tc-filter-tabs { border-color: #29414f; }
+.dark-theme .tc-workspace-tabs button { color: #93a8b8; }
+.dark-theme .tc-rubric input,
+.dark-theme .tc-submission-list textarea { background: #16283e; border-color: #29414f; color: #d7e4ec; }
+.dark-theme .tc-empty { color: #93a8b8; }

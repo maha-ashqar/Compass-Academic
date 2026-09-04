@@ -300,3 +300,41 @@
   .ta-submission-meta { grid-template-columns: 1fr; }
   .ta-two { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   ============================================================ */
+.dark-theme .ta-page { color: #d7e4ec; }
+.dark-theme .ta-page-head h1, .dark-theme .ta-list-card > h2,
+.dark-theme .ta-side h3, .dark-theme .ta-row-copy strong,
+.dark-theme .ta-selected h3, .dark-theme .ta-review-head h2,
+.dark-theme .ta-modal h2 { color: #eef6fb; }
+.dark-theme .ta-page-head p, .dark-theme .ta-row-copy small,
+.dark-theme .ta-row-copy em, .dark-theme .ta-review-head p,
+.dark-theme .ta-modal form > p, .dark-theme .ta-sort-note { color: #93a8b8; }
+.dark-theme .ta-list-card,
+.dark-theme .ta-side > section,
+.dark-theme .ta-toolbar label,
+.dark-theme .ta-toolbar select,
+.dark-theme .ta-head-actions button,
+.dark-theme .ta-review-actions button,
+.dark-theme .ta-selected > button,
+.dark-theme .ta-more > div,
+.dark-theme .ta-modal form,
+.dark-theme .ta-review-modal,
+.dark-theme .ta-action-dialog,
+.dark-theme .ta-student-preview,
+.dark-theme .ta-modal input,
+.dark-theme .ta-modal select,
+.dark-theme .ta-modal textarea,
+.dark-theme .ta-submission-meta {
+  background: #101f2c;
+  border-color: #29414f;
+  color: #d7e4ec;
+}
+.dark-theme .ta-row-icon,
+.dark-theme .ta-recent > span,
+.dark-theme .ta-review-layout > aside > button > span { background: #16283e; }
+.dark-theme .ta-review-layout > aside { border-color: #29414f; }
+.dark-theme .ta-tabs button { background: #16283e; color: #93a8b8; }
+.dark-theme .ta-empty { color: #93a8b8; }

@@ -319,7 +319,7 @@
   background: var(--dashboard-blue);
   border-color: var(--dashboard-blue);
 }
-.td-quick-actions button.primary:hover { background: var(--dashboard-navy); border-color: var(--dashboard-navy); }
+.td-quick-actions button.primary:hover { background: var(--dashboard-blue-dark); border-color: var(--dashboard-blue-dark); }
 
 .td-operations-stats {
   display: grid;
@@ -552,4 +552,43 @@
   .td-review-list em { display: none; }
   .td-course-rows article { grid-template-columns: 42px minmax(0, 1fr) 18px; }
   .td-course-rows i { display: none; }
+}
+
+/* ============================================================
+   DARK MODE — trainer dashboard shell + primary card types.
+   See the matching block in StudentDashboard.css for the
+   reasoning: --dashboard-navy is text-only now (never a
+   button/background fill), so it's safe to invert here.
+   ============================================================ */
+/* ============================================================
+   DARK MODE — REVERTED AND FIXED. See the matching comment in
+   StudentDashboard.css: this no longer touches the shared
+   --dashboard-navy/--dashboard-text tokens (which every other
+   trainer page also reads), only explicit background+color pairs
+   on the elements this file owns.
+   ============================================================ */
+.dark-theme body,
+.dark-theme .dashboard-container { background: #0d1923; }
+.dark-theme .main-header { background: #101f2c; border-color: #29414f; }
+.dark-theme .search-box { background: #16283e; border-color: #29414f; }
+.dark-theme .search-box input { color: #eef6fb; }
+.dark-theme .icon-btn { background: #16283e; }
+.dark-theme .td-operations-stats article,
+.dark-theme .td-panel,
+.dark-theme .notif-dropdown,
+.dark-theme .header-user-menu {
+  background: #101f2c;
+  border-color: #29414f;
+}
+.dark-theme .td-quick-actions button { background: #101f2c; border-color: #29414f; color: #eef6fb; }
+.dark-theme .td-home-heading h1,
+.dark-theme .td-operations-stats article strong,
+.dark-theme .td-panel-head h2,
+.dark-theme .td-row-copy strong {
+  color: #eef6fb;
+}
+.dark-theme .td-home-heading p,
+.dark-theme .td-operations-stats article small,
+.dark-theme .td-panel-head p {
+  color: #93a8b8;
 }

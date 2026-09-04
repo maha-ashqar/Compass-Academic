@@ -1,3 +1,10 @@
+/* FIXED: this rule used to be written as `compass-profile-view { ... }`
+   (missing the leading dot), so it matched a non-existent <compass-profile-view>
+   HTML tag instead of the .compass-profile-view class. Every --cp-* custom
+   property defined here was therefore never actually set anywhere, and
+   every var(--cp-navy) etc. used throughout the rest of this file (with
+   no fallback value) silently fell back to black/inherited text instead
+   of the intended navy brand color. */
 .compass-profile-view {
   --cp-navy: #0b2947;
   --cp-teal: #07536f;
@@ -28,36 +35,97 @@
   box-shadow: 0 4px 12px rgba(7,65,91,.04);
 }
 .cpv-hero-person { display: flex; align-items: center; gap: 28px; min-width: 0; }
-.cpv-hero-person img { width: 112px; height: 112px; flex: 0 0 112px; border: 5px solid #fff; border-radius: 50%; object-fit: cover; object-position: center top; box-shadow: 0 8px 18px rgba(8,54,76,.14); }
+.cpv-hero-person img {
+  width: 112px; height: 112px; flex: 0 0 112px;
+  border: 5px solid #fff; border-radius: 50%; object-fit: cover; object-position: center top;
+  box-shadow: 0 8px 18px rgba(8,54,76,.14);
+}
 .cpv-hero h1 { margin: 0 0 10px; font-size: 23px; }
 .cpv-hero p { margin: 0; color: var(--cp-muted); font-size: 14px; font-weight: 600; }
 .cpv-status { padding: 7px 16px; border-radius: 20px; color: #10724c; background: #dff7e9; font-size: 11px; font-weight: 800; text-transform: capitalize; }
-.cpv-edit-button { display: inline-flex; align-items: center; justify-content: center; min-width: 158px; padding: 14px 20px; gap: 10px; color: #fff; background: var(--cp-teal); border: 0; border-radius: 12px; font-weight: 800; cursor: pointer; }
+.cpv-edit-button {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 158px;
+  padding: 14px 20px; gap: 10px; color: #fff; background: var(--cp-teal); border: 0;
+  border-radius: 12px; font-weight: 800; cursor: pointer;
+}
 
-.cpv-details-grid { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(330px,.85fr); align-items: start; gap: 34px; margin: 56px 18px 0; }
-.cpv-card { padding: 34px 36px; background: var(--cp-card); border: 1px solid var(--cp-line); border-radius: 22px; box-shadow: 0 4px 12px rgba(7,65,91,.035); }
+.cpv-details-grid {
+  display: grid; grid-template-columns: minmax(0,1.25fr) minmax(330px,.85fr);
+  align-items: start; gap: 34px; margin: 56px 18px 0;
+}
+.cpv-card {
+  padding: 34px 36px; background: var(--cp-card); border: 1px solid var(--cp-line);
+  border-radius: 22px; box-shadow: 0 4px 12px rgba(7,65,91,.035);
+}
 .cpv-card header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
 .cpv-card header h2 { margin: 0; font-size: 20px; }
 .cpv-card header svg { color: var(--cp-teal); font-size: 21px; }
 .cpv-personal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px 42px; }
-.cpv-info span,.cpv-overview span { display: block; margin-bottom: 8px; color: var(--cp-muted); font-size: 10px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; }
+.cpv-info span, .cpv-overview span {
+  display: block; margin-bottom: 8px; color: var(--cp-muted); font-size: 10px;
+  font-weight: 700; letter-spacing: .7px; text-transform: uppercase;
+}
 .cpv-info strong { display: block; overflow-wrap: anywhere; font-size: 14px; }
 .cpv-overview { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--cp-line); }
 .cpv-overview p { margin: 0; color: #536b80; font-size: 13px; line-height: 1.7; }
 
 .cpv-academic-card { background: linear-gradient(160deg,#fff,#f6fbfd); }
-.cpv-academic-row { display: flex; align-items: center; min-height: 78px; margin-bottom: 14px; padding: 14px 16px; gap: 15px; background: #fff; border: 1px solid #e7eef2; border-radius: 14px; }
+.cpv-academic-row {
+  display: flex; align-items: center; min-height: 78px; margin-bottom: 14px;
+  padding: 14px 16px; gap: 15px; background: #fff; border: 1px solid #e7eef2; border-radius: 14px;
+}
 .cpv-academic-row:last-child { margin-bottom: 0; }
 .cpv-academic-icon { display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center; border-radius: 50%; font-size: 18px; }
-.cpv-academic-icon.blue { color:#3154ba;background:#e6ebff }.cpv-academic-icon.orange{color:#c65e39;background:#ffebe3}.cpv-academic-icon.cyan{color:#078ec7;background:#e4f6fc}.cpv-academic-icon.green{color:#16805a;background:#e3f7ed}
+.cpv-academic-icon.blue { color:#3154ba; background:#e6ebff; }
+.cpv-academic-icon.orange { color:#c65e39; background:#ffebe3; }
+.cpv-academic-icon.cyan { color:#078ec7; background:#e4f6fc; }
+.cpv-academic-icon.green { color:#16805a; background:#e3f7ed; }
 .cpv-academic-row small { display: block; margin-bottom: 5px; color: var(--cp-muted); font-size: 10px; }
 .cpv-academic-row strong { display: block; font-size: 13px; }
 .cpv-academic-row p { margin: 4px 0 0; color: var(--cp-blue); font-size: 10px; font-weight: 700; }
 
-.cpv-contact-card { display: flex; align-items: center; margin: 34px 18px 0; padding: 20px 26px; gap: 40px; background: #e7f7fd; border-radius: 16px; }
+.cpv-contact-card {
+  display: flex; align-items: center; margin: 34px 18px 0; padding: 20px 26px;
+  gap: 40px; background: #e7f7fd; border-radius: 16px;
+}
 .cpv-contact-card div { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
 .cpv-contact-card svg { color: var(--cp-blue); }
 .cpv-contact-card button { margin-left: auto; color: var(--cp-blue); background: transparent; border: 0; font-weight: 800; cursor: pointer; }
 
-@media(max-width:1000px){.cpv-details-grid{grid-template-columns:1fr}.cpv-hero{grid-template-columns:1fr auto}.cpv-edit-button{grid-column:1/-1}.cpv-contact-card{flex-wrap:wrap}}
-@media(max-width:700px){.compass-profile-view{padding:28px 18px}.cpv-hero{display:flex;align-items:flex-start;flex-direction:column}.cpv-hero-person{align-items:flex-start;flex-direction:column}.cpv-details-grid,.cpv-contact-card{margin-inline:0}.cpv-personal-grid{grid-template-columns:1fr}.cpv-contact-card{align-items:flex-start;flex-direction:column;gap:16px}.cpv-contact-card button{margin-left:0}}
+@media (max-width: 1000px) {
+  .cpv-details-grid { grid-template-columns: 1fr; }
+  .cpv-hero { grid-template-columns: 1fr auto; }
+  .cpv-edit-button { grid-column: 1/-1; }
+  .cpv-contact-card { flex-wrap: wrap; }
+}
+@media (max-width: 700px) {
+  .compass-profile-view { padding: 28px 18px; }
+  .cpv-hero { display: flex; align-items: flex-start; flex-direction: column; }
+  .cpv-hero-person { align-items: flex-start; flex-direction: column; }
+  .cpv-details-grid, .cpv-contact-card { margin-inline: 0; }
+  .cpv-personal-grid { grid-template-columns: 1fr; }
+  .cpv-contact-card { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .cpv-contact-card button { margin-left: 0; }
+}
+
+/* ============================================================
+   DARK MODE — explicit colors only, no shared-token mutation.
+   ============================================================ */
+.dark-theme .compass-profile-view { color: #d7e4ec; }
+.dark-theme .cpv-hero h1,
+.dark-theme .cpv-card header h2,
+.dark-theme .cpv-info strong,
+.dark-theme .cpv-academic-row strong { color: #eef6fb; }
+.dark-theme .cpv-hero p,
+.dark-theme .cpv-info span,
+.dark-theme .cpv-overview span,
+.dark-theme .cpv-overview p,
+.dark-theme .cpv-academic-row small { color: #93a8b8; }
+.dark-theme .cpv-hero,
+.dark-theme .cpv-card,
+.dark-theme .cpv-academic-row,
+.dark-theme .cpv-contact-card {
+  background: #101f2c;
+  border-color: #29414f;
+}
+.dark-theme .cpv-academic-card { background: #101f2c; }
