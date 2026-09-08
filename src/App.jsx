@@ -21,9 +21,15 @@ import { TrainerStudentsProvider } from './TrainerStudentsContext';
 import { NotificationsProvider } from './NotificationsContext';
 import { CompetitionsProvider } from './CompetitionsContext';
 import { AnnouncementsProvider } from './AnnouncementsContext';
+
 import StudentProtectedRoute from './StudentProtectedRoute';
-import { getStudentProfile } from './api/studentProfile';
+import TrainerProtectedRoute from './TrainerProtectedRoute';
 import PublicPortfolio from './PublicPortfolio';
+
+import { getStudentProfile } from './api/studentProfile';
+import { getStudentMe, studentLogout } from './api/studentAuth';
+import { getTrainerMe, trainerLogout } from './api/trainerAuth';
+
 import {
   getOrCreateStudent,
   getCurrentUserEmail,
@@ -38,7 +44,6 @@ import {
   clearCurrentTrainer,
 } from './trainersData';
 
-import { getStudentMe, studentLogout } from './api/studentAuth';
 import './App.css';
 
 function App() {
@@ -55,8 +60,13 @@ function App() {
 
     return getOrCreateStudent('mohammed@university.edu.sa');
   });
-  const [isStudentAuthenticated, setIsStudentAuthenticated] = useState(false);
-  const [isCheckingStudentAuth, setIsCheckingStudentAuth] = useState(true);
+
+  const [isStudentAuthenticated, setIsStudentAuthenticated] =
+    useState(false);
+
+  const [isCheckingStudentAuth, setIsCheckingStudentAuth] =
+    useState(true);
+
   const [trainerData, setTrainerData] = useState(() => {
     const savedEmail = getCurrentTrainerEmail();
 
@@ -70,6 +80,12 @@ function App() {
 
     return getOrCreateTrainer('ahmad@compass.edu.sa');
   });
+
+  const [isTrainerAuthenticated, setIsTrainerAuthenticated] =
+    useState(false);
+
+  const [isCheckingTrainerAuth, setIsCheckingTrainerAuth] =
+    useState(true);
 
   useEffect(() => {
     const restoreStudentSession = async () => {
@@ -121,6 +137,49 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const restoreTrainerSession = async () => {
+      const token =
+        localStorage.getItem('trainer_token') ||
+        sessionStorage.getItem('trainer_token');
+
+      if (!token) {
+        setIsTrainerAuthenticated(false);
+        setIsCheckingTrainerAuth(false);
+        return;
+      }
+
+      try {
+        const data = await getTrainerMe();
+        const apiUser = data.user;
+        const localTrainer = getOrCreateTrainer(apiUser.email);
+
+        setTrainerData({
+          ...localTrainer,
+          fullName: apiUser.name || localTrainer.fullName,
+          displayName: apiUser.name
+            ? `Eng. ${apiUser.name}`
+            : localTrainer.displayName,
+          email: apiUser.email,
+          avatar: apiUser.avatar || localTrainer.avatar,
+        });
+
+        setIsTrainerAuthenticated(true);
+      } catch (error) {
+        console.error('Unable to restore trainer session:', error);
+
+        localStorage.removeItem('trainer_token');
+        sessionStorage.removeItem('trainer_token');
+
+        setIsTrainerAuthenticated(false);
+      } finally {
+        setIsCheckingTrainerAuth(false);
+      }
+    };
+
+    restoreTrainerSession();
+  }, []);
+
+  useEffect(() => {
     if (studentData?.email) {
       saveStudent(studentData);
     }
@@ -131,6 +190,7 @@ function App() {
       saveTrainer(trainerData);
     }
   }, [trainerData]);
+
   const loadStudentProfile = async () => {
     const data = await getStudentProfile();
     const profile = data.profile;
@@ -165,6 +225,7 @@ function App() {
       },
     }));
   };
+
   const handleLogin = async (email) => {
     const student = getOrCreateStudent(email);
 
@@ -182,6 +243,7 @@ function App() {
     const trainer = getOrCreateTrainer(email);
 
     setTrainerData(trainer);
+    setIsTrainerAuthenticated(true);
   };
 
   const handleTrainerUpdate = (profile) => {
@@ -204,8 +266,18 @@ function App() {
     }
   };
 
-  const handleTrainerLogout = () => {
-    clearCurrentTrainer();
+  const handleTrainerLogout = async () => {
+    try {
+      await trainerLogout();
+    } catch (error) {
+      console.error('Trainer logout failed:', error);
+    } finally {
+      localStorage.removeItem('trainer_token');
+      sessionStorage.removeItem('trainer_token');
+
+      clearCurrentTrainer();
+      setIsTrainerAuthenticated(false);
+    }
   };
 
   return (
@@ -226,76 +298,88 @@ function App() {
                                 path="/portfolio/:portfolioCode"
                                 element={<PublicPortfolio />}
                               />
+
                               <Route
                                 path="/"
                                 element={<Homepage />}
                               />
 
                               <Route
-  path="/login"
-  element={
-    isCheckingStudentAuth ? (
-      null
-    ) : isStudentAuthenticated ? (
-      <Navigate
-        to="/student-dashboard"
-        replace
-      />
-    ) : (
-      <LoginPage
-        onLogin={handleLogin}
-      />
-    )
-  }
-/>
+                                path="/login"
+                                element={
+                                  isCheckingStudentAuth ? null : isStudentAuthenticated ? (
+                                    <Navigate
+                                      to="/student-dashboard"
+                                      replace
+                                    />
+                                  ) : (
+                                    <LoginPage
+                                      onLogin={handleLogin}
+                                    />
+                                  )
+                                }
+                              />
 
                               <Route
-  path="/forgot-password"
-  element={
-    isCheckingStudentAuth ? null : isStudentAuthenticated ? (
-      <Navigate to="/student-dashboard" replace />
-    ) : (
-      <ForgotPassword />
-    )
-  }
-/>
+                                path="/forgot-password"
+                                element={
+                                  isCheckingStudentAuth ? null : isStudentAuthenticated ? (
+                                    <Navigate
+                                      to="/student-dashboard"
+                                      replace
+                                    />
+                                  ) : (
+                                    <ForgotPassword />
+                                  )
+                                }
+                              />
 
-                              {/* SignupPage is shared by both roles: which account gets
-                                  created (student vs trainer) is decided inside the page
-                                  itself via location.state.from, exactly like
-                                  ForgotPasswordPage already does. Both handlers are just
-                                  passed down so the page can call the right one. */}
-                             <Route
-  path="/signup"
-  element={
-    isCheckingStudentAuth ? null : isStudentAuthenticated ? (
-      <Navigate to="/student-dashboard" replace />
-    ) : (
-      <SignupPage
-        onStudentSignup={handleLogin}
-        onTrainerSignup={handleTrainerLogin}
-      />
-    )
-  }
-/>
+                              <Route
+                                path="/signup"
+                                element={
+                                  isCheckingStudentAuth ? null : isStudentAuthenticated ? (
+                                    <Navigate
+                                      to="/student-dashboard"
+                                      replace
+                                    />
+                                  ) : (
+                                    <SignupPage
+                                      onStudentSignup={handleLogin}
+                                      onTrainerSignup={handleTrainerLogin}
+                                    />
+                                  )
+                                }
+                              />
 
                               <Route
                                 path="/trainer-login"
                                 element={
-                                  <TrainerLogin
-                                    onLogin={handleTrainerLogin}
-                                  />
+                                  isCheckingTrainerAuth ? null : isTrainerAuthenticated ? (
+                                    <Navigate
+                                      to="/trainer-dashboard"
+                                      replace
+                                    />
+                                  ) : (
+                                    <TrainerLogin
+                                      onLogin={handleTrainerLogin}
+                                    />
+                                  )
                                 }
                               />
 
                               <Route
                                 path="/trainer-dashboard/*"
                                 element={
-                                  <TrainerDashboard
-                                    trainerData={trainerData}
-                                    onTrainerUpdate={handleTrainerUpdate}
-                                    onLogout={handleTrainerLogout}
-                                  />
+                                  <TrainerProtectedRoute
+                                    isAuthenticated={isTrainerAuthenticated}
+                                    isCheckingAuth={isCheckingTrainerAuth}
+                                  >
+                                    <TrainerDashboard
+                                      trainerData={trainerData}
+                                      onTrainerUpdate={handleTrainerUpdate}
+                                      onLogout={handleTrainerLogout}
+                                    />
+                                  </TrainerProtectedRoute>
                                 }
                               />
 

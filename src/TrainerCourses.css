@@ -1,4 +1,3 @@
-
 .tc-page {
   --navy: #0b304b;
   --blue: #079cda;
@@ -117,13 +116,33 @@
   font-size: 25px;
 }
 
-.tc-overview .blue { background: #e4f5fc; color: #079cda; }
-.tc-overview .purple { background: #f1ecff; color: #7651d5; }
-.tc-overview .orange { background: #fff0e4; color: #f18125; }
+.tc-overview .blue {
+  background: #e4f5fc;
+  color: #079cda;
+}
 
-.tc-overview strong { font-size: 24px; }
-.tc-overview b { font-size: 12px; }
-.tc-overview small { color: var(--muted); font-size: 10px; }
+.tc-overview .purple {
+  background: #f1ecff;
+  color: #7651d5;
+}
+
+.tc-overview .orange {
+  background: #fff0e4;
+  color: #f18125;
+}
+
+.tc-overview strong {
+  font-size: 24px;
+}
+
+.tc-overview b {
+  font-size: 12px;
+}
+
+.tc-overview small {
+  color: var(--muted);
+  font-size: 10px;
+}
 
 /* ============================================
    LAYOUT (list view: course list + sidebar)
@@ -166,9 +185,19 @@
   margin-bottom: 14px;
 }
 
-.tc-card-title h2 { font-size: 18px; margin: 0; }
-.tc-card-title p { font-size: 11px; }
-.tc-card-title span { color: var(--muted); font-size: 11px; }
+.tc-card-title h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.tc-card-title p {
+  font-size: 11px;
+}
+
+.tc-card-title span {
+  color: var(--muted);
+  font-size: 11px;
+}
 
 /* ============================================
    TOOLBAR (search / status / sort / view toggle)
@@ -248,6 +277,8 @@
 
 .tc-course-row {
   position: relative;
+  z-index: 1;
+  overflow: visible;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) 132px 40px;
   align-items: center;
@@ -321,10 +352,25 @@
   text-transform: capitalize;
 }
 
-.tc-status.published { color: #16885f; background: #e4f7ed; }
-.tc-status.draft { color: #a76b00; background: #fff1d3; }
-.tc-status.hidden { color: #5d6073; background: #eceef3; }
-.tc-status.archived { color: #8a5160; background: #fae9ed; }
+.tc-status.published {
+  color: #16885f;
+  background: #e4f7ed;
+}
+
+.tc-status.draft {
+  color: #a76b00;
+  background: #fff1d3;
+}
+
+.tc-status.hidden {
+  color: #5d6073;
+  background: #eceef3;
+}
+
+.tc-status.archived {
+  color: #8a5160;
+  background: #fae9ed;
+}
 
 .tc-course-meta {
   display: flex;
@@ -369,6 +415,7 @@
 
 .tc-more {
   position: relative;
+  z-index: 50;
 }
 
 .tc-more > button {
@@ -383,7 +430,7 @@
   position: absolute;
   right: 0;
   top: 42px;
-  z-index: 10;
+  z-index: 100;
   width: 165px;
   padding: 6px;
   background: #fff;
@@ -653,8 +700,14 @@
   border-top: 1px solid #edf2f5;
 }
 
-.tc-builder-side dt { color: var(--muted); }
-.tc-builder-side dd { margin: 0; font-weight: 750; }
+.tc-builder-side dt {
+  color: var(--muted);
+}
+
+.tc-builder-side dd {
+  margin: 0;
+  font-weight: 750;
+}
 
 .tc-wide {
   display: flex;
@@ -1057,10 +1110,18 @@
 }
 
 .tc-page .tc-course-list.list .tc-course-row:hover {
+  z-index: 20 !important;
   border-color: #a9d8e9 !important;
   background: #f9fcfe !important;
   box-shadow: 0 8px 22px rgba(11, 48, 75, 0.06);
-  transform: translateY(-1px);
+}
+
+.tc-page .tc-course-list.list .tc-course-row:has(.tc-more > div) {
+  z-index: 100 !important;
+}
+
+.tc-page .tc-course-list.list .tc-course-row:has(.tc-more > div) .tc-more {
+  z-index: 110 !important;
 }
 
 .tc-page .tc-cover {
