@@ -591,4 +591,16 @@
 .dark-theme .td-operations-stats article small,
 .dark-theme .td-panel-head p {
   color: #93a8b8;
+}.notif-dropdown-item {
+  position: relative;
+}
+
+.notif-dropdown-item > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  flex-shrink: 0;
+  margin-left: auto;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }

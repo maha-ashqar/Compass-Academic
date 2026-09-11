@@ -12,16 +12,14 @@ import {
   FiArrowRight,
   FiBell,
   FiBookOpen,
-  FiBriefcase,
   FiCheckCircle,
-  FiFileText,
   FiLogOut,
   FiMail,
   FiMoreHorizontal,
   FiPlus,
+  FiRefreshCw,
   FiSearch,
   FiSettings,
-  FiTarget,
   FiUser,
   FiUsers,
 } from 'react-icons/fi';
@@ -40,6 +38,7 @@ import TrainerAnnouncements from './TrainerAnnouncements';
 import TrainerProfile from './TrainerProfile';
 import TrainerSettings from './TrainerSettings';
 import { getTrainerDashboard } from './api/trainerDashboard';
+import { useTrainerNotifications } from './TrainerNotificationsContext';
 
 const getInitials = (text) =>
   (text || '')
@@ -74,10 +73,14 @@ const TrainerDashboard = ({
             )
           ? 'Settings'
           : location.pathname.startsWith(
-                '/trainer-dashboard/announcements'
+                '/trainer-dashboard/notifications'
               )
-            ? 'Announcements'
-            : 'Home'
+            ? 'Notifications'
+            : location.pathname.startsWith(
+                  '/trainer-dashboard/announcements'
+                )
+              ? 'Announcements'
+              : 'Home'
   );
 
   const [dashboardData, setDashboardData] =
@@ -100,6 +103,16 @@ const TrainerDashboard = ({
 
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  const {
+    notifications,
+    unreadCount,
+    loading: notificationsLoading,
+    error: notificationsError,
+    markAsRead,
+    markAllRead,
+    refreshNotifications,
+  } = useTrainerNotifications();
 
   const displayName =
     trainerData?.displayName ||
@@ -224,6 +237,10 @@ const TrainerDashboard = ({
       navigate(
         '/trainer-dashboard/announcements'
       );
+    } else if (tab === 'Notifications') {
+      navigate(
+        '/trainer-dashboard/notifications'
+      );
     } else if (
       location.pathname.startsWith(
         '/trainer-dashboard/competitions'
@@ -239,6 +256,9 @@ const TrainerDashboard = ({
       ) ||
       location.pathname.startsWith(
         '/trainer-dashboard/announcements'
+      ) ||
+      location.pathname.startsWith(
+        '/trainer-dashboard/notifications'
       )
     ) {
       navigate('/trainer-dashboard');
@@ -286,68 +306,45 @@ const TrainerDashboard = ({
     );
   }, [reviewQueue, searchQuery]);
 
-  const trainerAlerts = useMemo(
-    () =>
-      [
-        stats.ungraded_assignments > 0 && {
-          id: 'assignments',
-          icon: <FiFileText />,
-          text: `${
-            stats.ungraded_assignments
-          } submission${
-            stats.ungraded_assignments === 1
-              ? ''
-              : 's'
-          } awaiting grading`,
-          tab: 'Assignments',
-        },
+  const recentNotifications =
+    notifications.slice(0, 6);
 
-        stats.pending_projects > 0 && {
-          id: 'projects',
-          icon: <FiBriefcase />,
-          text: `${
-            stats.pending_projects
-          } project${
-            stats.pending_projects === 1
-              ? ''
-              : 's'
-          } awaiting review`,
-          tab: 'Projects',
-        },
+  const handleNotificationToggle = async () => {
+    const nextOpen = !showNotifications;
 
-        stats
-          .pending_competition_registrations >
-          0 && {
-          id: 'competitions',
-          icon: <FiTarget />,
-          text: `${
-            stats
-              .pending_competition_registrations
-          } competition registration request${
-            stats
-              .pending_competition_registrations ===
-            1
-              ? ''
-              : 's'
-          }`,
-          tab: 'Competitions',
-        },
+    setShowNotifications(nextOpen);
 
-        stats.unread_messages > 0 && {
-          id: 'messages',
-          icon: <FiMail />,
-          text: `${
-            stats.unread_messages
-          } unread message${
-            stats.unread_messages === 1
-              ? ''
-              : 's'
-          }`,
-          tab: 'Messages',
-        },
-      ].filter(Boolean),
-    [stats]
-  );
+    if (nextOpen) {
+      await refreshNotifications();
+    }
+  };
+
+  const openNotification = async (
+    notification
+  ) => {
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+
+    setShowNotifications(false);
+
+    if (notification.actionPath) {
+      navigate(notification.actionPath);
+      return;
+    }
+
+    if (notification.actionTab) {
+      handleTabSelect(
+        notification.actionTab
+      );
+    }
+  };
+
+  const markAllNotificationsRead =
+    async () => {
+      await markAllRead();
+    };
+
 
   return (
     <div className="dashboard-container">
@@ -382,17 +379,16 @@ const TrainerDashboard = ({
               <button
                 type="button"
                 className="icon-btn"
-                onClick={() =>
-                  setShowNotifications(
-                    (current) => !current
-                  )
+                onClick={
+                  handleNotificationToggle
                 }
+                aria-label="Notifications"
               >
                 <FiBell className="header-icon" />
 
-                {trainerAlerts.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="notif-badge">
-                    {trainerAlerts.length}
+                    {unreadCount}
                   </span>
                 )}
               </button>
@@ -403,38 +399,100 @@ const TrainerDashboard = ({
                     <h4>Notifications</h4>
                   </div>
 
-                  {trainerAlerts.length ? (
-                    trainerAlerts.map(
-                      (alert) => (
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      className="notif-dropdown-item"
+                      onClick={
+                        markAllNotificationsRead
+                      }
+                    >
+                      <span className="notif-dropdown-icon">
+                        <FiCheckCircle />
+                      </span>
+
+                      <span>
+                        Mark all as read
+                      </span>
+                    </button>
+                  )}
+
+                  {notificationsLoading &&
+                  !notifications.length ? (
+                    <p className="notif-dropdown-empty">
+                      Loading notifications...
+                    </p>
+                  ) : recentNotifications.length ? (
+                    recentNotifications.map(
+                      (notification) => (
                         <button
                           type="button"
-                          key={alert.id}
+                          key={notification.id}
                           className="notif-dropdown-item"
-                          onClick={() => {
-                            handleTabSelect(
-                              alert.tab
-                            );
-
-                            setShowNotifications(
-                              false
-                            );
-                          }}
+                          onClick={() =>
+                            openNotification(
+                              notification
+                            )
+                          }
                         >
                           <span className="notif-dropdown-icon">
-                            {alert.icon}
+                            {notification.icon ||
+                              '🔔'}
                           </span>
 
                           <span>
-                            {alert.text}
+                            <strong>
+                              {
+                                notification.title
+                              }
+                            </strong>
+
+                            <small>
+                              {notification.text}
+                            </small>
                           </span>
+
+                          {!notification.read && (
+                            <i
+                              aria-label="Unread notification"
+                            />
+                          )}
                         </button>
                       )
                     )
                   ) : (
                     <p className="notif-dropdown-empty">
-                      You're all caught up.
+                      You&apos;re all caught up.
                     </p>
                   )}
+
+                  {notificationsError && (
+                    <p className="notif-dropdown-empty">
+                      {notificationsError}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    className="notif-dropdown-item"
+                    onClick={() => {
+                      handleTabSelect(
+                        'Notifications'
+                      );
+
+                      setShowNotifications(
+                        false
+                      );
+                    }}
+                  >
+                    <span className="notif-dropdown-icon">
+                      <FiBell />
+                    </span>
+
+                    <span>
+                      View all notifications
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1077,6 +1135,147 @@ const TrainerDashboard = ({
             <TrainerCompetitions
               trainerData={trainerData}
             />
+          )}
+
+          {activeTab ===
+            'Notifications' && (
+            <div className="tab-content">
+              <div className="td-home-heading">
+                <div className="welcome-text">
+                  <span>
+                    NOTIFICATION CENTER
+                  </span>
+
+                  <h1>
+                    Trainer notifications
+                  </h1>
+
+                  <p>
+                    Assignment submissions,
+                    project reviews, and
+                    competition activity that
+                    need your attention.
+                  </p>
+                </div>
+
+                <div className="td-quick-actions">
+                  <button
+                    type="button"
+                    onClick={
+                      refreshNotifications
+                    }
+                    disabled={
+                      notificationsLoading
+                    }
+                  >
+                    <FiRefreshCw />
+                    Refresh
+                  </button>
+
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={
+                      markAllNotificationsRead
+                    }
+                    disabled={
+                      unreadCount === 0
+                    }
+                  >
+                    <FiCheckCircle />
+                    Mark all as read
+                  </button>
+                </div>
+              </div>
+
+              <section className="td-panel td-review-panel">
+                <div className="td-panel-head">
+                  <div>
+                    <h2>
+                      Recent notifications
+                    </h2>
+
+                    <p>
+                      {unreadCount}{' '}
+                      unread notification
+                      {unreadCount === 1
+                        ? ''
+                        : 's'}
+                    </p>
+                  </div>
+                </div>
+
+                {notificationsError && (
+                  <div className="td-panel-empty">
+                    {notificationsError}
+                  </div>
+                )}
+
+                {notificationsLoading &&
+                !notifications.length ? (
+                  <div className="td-panel-empty">
+                    Loading notifications...
+                  </div>
+                ) : notifications.length ? (
+                  <div className="td-review-list">
+                    {notifications.map(
+                      (notification) => (
+                        <article
+                          key={
+                            notification.id
+                          }
+                        >
+                          <span className="td-type">
+                            {notification.icon ||
+                              '🔔'}
+                          </span>
+
+                          <div>
+                            <strong>
+                              {
+                                notification.title
+                              }
+                            </strong>
+
+                            <small>
+                              {notification.text}
+                              {notification.time
+                                ? ` · ${notification.time}`
+                                : ''}
+                            </small>
+                          </div>
+
+                          <em>
+                            {notification.read
+                              ? 'Read'
+                              : 'New'}
+                          </em>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openNotification(
+                                notification
+                              )
+                            }
+                          >
+                            {notification
+                              .actionLabel ||
+                              (notification.read
+                                ? 'Open'
+                                : 'View')}
+                          </button>
+                        </article>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="td-panel-empty">
+                    You&apos;re all caught up.
+                  </div>
+                )}
+              </section>
+            </div>
           )}
 
           {activeTab === 'Settings' && (
