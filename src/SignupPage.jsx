@@ -4,6 +4,7 @@ import CompassWordmark from './CompassWordmark';
 import heroImg from './assets/hero.jpg';
 import { UserIcon, MailIcon, LockIcon, GoogleIcon } from './AuthIcons';
 import { studentRegister } from './api/studentAuth';
+import { trainerRegister } from './api/trainerAuth';
 import './SignupPage.css';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,10 +70,6 @@ function SignupPage({ onStudentSignup, onTrainerSignup }) {
   const content = CONTENT_BY_ORIGIN[origin];
 
   const loginPath = isTrainer ? '/trainer-login' : '/login';
-  const dashboardPath = isTrainer
-    ? '/trainer-dashboard'
-    : '/student-dashboard';
-
   const topActionPath = isTrainer ? '/login' : '/trainer-login';
 
   const passwordChecks = getPasswordChecks(password);
@@ -113,22 +110,35 @@ function SignupPage({ onStudentSignup, onTrainerSignup }) {
       return;
     }
 
-    if (isTrainer) {
-      const created = onTrainerSignup
-        ? onTrainerSignup(cleanEmail)
-        : true;
-
-      if (created === false) {
-        setError('We could not create your account. Please try again.');
-        return;
-      }
-
-      navigate(dashboardPath);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
+
+      if (isTrainer) {
+        const data = await trainerRegister({
+          name: cleanName,
+          email: cleanEmail,
+          password,
+          passwordConfirmation: confirmPassword,
+        });
+
+        localStorage.removeItem('trainer_token');
+        sessionStorage.removeItem('trainer_token');
+
+        sessionStorage.setItem(
+          'trainer_token',
+          data.token
+        );
+
+        if (onTrainerSignup) {
+          await onTrainerSignup(data.user.email);
+        }
+
+        navigate('/trainer-dashboard', {
+          replace: true,
+        });
+
+        return;
+      }
 
       const data = await studentRegister({
         name: cleanName,
@@ -140,7 +150,10 @@ function SignupPage({ onStudentSignup, onTrainerSignup }) {
       localStorage.removeItem('student_token');
       sessionStorage.removeItem('student_token');
 
-      sessionStorage.setItem('student_token', data.token);
+      sessionStorage.setItem(
+        'student_token',
+        data.token
+      );
 
       if (onStudentSignup) {
         await onStudentSignup(data.user.email);

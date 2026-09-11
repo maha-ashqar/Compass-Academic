@@ -64,3 +64,119 @@ export async function trainerLogout() {
 
   return handleResponse(response);
 }
+
+async function trainerAuthRequest(
+  endpoint,
+  options = {}
+) {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}${endpoint}`,
+    {
+      ...options,
+      headers: {
+        Accept: 'application/json',
+        ...(options.body
+          ? {
+              'Content-Type': 'application/json',
+            }
+          : {}),
+        ...(options.headers || {}),
+      },
+    }
+  );
+
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const validationError =
+      data?.errors
+        ? Object.values(data.errors).flat()[0]
+        : null;
+
+    throw new Error(
+      validationError ||
+        data?.message ||
+        'Unable to complete the request.'
+    );
+  }
+
+  return data;
+}
+
+export function trainerRegister({
+  name,
+  email,
+  password,
+  passwordConfirmation,
+}) {
+  return trainerAuthRequest(
+    '/trainer/register',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        password_confirmation:
+          passwordConfirmation,
+      }),
+    }
+  );
+}
+
+export function requestTrainerPasswordReset(
+  email
+) {
+  return trainerAuthRequest(
+    '/trainer/forgot-password',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+      }),
+    }
+  );
+}
+
+export function verifyTrainerPasswordResetCode(
+  email,
+  code
+) {
+  return trainerAuthRequest(
+    '/trainer/forgot-password/verify',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        code,
+      }),
+    }
+  );
+}
+
+export function resetTrainerPassword({
+  email,
+  code,
+  password,
+  passwordConfirmation,
+}) {
+  return trainerAuthRequest(
+    '/trainer/reset-password',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        code,
+        password,
+        password_confirmation:
+          passwordConfirmation,
+      }),
+    }
+  );
+}

@@ -9,6 +9,11 @@ import {
   verifyStudentPasswordResetCode,
   resetStudentPassword,
 } from './api/studentAuth';
+import {
+  requestTrainerPasswordReset,
+  verifyTrainerPasswordResetCode,
+  resetTrainerPassword,
+} from './api/trainerAuth';
 import './ForgotPasswordPage.css';
 
 const VISUAL_CONTENT_BY_ROLE = {
@@ -94,7 +99,6 @@ const VISUAL_CONTENT_BY_ROLE = {
 };
 
 const RESEND_COOLDOWN_SECONDS = 45;
-const DUMMY_CODE = '123456';
 
 function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
@@ -147,10 +151,17 @@ function ForgotPasswordPage() {
       setIsSubmitting(true);
 
       try {
-        await verifyStudentPasswordResetCode(
-          resetEmail,
-          resetCode
-        );
+        if (origin === 'trainer') {
+          await verifyTrainerPasswordResetCode(
+            resetEmail,
+            resetCode
+          );
+        } else {
+          await verifyStudentPasswordResetCode(
+            resetEmail,
+            resetCode
+          );
+        }
 
         if (cancelled) return;
 
@@ -180,7 +191,7 @@ function ForgotPasswordPage() {
     return () => {
       cancelled = true;
     };
-  }, [location.search, navigate]);
+  }, [location.search, navigate, origin]);
   useEffect(() => {
     if (step !== 2 || countdown <= 0) {
       return undefined;
@@ -207,17 +218,17 @@ function ForgotPasswordPage() {
       return;
     }
 
-    if (origin === 'trainer') {
-      setEmail(cleanEmail);
-      setCountdown(RESEND_COOLDOWN_SECONDS);
-      setStep(2);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      const data = await requestStudentPasswordReset(cleanEmail);
+      const data =
+        origin === 'trainer'
+          ? await requestTrainerPasswordReset(
+              cleanEmail
+            )
+          : await requestStudentPasswordReset(
+              cleanEmail
+            );
 
       setEmail(cleanEmail);
       setCountdown(RESEND_COOLDOWN_SECONDS);
@@ -230,7 +241,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-        'Unable to send the reset code. Please try again.'
+          'Unable to send the reset code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -242,15 +253,17 @@ function ForgotPasswordPage() {
 
     setError('');
 
-    if (origin === 'trainer') {
-      setCountdown(RESEND_COOLDOWN_SECONDS);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      const data = await requestStudentPasswordReset(email);
+      const data =
+        origin === 'trainer'
+          ? await requestTrainerPasswordReset(
+              email
+            )
+          : await requestStudentPasswordReset(
+              email
+            );
 
       if (data.debug_code) {
         console.log('Reset code:', data.debug_code);
@@ -260,7 +273,7 @@ function ForgotPasswordPage() {
     } catch (error) {
       setError(
         error.message ||
-        'Unable to resend the code. Please try again.'
+          'Unable to resend the code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -281,29 +294,26 @@ function ForgotPasswordPage() {
       return;
     }
 
-    if (origin === 'trainer') {
-      if (cleanCode !== DUMMY_CODE) {
-        setError('Incorrect verification code.');
-        return;
-      }
-
-      setStep(3);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      await verifyStudentPasswordResetCode(
-        email,
-        cleanCode
-      );
+      if (origin === 'trainer') {
+        await verifyTrainerPasswordResetCode(
+          email,
+          cleanCode
+        );
+      } else {
+        await verifyStudentPasswordResetCode(
+          email,
+          cleanCode
+        );
+      }
 
       setStep(3);
     } catch (error) {
       setError(
         error.message ||
-        'The verification code is invalid or expired.'
+          'The verification code is invalid or expired.'
       );
     } finally {
       setIsSubmitting(false);
@@ -329,29 +339,33 @@ function ForgotPasswordPage() {
       return;
     }
 
-    if (origin === 'trainer') {
-      setStep(4);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      await resetStudentPassword({
+      const payload = {
         email,
         code: code.trim(),
         password: newPassword,
         passwordConfirmation: confirmPassword,
-      });
+      };
 
-      localStorage.removeItem('student_token');
-      sessionStorage.removeItem('student_token');
+      if (origin === 'trainer') {
+        await resetTrainerPassword(payload);
+
+        localStorage.removeItem('trainer_token');
+        sessionStorage.removeItem('trainer_token');
+      } else {
+        await resetStudentPassword(payload);
+
+        localStorage.removeItem('student_token');
+        sessionStorage.removeItem('student_token');
+      }
 
       setStep(4);
     } catch (error) {
       setError(
         error.message ||
-        'Unable to update your password. Please try again.'
+          'Unable to update your password. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
