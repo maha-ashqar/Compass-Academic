@@ -27,8 +27,10 @@ import {
   MAX_ATTACHMENT_BYTES,
   MESSAGE_EDIT_WINDOW_MS,
   readFileAsAttachment,
-  useTrainerConversations,
 } from './SharedConversationsContext';
+import {
+  useTrainerConversations,
+} from './useTrainerMessages';
 import {
   useStudentConversations,
 } from './useStudentMessages';
@@ -56,19 +58,40 @@ const initials = (name = '') =>
     .slice(0, 2)
     .toUpperCase();
 
-const timeLabel = (value) => {
+const parseApiDate = (value) => {
   if (!value) {
-    return '';
+    return null;
   }
 
-  const date = new Date(value);
+  let normalized = value;
+
+  if (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(
+      value
+    )
+  ) {
+    normalized = `${value.replace(' ', 'T')}Z`;
+  }
+
+  const date = new Date(normalized);
 
   if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+};
+
+const timeLabel = (value) => {
+  const date = parseApiDate(value);
+
+  if (!date) {
     return '';
   }
 
   return date.toLocaleTimeString(
-    'en-US',
+    undefined,
     {
       hour: '2-digit',
       minute: '2-digit',
@@ -688,6 +711,10 @@ export default function ChatApp({
         }
       );
 
+      await api.openConversation(
+        selected.id
+      );
+
       setDraft('');
       setAttachments([]);
     } catch (requestError) {
@@ -1032,6 +1059,22 @@ export default function ChatApp({
                       </small>
                     </span>
 
+                    {unread > 0 && (
+                      <span
+                        aria-label="Unread message"
+                        title="New message"
+                        style={{
+                          width: '9px',
+                          height: '9px',
+                          borderRadius: '50%',
+                          background: '#2563eb',
+                          flexShrink: 0,
+                          boxShadow:
+                            '0 0 0 3px rgba(37, 99, 235, 0.12)',
+                        }}
+                      />
+                    )}
+
                     {pending && (
                       <b className="chat-badge pending">
                         New
@@ -1158,16 +1201,23 @@ export default function ChatApp({
                     </button>
 
                     <button
-                      type="button"
-                      onClick={
-                        handleToggleBlock
-                      }
-                    >
-                      <FiSlash />
-                      {selected.blockedBy
-                        ? 'Unblock'
-                        : 'Block conversation'}
-                    </button>
+  type="button"
+  onClick={
+    handleToggleBlock
+  }
+  disabled={
+    selected.blockedBy &&
+    selected.blockedBy !== role
+  }
+>
+  <FiSlash />
+
+  {selected.blockedBy === role
+    ? 'Unblock'
+    : selected.blockedBy
+      ? 'Blocked by other user'
+      : 'Block conversation'}
+</button>
 
                     <button
                       type="button"
@@ -1234,10 +1284,18 @@ export default function ChatApp({
                     message.sender ===
                     role;
 
+                  const messageDate =
+                    parseApiDate(
+                      message.time
+                    );
+
                   const editable =
-  mine &&
-  !message.deleted &&
-  message.canEdit === true;
+                    mine &&
+                    !message.deleted &&
+                    messageDate &&
+                    Date.now() -
+                      messageDate.getTime() <=
+                      MESSAGE_EDIT_WINDOW_MS;
 
                   return (
                     <div
@@ -1366,10 +1424,9 @@ export default function ChatApp({
                     handleToggleBlock
                   }
                 >
-                  {selected.blockedBy ===
-                  'student'
-                    ? 'Unblock'
-                    : 'Blocked by other user'}
+                  {selected.blockedBy === role
+  ? 'Unblock'
+  : 'Blocked by other user'}
                 </button>
               </div>
             ) : selectedPending ? (

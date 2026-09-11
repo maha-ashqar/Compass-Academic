@@ -39,6 +39,7 @@ import TrainerProfile from './TrainerProfile';
 import TrainerSettings from './TrainerSettings';
 import { getTrainerDashboard } from './api/trainerDashboard';
 import { useTrainerNotifications } from './TrainerNotificationsContext';
+import { useTrainerConversations } from './useTrainerMessages';
 
 const getInitials = (text) =>
   (text || '')
@@ -98,10 +99,14 @@ const TrainerDashboard = ({
   const [showNotifications, setShowNotifications] =
     useState(false);
 
+  const [showMessages, setShowMessages] =
+    useState(false);
+
   const [showUserMenu, setShowUserMenu] =
     useState(false);
 
   const notifRef = useRef(null);
+  const messagesRef = useRef(null);
   const userMenuRef = useRef(null);
 
   const {
@@ -113,6 +118,14 @@ const TrainerDashboard = ({
     markAllRead,
     refreshNotifications,
   } = useTrainerNotifications();
+
+  const {
+    conversations: messageConversations,
+    unreadCount: messagesUnreadCount,
+    loading: messagesLoading,
+    error: messagesError,
+    refreshConversations: refreshMessages,
+  } = useTrainerConversations();
 
   const displayName =
     trainerData?.displayName ||
@@ -177,6 +190,28 @@ const TrainerDashboard = ({
         !notifRef.current.contains(event.target)
       ) {
         setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener(
+      'mousedown',
+      handleClickOutside
+    );
+
+    return () =>
+      document.removeEventListener(
+        'mousedown',
+        handleClickOutside
+      );
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        messagesRef.current &&
+        !messagesRef.current.contains(event.target)
+      ) {
+        setShowMessages(false);
       }
     };
 
@@ -286,8 +321,78 @@ const TrainerDashboard = ({
   const activeCourses =
     dashboardData?.active_courses || [];
 
-  const recentMessages =
-    dashboardData?.recent_messages || [];
+  const recentMessages = useMemo(
+    () =>
+      [...messageConversations]
+        .filter(
+          (conversation) =>
+            Array.isArray(
+              conversation.messages
+            ) &&
+            conversation.messages.length > 0
+        )
+        .sort((a, b) => {
+          const aTime =
+            a.messages.at(-1)?.time || '';
+          const bTime =
+            b.messages.at(-1)?.time || '';
+
+          return (
+            new Date(bTime).getTime() -
+            new Date(aTime).getTime()
+          );
+        })
+        .slice(0, 4)
+        .map((conversation) => {
+          const last =
+            conversation.messages.at(-1);
+
+          return {
+            id: conversation.id,
+            name:
+              conversation.studentName ||
+              conversation.contact?.name ||
+              'Student',
+            message: last?.deleted
+              ? 'Message deleted'
+              : last?.text ||
+                (last?.attachments?.length
+                  ? 'Attachment'
+                  : 'No messages yet'),
+            unread_count: Number(
+              conversation.unreadForTrainer ||
+                0
+            ),
+          };
+        }),
+    [messageConversations]
+  );
+
+  const recentMessageConversations =
+    useMemo(
+      () =>
+        [...messageConversations]
+          .filter(
+            (conversation) =>
+              Array.isArray(
+                conversation.messages
+              ) &&
+              conversation.messages.length > 0
+          )
+          .sort((a, b) => {
+            const aTime =
+              a.messages.at(-1)?.time || '';
+            const bTime =
+              b.messages.at(-1)?.time || '';
+
+            return (
+              new Date(bTime).getTime() -
+              new Date(aTime).getTime()
+            );
+          })
+          .slice(0, 6),
+      [messageConversations]
+    );
 
   const filteredQueue = useMemo(() => {
     const query =
@@ -312,11 +417,30 @@ const TrainerDashboard = ({
   const handleNotificationToggle = async () => {
     const nextOpen = !showNotifications;
 
+    setShowMessages(false);
+    setShowUserMenu(false);
     setShowNotifications(nextOpen);
 
     if (nextOpen) {
       await refreshNotifications();
     }
+  };
+
+  const handleMessagesToggle = async () => {
+    const nextOpen = !showMessages;
+
+    setShowNotifications(false);
+    setShowUserMenu(false);
+    setShowMessages(nextOpen);
+
+    if (nextOpen) {
+      await refreshMessages();
+    }
+  };
+
+  const openMessages = () => {
+    setShowMessages(false);
+    handleTabSelect('Messages');
   };
 
   const openNotification = async (
@@ -497,21 +621,119 @@ const TrainerDashboard = ({
               )}
             </div>
 
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() =>
-                handleTabSelect('Messages')
-              }
+            <div
+              className="notif-dropdown-wrap"
+              ref={messagesRef}
             >
-              <FiMail className="header-icon" />
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={handleMessagesToggle}
+                aria-label="Messages"
+              >
+                <FiMail className="header-icon" />
 
-              {stats.unread_messages > 0 && (
-                <span className="notif-badge">
-                  {stats.unread_messages}
-                </span>
+                {messagesUnreadCount > 0 && (
+                  <span className="notif-badge">
+                    {messagesUnreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showMessages && (
+                <div className="notif-dropdown">
+                  <div className="notif-dropdown-head">
+                    <h4>Messages</h4>
+                  </div>
+
+                  {messagesLoading &&
+                  !recentMessageConversations.length ? (
+                    <p className="notif-dropdown-empty">
+                      Loading messages...
+                    </p>
+                  ) : recentMessageConversations.length ? (
+                    recentMessageConversations.map(
+                      (conversation) => {
+                        const last =
+                          conversation.messages.at(-1);
+
+                        const preview =
+                          last?.deleted
+                            ? 'Message deleted'
+                            : last?.text ||
+                              (last?.attachments?.length
+                                ? 'Attachment'
+                                : 'No messages yet');
+
+                        return (
+                          <button
+                            type="button"
+                            key={conversation.id}
+                            className="notif-dropdown-item"
+                            onClick={openMessages}
+                          >
+                            <span className="notif-dropdown-icon">
+                              {getInitials(
+                                conversation.studentName ||
+                                  conversation.contact
+                                    ?.name ||
+                                  'Student'
+                              )}
+                            </span>
+
+                            <span>
+                              <strong>
+                                {conversation.studentName ||
+                                  conversation.contact
+                                    ?.name ||
+                                  'Student'}
+                              </strong>
+
+                              <small>
+                                {preview}
+                              </small>
+                            </span>
+
+                            {Number(
+                              conversation.unreadForTrainer ||
+                                0
+                            ) > 0 && (
+                              <i
+                                aria-label="Unread message"
+                              />
+                            )}
+                          </button>
+                        );
+                      }
+                    )
+                  ) : (
+                    <p className="notif-dropdown-empty">
+                      No messages yet.
+                    </p>
+                  )}
+
+                  {messagesError && (
+                    <p className="notif-dropdown-empty">
+                      {messagesError}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    className="notif-dropdown-item"
+                    onClick={openMessages}
+                  >
+                    <span className="notif-dropdown-icon">
+                      <FiMail />
+                    </span>
+
+                    <span>
+                      View all messages
+                    </span>
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
 
             <div
               className="header-user-wrap"
@@ -520,11 +742,13 @@ const TrainerDashboard = ({
               <button
                 type="button"
                 className="header-user"
-                onClick={() =>
+                onClick={() => {
+                  setShowNotifications(false);
+                  setShowMessages(false);
                   setShowUserMenu(
                     (current) => !current
-                  )
-                }
+                  );
+                }}
               >
                 <span className="user-name">
                   {displayName
@@ -741,7 +965,7 @@ const TrainerDashboard = ({
 
                       <strong>
                         {
-                          stats.unread_messages
+                          messagesUnreadCount
                         }
                       </strong>
 
